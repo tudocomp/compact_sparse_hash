@@ -6,6 +6,10 @@
 #include <tudocomp/util/bits.hpp>
 
 using namespace tdc;
+using namespace tdc::compact_sparse_hashtable;
+
+template<typename val_t>
+using compact_hash = compact_sparse_hashtable_t<val_t>;
 
 bool print_init = false;
 
