@@ -19,7 +19,7 @@ regard, a proper installation of the dependencies is not required.
 Said external dependencies are the following:
 
 * [Google Logging (glog)](https://github.com/google/glog) (0.34 or later).
-* __Just for running the unit tests__ [Google Test](https://github.com/google/googletest) (1.7.0 or later).
+* [Google Test](https://github.com/google/googletest) (1.7.0 or later) __[Just for running the unit tests]__.
 
 # License
 
