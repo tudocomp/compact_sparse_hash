@@ -33,10 +33,20 @@ public:
         b_mask(1ull << bit_pos)
     {}
 
+    inline typename buckets_t::value_type& bucket() {
+        DCHECK_LT(bucket_pos, m_buckets->size());
+        return (*m_buckets)[bucket_pos];
+    }
+
+    inline typename buckets_t::value_type const& bucket() const {
+        DCHECK_LT(bucket_pos, m_buckets->size());
+        return (*m_buckets)[bucket_pos];
+    }
+
     // check if the right bit is set in the bucket's bv
     inline bool exists_in_bucket() const {
         // bitvector of the bucket
-        uint64_t bv = m_buckets->at(bucket_pos).bv();
+        uint64_t bv = bucket().bv();
 
         return (bv & b_mask) != 0;
     }
@@ -45,7 +55,7 @@ public:
     // based on number of set bits in bv
     inline size_t offset_in_bucket() const {
         // bitvector of the bucket
-        uint64_t bv = m_buckets->at(bucket_pos).bv();
+        uint64_t bv = bucket().bv();
 
         return __builtin_popcountll(bv & (b_mask - 1));
     }

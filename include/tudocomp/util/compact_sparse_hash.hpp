@@ -860,7 +860,7 @@ private:
         DCHECK(!data.exists_in_bucket());
 
         // figure out which bucket to access
-        auto& bucket = m_buckets[data.bucket_pos];
+        auto& bucket = data.bucket();
         size_t const qw = quotient_width();
 
         // we will insert a new element
@@ -918,7 +918,7 @@ private:
 
                 // NB: Using pointer arithmetic here, because
                 // we can (intentionally) end up with the address 1-past
-                // the end of the vector, which represents a end-iterator
+                // the end of the vector, which represents an end-iterator.
                 m_bucket = table.m_buckets.data() + pos.bucket_pos;
 
                 if(pos.bucket_pos < table.m_buckets.size()) {
@@ -1004,7 +1004,7 @@ private:
         DCHECK(pos.exists_in_bucket());
         size_t qw = quotient_width();
 
-        return m_buckets[pos.bucket_pos].at(pos.offset_in_bucket(), qw);
+        return pos.bucket().at(pos.offset_in_bucket(), qw);
     }
 
     inline BucketElem<val_t> get_bucket_elem_at(size_t pos) {
