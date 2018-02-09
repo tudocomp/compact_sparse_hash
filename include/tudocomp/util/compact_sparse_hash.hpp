@@ -829,12 +829,12 @@ private:
                 // drop buckets of old table as they get emptied out
                 if (p.offset_in_bucket() == 0) {
                     if (start_of_bucket) {
-                        DCHECK_NE(bucket, p.bucket_pos);
+                        DCHECK_NE(bucket, p.idx_of_bucket);
                         drop_bucket(bucket);
                     }
 
                     start_of_bucket = true;
-                    bucket = p.bucket_pos;
+                    bucket = p.idx_of_bucket;
                 }
 
                 auto kv = get_bucket_elem_at(p);
@@ -868,7 +868,7 @@ private:
         // insert element & grow bucket as appropriate
         insert_in_bucket(bucket,
                          data.offset_in_bucket(),
-                         data.b_mask,
+                         data.bit_mask_in_bucket,
                          qw,
                          std::move(val),
                          quot);
@@ -917,9 +917,9 @@ private:
                 // NB: Using pointer arithmetic here, because
                 // we can (intentionally) end up with the address 1-past
                 // the end of the vector, which represents an end-iterator.
-                m_bucket = table.m_buckets.data() + pos.bucket_pos;
+                m_bucket = table.m_buckets.data() + pos.idx_of_bucket;
 
-                if(pos.bucket_pos < table.m_buckets.size()) {
+                if(pos.idx_of_bucket < table.m_buckets.size()) {
                     set_bucket_elem_range(pos.offset_in_bucket());
                 } else {
                     // use default constructed nullptr BucketElems

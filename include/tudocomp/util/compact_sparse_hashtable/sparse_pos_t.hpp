@@ -9,55 +9,53 @@
 
 namespace tdc {namespace compact_sparse_hashtable {
 
+/// This type represents a position inside the compact sparse hashtable.
+///
+/// It is valid to have a sparse_pos_t one-past-the-end of the underlying
+/// bucket vector, to act as an end-iterator.
 template<typename buckets_t, typename bucket_layout_t>
 class sparse_pos_t {
 private:
     buckets_t* m_buckets;
 public:
-    size_t const bucket_pos;
-    size_t const bit_pos;
-    uint64_t const b_mask;
+    using bucket_t = typename buckets_t::value_type;
 
-    inline sparse_pos_t() {}
+    /// Index of bucket inside the hashtable
+    size_t const idx_of_bucket;
+
+    /// Bit mask of the element inside the bucket
+    uint64_t const bit_mask_in_bucket;
 
     inline sparse_pos_t(size_t pos, buckets_t& buckets):
         m_buckets(&buckets),
-
-        // bucket index based on position (division by 64 bits)
-        bucket_pos(bucket_layout_t::table_pos_to_idx_of_bucket(pos)),
-
-        // remainder position of pos inside the bucket (modulo by 64 bits)
-        bit_pos(bucket_layout_t::table_pos_to_idx_inside_bucket(pos)),
-
-        // mask for the single bit we deal with
-        b_mask(1ull << bit_pos)
+        idx_of_bucket(bucket_layout_t::table_pos_to_idx_of_bucket(pos)),
+        bit_mask_in_bucket(1ull << bucket_layout_t::table_pos_to_idx_inside_bucket(pos))
     {}
 
-    inline typename buckets_t::value_type& bucket() {
-        DCHECK_LT(bucket_pos, m_buckets->size());
-        return (*m_buckets)[bucket_pos];
+    /// Accesses the bucket at this sparse position.
+    inline bucket_t& bucket() const {
+        DCHECK_LT(idx_of_bucket, m_buckets->size());
+        return (*m_buckets)[idx_of_bucket];
     }
 
-    inline typename buckets_t::value_type const& bucket() const {
-        DCHECK_LT(bucket_pos, m_buckets->size());
-        return (*m_buckets)[bucket_pos];
-    }
-
-    // check if the right bit is set in the bucket's bv
+    /// Check if the sparse position exists in the corresponding bucket.
     inline bool exists_in_bucket() const {
         // bitvector of the bucket
         uint64_t bv = bucket().bv();
 
-        return (bv & b_mask) != 0;
+        return (bv & bit_mask_in_bucket) != 0;
     }
 
-    // calculate offset of element in bucket for current pos
-    // based on number of set bits in bv
+    /// Get the idx of the element inside the corresponding bucket.
+    ///
+    /// It is legal to call this method even if the element at
+    /// the sparse position does not exists, to calculate a position
+    /// at which it should be inserted.
     inline size_t offset_in_bucket() const {
         // bitvector of the bucket
         uint64_t bv = bucket().bv();
 
-        return __builtin_popcountll(bv & (b_mask - 1));
+        return __builtin_popcountll(bv & (bit_mask_in_bucket - 1));
     }
 };
 
