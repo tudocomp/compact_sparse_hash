@@ -13,12 +13,22 @@ class size_manager_t {
     uint8_t m_capacity_log2;
     size_t m_size;
 
+    /// Adjust the user-specified size of the table as needed
+    /// by the current implementation.
+    ///
+    /// In this case, the grow function multiplies the capacity by two,
+    /// so we need to start at a value != 0.
+    inline static size_t adjust_size(size_t size) {
+        return (size < 2) ? 2 : size;
+    }
 public:
     inline uint8_t capacity_log2() const {
         return m_capacity_log2;
     }
 
     inline size_manager_t(size_t capacity) {
+        capacity = adjust_size(capacity);
+
         m_size = 0;
         CHECK(is_pot(capacity));
         m_capacity_log2 = log2_upper(capacity);
