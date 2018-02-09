@@ -56,47 +56,6 @@ class compact_sparse_hashtable_t {
         return (size < 2) ? 2 : size;
     }
 
-public:
-
-    inline compact_sparse_hashtable_t(size_t size, size_t key_width = DEFAULT_KEY_WIDTH):
-        m_sizing(min_size(size)),
-        m_width(key_width)
-    {
-        size_t cv_size = table_size();
-        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
-
-        // std::cout << "cv_size: " << cv_size << ", buckets_size: " << buckets_size << "\n";
-
-        m_cv.reserve(cv_size);
-        m_cv.resize(cv_size);
-        m_buckets.reserve(buckets_size);
-        m_buckets.resize(buckets_size);
-    }
-
-    inline ~compact_sparse_hashtable_t() {
-        destroy_buckets();
-    }
-
-    inline compact_sparse_hashtable_t(compact_sparse_hashtable_t&& other):
-        m_sizing(std::move(other.m_sizing)),
-        m_width(std::move(other.m_width)),
-        m_cv(std::move(other.m_cv)),
-        m_buckets(std::move(other.m_buckets))
-    {
-    }
-
-    inline compact_sparse_hashtable_t& operator=(compact_sparse_hashtable_t&& other) {
-        destroy_buckets();
-
-        m_sizing = std::move(other.m_sizing);
-        m_width = std::move(other.m_width);
-        m_cv = std::move(other.m_cv);
-        m_buckets = std::move(other.m_buckets);
-
-        return *this;
-    }
-
-private:
     inline size_t table_size() {
         return m_sizing.capacity();
     }
@@ -265,40 +224,6 @@ private:
         }
         return nullptr;
     }
-
-public:
-
-    // TODO: This is not a std interface
-    inline void insert(uint64_t key, val_t&& value) {
-        insert(key, std::move(value), m_width);
-    }
-    inline void insert(uint64_t key, val_t&& value, size_t key_width) {
-        insert_handler(key, key_width, InsertHandler {
-            std::move(value)
-        });
-    }
-
-    inline val_t& operator[](uint64_t key) {
-        return index(key, m_width);
-    }
-
-    inline val_t& index(uint64_t key, size_t key_width) {
-        val_t* addr = nullptr;
-
-        insert_handler(key, key_width, AddressDefaultHandler {
-            &addr
-        });
-
-        DCHECK(addr != nullptr);
-
-        return *addr;
-    }
-
-    inline size_t size() const {
-        return m_sizing.size();
-    }
-
-private:
     // Handler for inserting an element that exists as a rvalue reference.
     // This will overwrite an existing element.
     class InsertHandler {
@@ -528,7 +453,6 @@ private:
         }
     };
 
-
     inline void grow_if_needed(size_t new_width) {
         auto needs_capacity_change = [&]() {
             return(m_sizing.capacity() / 2) <= (m_sizing.size() + 1);
@@ -597,92 +521,6 @@ private:
         DCHECK(!needs_realloc());
     }
 
-public:
-    // for tests:
-
-    inline std::string debug_state() {
-        std::stringstream ss;
-
-        bool gap_active = false;
-        size_t gap_start;
-        size_t gap_end;
-
-        auto print_gap = [&](){
-            if (gap_active) {
-                gap_active = false;
-                ss << "    [" << gap_start << " to " << gap_end << " empty]\n";
-            }
-        };
-
-        auto add_gap = [&](size_t i){
-            if (!gap_active) {
-                gap_active = true;
-                gap_start = i;
-            }
-            gap_end = i;
-        };
-
-        std::vector<std::string> lines(table_size());
-
-        uint64_t initial_address;
-        size_t j;
-        auto iter = iter_all_t(*this);
-        while(iter.next(&initial_address, &j)) {
-            std::stringstream ss2;
-
-            auto kv = sparse_get_at(j);
-            auto stored_quotient = kv.get_quotient();
-            auto& val = kv.val();
-            key_t key = compose_key(initial_address, stored_quotient);
-
-            ss2 << j
-                << "\t: v = " << get_v(j)
-                << ", c = " << get_c(j)
-                << ", quot = " << stored_quotient
-                << ", iadr = " << initial_address
-                << "\t, key = " << key
-                << "\t, value = " << val
-                << "\t (" << &val << ")";
-
-            lines.at(j) = ss2.str();
-        }
-
-        ss << "[\n";
-        for (size_t i = 0; i < table_size(); i++) {
-            bool cv_exist = lines.at(i) != "";
-
-            DCHECK_EQ(cv_exist, sparse_exists(i));
-
-            if (cv_exist) {
-                print_gap();
-                ss << "    "
-                    << lines.at(i)
-                    << "\n";
-            } else {
-                add_gap(i);
-            }
-        }
-        print_gap();
-        ss << "]";
-
-        return ss.str();
-    }
-
-    inline void debug_check_single(uint64_t key, val_t const& val) {
-        auto ptr = search(key);
-        ASSERT_NE(ptr, nullptr) << "key " << key << " not found!";
-        if (ptr != nullptr) {
-            ASSERT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
-        }
-    }
-
-    inline void debug_print() {
-        std::cout << "m_width: " << uint32_t(m_width) << "\n",
-        std::cout << "size: " << size() << "\n",
-        std::cout << debug_state() << "\n";
-    }
-
-private:
     template<typename handler_t>
     inline void sparse_set_at_empty_handler(size_t pos, key_t quot, handler_t&& handler) {
         auto data = sparse_pos(pos);
@@ -878,6 +716,161 @@ private:
 
     inline BucketElem<val_t> sparse_get_at(size_t pos) {
         return sparse_get_at(sparse_pos(pos));
+    }
+
+public:
+    inline compact_sparse_hashtable_t(size_t size, size_t key_width = DEFAULT_KEY_WIDTH):
+        m_sizing(min_size(size)),
+        m_width(key_width)
+    {
+        size_t cv_size = table_size();
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
+
+        // std::cout << "cv_size: " << cv_size << ", buckets_size: " << buckets_size << "\n";
+
+        m_cv.reserve(cv_size);
+        m_cv.resize(cv_size);
+        m_buckets.reserve(buckets_size);
+        m_buckets.resize(buckets_size);
+    }
+
+    inline ~compact_sparse_hashtable_t() {
+        destroy_buckets();
+    }
+
+    inline compact_sparse_hashtable_t(compact_sparse_hashtable_t&& other):
+        m_sizing(std::move(other.m_sizing)),
+        m_width(std::move(other.m_width)),
+        m_cv(std::move(other.m_cv)),
+        m_buckets(std::move(other.m_buckets))
+    {
+    }
+
+    inline compact_sparse_hashtable_t& operator=(compact_sparse_hashtable_t&& other) {
+        destroy_buckets();
+
+        m_sizing = std::move(other.m_sizing);
+        m_width = std::move(other.m_width);
+        m_cv = std::move(other.m_cv);
+        m_buckets = std::move(other.m_buckets);
+
+        return *this;
+    }
+
+    // TODO: This is not a std interface
+    inline void insert(uint64_t key, val_t&& value) {
+        insert(key, std::move(value), m_width);
+    }
+    inline void insert(uint64_t key, val_t&& value, size_t key_width) {
+        insert_handler(key, key_width, InsertHandler {
+            std::move(value)
+        });
+    }
+
+    inline val_t& operator[](uint64_t key) {
+        return index(key, m_width);
+    }
+
+    inline val_t& index(uint64_t key, size_t key_width) {
+        val_t* addr = nullptr;
+
+        insert_handler(key, key_width, AddressDefaultHandler {
+            &addr
+        });
+
+        DCHECK(addr != nullptr);
+
+        return *addr;
+    }
+
+    inline size_t size() const {
+        return m_sizing.size();
+    }
+
+    // -----------------------
+    // For tests and debugging
+    // -----------------------
+
+    inline std::string debug_state() {
+        std::stringstream ss;
+
+        bool gap_active = false;
+        size_t gap_start;
+        size_t gap_end;
+
+        auto print_gap = [&](){
+            if (gap_active) {
+                gap_active = false;
+                ss << "    [" << gap_start << " to " << gap_end << " empty]\n";
+            }
+        };
+
+        auto add_gap = [&](size_t i){
+            if (!gap_active) {
+                gap_active = true;
+                gap_start = i;
+            }
+            gap_end = i;
+        };
+
+        std::vector<std::string> lines(table_size());
+
+        uint64_t initial_address;
+        size_t j;
+        auto iter = iter_all_t(*this);
+        while(iter.next(&initial_address, &j)) {
+            std::stringstream ss2;
+
+            auto kv = sparse_get_at(j);
+            auto stored_quotient = kv.get_quotient();
+            auto& val = kv.val();
+            key_t key = compose_key(initial_address, stored_quotient);
+
+            ss2 << j
+                << "\t: v = " << get_v(j)
+                << ", c = " << get_c(j)
+                << ", quot = " << stored_quotient
+                << ", iadr = " << initial_address
+                << "\t, key = " << key
+                << "\t, value = " << val
+                << "\t (" << &val << ")";
+
+            lines.at(j) = ss2.str();
+        }
+
+        ss << "[\n";
+        for (size_t i = 0; i < table_size(); i++) {
+            bool cv_exist = lines.at(i) != "";
+
+            DCHECK_EQ(cv_exist, sparse_exists(i));
+
+            if (cv_exist) {
+                print_gap();
+                ss << "    "
+                    << lines.at(i)
+                    << "\n";
+            } else {
+                add_gap(i);
+            }
+        }
+        print_gap();
+        ss << "]";
+
+        return ss.str();
+    }
+
+    inline void debug_check_single(uint64_t key, val_t const& val) {
+        auto ptr = search(key);
+        ASSERT_NE(ptr, nullptr) << "key " << key << " not found!";
+        if (ptr != nullptr) {
+            ASSERT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+        }
+    }
+
+    inline void debug_print() {
+        std::cout << "m_width: " << uint32_t(m_width) << "\n",
+        std::cout << "size: " << size() << "\n",
+        std::cout << debug_state() << "\n";
     }
 };
 
