@@ -780,15 +780,6 @@ public:
         return *this;
     }
 
-    // TODO: Change to STL-conform interface?
-    /// Inserts a key-value pair into the hashtable,
-    /// assuming that `key` does not exceed the current `key_width()`.
-    ///
-    /// The hashtable will grow as needed to fit the new element.
-    inline void insert(uint64_t key, val_t&& value) {
-        insert(key, std::move(value), m_width);
-    }
-
     /// Inserts a key-value pair into the hashtable,
     /// where `key` has a width of `key_width` bits.
     ///
@@ -806,10 +797,20 @@ public:
         });
     }
 
-    inline val_t& operator[](uint64_t key) {
-        return index(key, m_width);
-    }
-
+    /// Returns a reference to the element with key `key`,
+    /// where `key` has a width of `key_width` bits.
+    ///
+    /// The hashtable will grow and increases its `key_width()`
+    /// as needed to fit the new element.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    ///
+    /// Note: Calling this for incrementally inserting
+    /// new elements with increasing key widths is more efficient
+    /// than calling `grow_key_width()` separately,
+    /// since it fuses the reallocation needed for both a key-width change
+    /// and a table size increase.
     inline val_t& index(uint64_t key, size_t key_width) {
         val_t* addr = nullptr;
 
@@ -822,6 +823,35 @@ public:
         return *addr;
     }
 
+    // TODO: Change to STL-conform interface?
+    // TODO: Instead of 2 vs 1 key paramter, have
+    //       a Key+width types as index type?
+
+    /// Inserts a key-value pair into the hashtable.
+    ///
+    /// It assumes that `key` does not exceed the current `key_width()`.
+    ///
+    /// The hashtable will grow as needed to fit the new element.
+    ///
+    /// See comments on the 3-parameter `insert()` for the efficiency
+    /// of handling different bit width for `key`.
+    inline void insert(uint64_t key, val_t&& value) {
+        insert(key, std::move(value), m_width);
+    }
+
+    /// Returns a reference to the element with key `key`.
+    ///
+    /// It assumes that `key` does not exceed the current `key_width()`.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    ///
+    /// See comments on the 2-parameter `index()` for the efficiency
+    /// of handling different bit width for `key`.
+    inline val_t& operator[](uint64_t key) {
+        return index(key, m_width);
+    }
+
     /// Increase the width of the stored keys to `key_width` bits.
     ///
     /// Note: Calling this for incrementally inserting
@@ -831,6 +861,7 @@ public:
         grow_if_needed(size(), key_width);
     }
 
+    /// Returns the amount of elements inside the datastructure.
     inline size_t size() const {
         return m_sizing.size();
     }
@@ -840,13 +871,14 @@ public:
         return m_width;
     }
 
-    /// Amount of bits of the key that are stored implicitly
+    /// Amount of bits of the key, that are stored implicitly
     /// by its position in the table.
     inline size_t initial_address_width() {
         return m_sizing.capacity_log2();
     }
 
-    /// Amount of bits of the key that are stored explicitly in the buckets.
+    /// Amount of bits of the key, that are stored explicitly
+    /// in the buckets.
     inline size_t quotient_width() {
         return real_width() - m_sizing.capacity_log2();
     }
