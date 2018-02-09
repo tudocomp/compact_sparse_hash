@@ -19,14 +19,28 @@ namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t>
 class compact_sparse_hashtable_t {
-
     using key_t = uint64_t;
     using buckets_t = std::vector<Bucket<val_t>>;
 
-    static constexpr size_t BVS_WIDTH_SHIFT = 6;
-    static constexpr size_t BVS_WIDTH_MASK = 0b111111;
     static constexpr size_t DEFAULT_KEY_WIDTH = 16;
     static constexpr bool HIGH_BITS_RANDOM = false;
+
+    struct bucket_layout_t {
+        static constexpr size_t BVS_WIDTH_SHIFT = 6;
+        static constexpr size_t BVS_WIDTH_MASK = 0b111111;
+
+        static inline size_t table_pos_to_idx_of_bucket(size_t pos) {
+            return pos >> BVS_WIDTH_SHIFT;
+        }
+
+        static inline size_t table_pos_to_idx_inside_bucket(size_t pos) {
+            return pos & BVS_WIDTH_MASK;
+        }
+
+        static inline size_t table_size_to_bucket_size(size_t size) {
+            return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
+        }
+    };
 
     SizeManager m_sizing;
     uint8_t m_width;
@@ -48,7 +62,7 @@ public:
         m_width(key_width)
     {
         size_t cv_size = table_size();
-        size_t buckets_size = ((table_size() + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT);
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
 
         // std::cout << "cv_size: " << cv_size << ", buckets_size: " << buckets_size << "\n";
 
@@ -384,7 +398,8 @@ private:
         // - initial address full, v[initial address] = 1
         // - initial address full, v[initial address] = 0
 
-        DCHECK_LT(dkey.initial_address >> BVS_WIDTH_SHIFT, m_buckets.size());
+        DCHECK_LT(bucket_layout_t::table_pos_to_idx_of_bucket(dkey.initial_address),
+                  m_buckets.size());
 
         if (sparse_is_empty(dkey.initial_address)) {
             // check if we can insert directly
@@ -857,15 +872,6 @@ private:
         value_handler.new_location(sparse_get_at(new_loc).val());
     }
 
-    struct bucket_layout_t {
-        static inline size_t table_pos_to_idx_of_bucket(size_t pos) {
-            return pos >> BVS_WIDTH_SHIFT;
-        }
-
-        static inline size_t table_pos_to_idx_inside_bucket(size_t pos) {
-            return pos & BVS_WIDTH_MASK;
-        }
-    };
 
     using SparsePos = sparse_pos_t<buckets_t, bucket_layout_t>;
 
