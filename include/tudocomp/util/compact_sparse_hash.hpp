@@ -248,7 +248,7 @@ public:
         for (size_t i = 0; i < table_size(); i++) {
             bool cv_exist = lines.at(i) != "";
 
-            DCHECK_EQ(cv_exist, sparse_exists(i));
+            DCHECK_EQ(cv_exist, table_pos_contains_value(i));
 
             if (cv_exist) {
                 print_gap();
@@ -423,7 +423,7 @@ private:
         DCHECK_LT(bucket_layout_t::table_pos_to_idx_of_bucket(dkey.initial_address),
                   m_buckets.size());
 
-        if (sparse_is_empty(dkey.initial_address)) {
+        if (table_pos_is_empty(dkey.initial_address)) {
             // check if we can insert directly
 
             sparse_set_at_empty_handler(dkey.initial_address,
@@ -565,7 +565,7 @@ private:
         size_t v_counter = 0;
         DCHECK_EQ(get_v(cursor), true);
 
-        for(; sparse_exists(cursor); cursor = m_sizing.mod_add(cursor)) {
+        for(; table_pos_contains_value(cursor); cursor = m_sizing.mod_add(cursor)) {
             v_counter += get_v(cursor);
         }
         DCHECK_GE(v_counter, 1);
@@ -614,7 +614,7 @@ private:
     {
         // this will insert the value at the end of the range defined by res
 
-        if (sparse_is_empty(res.group_end)) {
+        if (table_pos_is_empty(res.group_end)) {
             // if there is no following group, just append the new entry
 
             sparse_set_at_empty_handler(res.group_end,
@@ -647,7 +647,7 @@ private:
             i = 0;
 
             for(;;i++) {
-                if (m_self.sparse_is_empty(i)) {
+                if (m_self.table_pos_is_empty(i)) {
                     break;
                 }
             }
@@ -666,7 +666,7 @@ private:
                 if (state == EMPTY_LOCATIONS) {
                     // skip empty locations
                     for(;;i = m_self.m_sizing.mod_add(i)) {
-                        if (m_self.sparse_exists(i)) {
+                        if (m_self.table_pos_contains_value(i)) {
                             // we initialize init-addr at 1 pos before the start of
                             // a group of blocks, so that the blocks iteration logic works
                             initial_address = m_self.m_sizing.mod_sub(i);
@@ -679,7 +679,7 @@ private:
                     }
                 } else {
                     // process full locations
-                    if (m_self.sparse_is_empty(i))  {
+                    if (m_self.table_pos_is_empty(i))  {
                         state = EMPTY_LOCATIONS;
                         continue;
                     }
@@ -797,12 +797,16 @@ private:
         value_handler.new_location(new_loc.val());
     }
 
-    inline bool sparse_is_empty(size_t i) {
-        return !sparse_exists(i);
+    /// Returns true if there is no element at the index `i`
+    /// in the hashtable.
+    inline bool table_pos_is_empty(size_t i) {
+        return !table_pos_contains_value(i);
     }
 
-    inline bool sparse_exists(size_t pos) {
-        return sparse_pos(pos).exists_in_bucket();
+    /// Returns true if there is an element at the index `i`
+    /// in the hashtable.
+    inline bool table_pos_contains_value(size_t i) {
+        return sparse_pos(i).exists_in_bucket();
     }
 
     // shifts all elements one to the right,
