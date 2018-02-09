@@ -14,6 +14,7 @@
 #include "compact_sparse_hashtable/hash_functions.hpp"
 #include "compact_sparse_hashtable/size_manager_t.hpp"
 #include "compact_sparse_hashtable/sparse_pos_t.hpp"
+#include "compact_sparse_hashtable/decomposed_key_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashtable {
 
@@ -23,7 +24,6 @@ class compact_sparse_hashtable_t {
     using buckets_t = std::vector<Bucket<val_t>>;
 
     static constexpr size_t DEFAULT_KEY_WIDTH = 16;
-    static constexpr bool HIGH_BITS_RANDOM = false;
 
     struct bucket_layout_t {
         static constexpr size_t BVS_WIDTH_SHIFT = 6;
@@ -42,7 +42,7 @@ class compact_sparse_hashtable_t {
         }
     };
 
-    SizeManager m_sizing;
+    size_manager_t m_sizing;
     uint8_t m_width;
 
     // Compact table data
@@ -96,10 +96,6 @@ public:
     }
 
 private:
-    inline uint8_t table_size_log2() {
-        return m_sizing.capacity_log2();
-    }
-
     inline size_t table_size() {
         return m_sizing.capacity();
     }
@@ -146,50 +142,28 @@ private:
     // he actual amount of bits usable for storing a key
     // is always >= the set key width stored in m_width
     inline uint8_t real_width() {
-        return std::max(uint8_t(table_size_log2() + 1), m_width);
+        return std::max(uint8_t(m_sizing.capacity_log2() + 1), m_width);
     }
 
-    struct DecomposedKey {
-        size_t initial_address;   // initial address of key in table
-        size_t stored_quotient;   // quotient value stored in table
-    };
+    inline size_t quotient_width() {
+        return real_width() - m_sizing.capacity_log2();
+    }
 
-    inline DecomposedKey decompose_key(uint64_t key) {
-        DCHECK(dcheck_key_width(key)) << "Attempt to insert key " << key << ", which requires more bits than the current set maximum of " << m_width << " Bits";
+    inline decomposed_key_t decompose_key(uint64_t key) {
+        DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << m_width << " bits, but should not";
 
         uint64_t hres = hash_t::hashfn(key, real_width());
 
         DCHECK_EQ(hash_t::reverse_hashfn(hres, real_width()), key);
 
-        uint64_t shift = table_size_log2();
-
-        if (HIGH_BITS_RANDOM) {
-            shift = 64 - shift;
-            return DecomposedKey {
-                hres >> shift,
-                hres & ((1ull << shift) - 1ull),
-            };
-        } else {
-            return DecomposedKey {
-                hres & ((1ull << shift) - 1ull),
-                hres >> shift,
-            };
-        }
+        return m_sizing.decompose_hashed_value(hres);
     }
 
     inline uint64_t compose_key(uint64_t initial_address, uint64_t quotient) {
-        uint64_t shift = table_size_log2();
-
-        uint64_t harg;
-        if (HIGH_BITS_RANDOM) {
-            shift = 64 - shift;
-            harg = (initial_address << shift) | quotient;
-        } else {
-            harg = (quotient << shift) | initial_address;
-        }
-
+        uint64_t harg = m_sizing.compose_hashed_value(initial_address, quotient);
         uint64_t key = hash_t::reverse_hashfn(harg, real_width());
-        dcheck_key_width(key);
+
+        DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << m_width << " bits, but should not";
         return key;
     }
 
@@ -221,7 +195,7 @@ private:
     // assumption: there exists a group at the location indicated by key
     // this group is either the group belonging to key,
     // or the one after it in the case that no group for key exists yet
-    inline SearchedGroup search_existing_group(DecomposedKey const& key) {
+    inline SearchedGroup search_existing_group(decomposed_key_t const& key) {
         auto ret = SearchedGroup();
 
         // walk forward from the initial address until we find a empty location
@@ -365,7 +339,7 @@ private:
 
     template<typename handler_t>
     inline void insert_after(SearchedGroup const& res,
-                             DecomposedKey const& dkey,
+                             decomposed_key_t const& dkey,
                              handler_t&& handler)
     {
         // this will insert the value at the end of the range defined by res
@@ -535,9 +509,6 @@ private:
         }
     };
 
-    inline size_t quotient_width() {
-        return real_width() - table_size_log2();
-    }
 
     inline void grow_if_needed(size_t new_width) {
         auto needs_capacity_change = [&]() {
