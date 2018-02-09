@@ -98,7 +98,7 @@ public:
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
     inline void insert(uint64_t key, val_t&& value, size_t key_width) {
-        access_handler(key, key_width, InsertHandler {
+        access_with_handler(key, key_width, InsertHandler {
             std::move(value)
         });
     }
@@ -120,7 +120,7 @@ public:
     inline val_t& index(uint64_t key, size_t key_width) {
         val_t* addr = nullptr;
 
-        access_handler(key, key_width, AddressDefaultHandler {
+        access_with_handler(key, key_width, AddressDefaultHandler {
             &addr
         });
 
@@ -407,7 +407,7 @@ private:
     /// to access or create a new or existing value in the hashtable.
     /// See `InsertHandler` and `AddressDefaultHandler` below.
     template<typename handler_t>
-    inline void access_handler(uint64_t key, size_t key_width, handler_t&& handler) {
+    inline void access_with_handler(uint64_t key, size_t key_width, handler_t&& handler) {
         grow_if_needed(size() + 1, key_width);
         auto const dkey = decompose_key(key);
 
@@ -426,9 +426,9 @@ private:
         if (table_pos_is_empty(dkey.initial_address)) {
             // check if we can insert directly
 
-            sparse_set_at_empty_handler(dkey.initial_address,
-                                        dkey.stored_quotient,
-                                        std::move(handler));
+            table_set_at_empty(dkey.initial_address,
+                               dkey.stored_quotient,
+                               std::move(handler));
 
             // we created a new group, so update the bitflags
             set_v(dkey.initial_address, true);
@@ -617,7 +617,7 @@ private:
         if (table_pos_is_empty(res.group_end)) {
             // if there is no following group, just append the new entry
 
-            sparse_set_at_empty_handler(res.group_end,
+            table_set_at_empty(res.group_end,
                                         dkey.stored_quotient,
                                         std::move(handler));
         } else {
@@ -775,7 +775,7 @@ private:
     }
 
     template<typename handler_t>
-    inline void sparse_set_at_empty_handler(size_t pos, key_t quot, handler_t&& handler) {
+    inline void table_set_at_empty(size_t pos, key_t quot, handler_t&& handler) {
         auto data = sparse_pos(pos);
         DCHECK(!data.exists_in_bucket());
 
@@ -949,7 +949,7 @@ private:
         // insert the element from the end of the range at the free
         // position to the right of it
         auto insert = InsertHandler(std::move(val));
-        sparse_set_at_empty_handler(to, quot, std::move(insert));
+        table_set_at_empty(to, quot, std::move(insert));
 
         // after the previous insert and a potential reallocation,
         // notify the handler about the address of the new value
