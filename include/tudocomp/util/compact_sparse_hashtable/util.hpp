@@ -6,7 +6,7 @@
 
 namespace tdc {namespace compact_sparse_hashtable {
 
-inline uint8_t log2_upper(uint64_t v) {
+inline uint8_t log2_upper(uint64_t v) { // TODO: this is slow. Use the highest set bit 
     uint8_t m = 0;
     uint64_t n = v;
     while(n) {
