@@ -23,6 +23,7 @@ class compact_sparse_hashtable_t {
     using key_t = uint64_t;
     using buckets_t = std::vector<Bucket<val_t>>;
 
+    // TODO: Change this, and fix tests
     static constexpr size_t DEFAULT_KEY_WIDTH = 16;
 
     struct bucket_layout_t {
@@ -139,10 +140,28 @@ private:
         return !key_is_too_large;
     }
 
-    // he actual amount of bits usable for storing a key
-    // is always >= the set key width stored in m_width
-    inline uint8_t real_width() {
-        return std::max(uint8_t(m_sizing.capacity_log2() + 1), m_width);
+    /// The actual amount of bits currently usable for
+    /// storing a key in the hashtable.
+    ///
+    /// Due to implementation details, this can be
+    /// larger than `key_width()`.
+    inline size_t real_width() {
+        /// NB: There are two cases:
+        /// - If all bits of the the key fit into the initial_address space,
+        ///   then the stored_quot bitvector inside the buckets would
+        ///   have to store integers of width 0. This is undefined behavior
+        ///   with the current code, so we add a padding bit.
+        /// - Otherwise the current maximum key width `m_width`
+        ///   determines the real width.
+        return std::max<size_t>(m_sizing.capacity_log2() + 1, m_width);
+    }
+
+    inline size_t key_width() {
+        return m_width;
+    }
+
+    inline size_t initial_address_width() {
+        return m_sizing.capacity_log2();
     }
 
     inline size_t quotient_width() {
@@ -150,7 +169,7 @@ private:
     }
 
     inline decomposed_key_t decompose_key(uint64_t key) {
-        DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << m_width << " bits, but should not";
+        DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not";
 
         uint64_t hres = hash_t::hashfn(key, real_width());
 
@@ -163,7 +182,7 @@ private:
         uint64_t harg = m_sizing.compose_hashed_value(initial_address, quotient);
         uint64_t key = hash_t::reverse_hashfn(harg, real_width());
 
-        DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << m_width << " bits, but should not";
+        DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not";
         return key;
     }
 
@@ -539,7 +558,7 @@ private:
             std::cout
                 << "grow to cap " << new_table.table_size()
                 << ", m_width: " << int(new_table.m_width)
-                << ", real_width: " << int(new_table.real_width())
+                << ", real_width: " << new_table.real_width()
                 << ", quot width: " << new_table.quotient_width()
                 << "\n";
             */
