@@ -408,7 +408,7 @@ private:
         DCHECK_NE(from, to);
 
         for(size_t i = to; i != from;) {
-            size_t next_i = mod_sub(i, size_t(1));
+            size_t next_i = m_sizing.mod_sub(i, size_t(1));
 
             set_c(i, get_c(next_i));
 
@@ -438,7 +438,7 @@ private:
         size_t v_counter = 0;
         DCHECK_EQ(get_v(cursor), true);
 
-        for(; sparse_exists(cursor); cursor = mod_add(cursor)) {
+        for(; sparse_exists(cursor); cursor = m_sizing.mod_add(cursor)) {
             v_counter += get_v(cursor);
         }
         DCHECK_GE(v_counter, 1);
@@ -446,14 +446,14 @@ private:
 
         // walk back again to find start of group belong to the initial address
         size_t c_counter = v_counter;
-        for(; c_counter != 1; cursor = mod_sub(cursor)) {
-            c_counter -= get_c(mod_sub(cursor));
+        for(; c_counter != 1; cursor = m_sizing.mod_sub(cursor)) {
+            c_counter -= get_c(m_sizing.mod_sub(cursor));
         }
 
         ret.group_end = cursor;
 
-        for(; c_counter != 0; cursor = mod_sub(cursor)) {
-            c_counter -= get_c(mod_sub(cursor));
+        for(; c_counter != 0; cursor = m_sizing.mod_sub(cursor)) {
+            c_counter -= get_c(m_sizing.mod_sub(cursor));
         }
 
         ret.group_start = cursor;
@@ -462,7 +462,7 @@ private:
     }
 
     inline val_t* search(SearchedGroup const& res, uint64_t stored_quotient) {
-        for(size_t i = res.group_start; i != res.group_end; i = mod_add(i)) {
+        for(size_t i = res.group_start; i != res.group_end; i = m_sizing.mod_add(i)) {
             auto sparse_entry = sparse_get_at(i);
 
             if (sparse_entry.get_quotient() == stored_quotient) {
@@ -624,17 +624,6 @@ private:
         }
     }
 
-    template<typename int_t>
-    inline int_t mod_add(int_t v, int_t add = 1) {
-        size_t mask = table_size() - 1;
-        return (v + add) & mask;
-    }
-    template<typename int_t>
-    inline int_t mod_sub(int_t v, int_t sub = 1) {
-        size_t mask = table_size() - 1;
-        return (v - sub) & mask;
-    }
-
     struct iter_all_t {
         compact_sparse_hashtable_t<val_t>& m_self;
         size_t i = 0;
@@ -663,18 +652,18 @@ private:
 
             // We proceed to the next position so that we can iterate until
             // we reach `original_start` again.
-            i = m_self.mod_add(i);
+            i = m_self.m_sizing.mod_add(i);
         }
 
         inline bool next(uint64_t* out_initial_address, size_t* out_i) {
             while(true) {
                 if (state == EMPTY_LOCATIONS) {
                     // skip empty locations
-                    for(;;i = m_self.mod_add(i)) {
+                    for(;;i = m_self.m_sizing.mod_add(i)) {
                         if (m_self.sparse_exists(i)) {
                             // we initialize init-addr at 1 pos before the start of
                             // a group of blocks, so that the blocks iteration logic works
-                            initial_address = m_self.mod_sub(i);
+                            initial_address = m_self.m_sizing.mod_sub(i);
                             state = FULL_LOCATIONS;
                             break;
                         }
@@ -694,17 +683,17 @@ private:
                         //
                         // this works for the first block because
                         // initial_address starts at 1 before the group
-                        initial_address = m_self.mod_add(initial_address);
+                        initial_address = m_self.m_sizing.mod_add(initial_address);
 
                         while(!m_self.get_v(initial_address)) {
-                            initial_address = m_self.mod_add(initial_address);
+                            initial_address = m_self.m_sizing.mod_add(initial_address);
                         }
                     }
 
                     *out_initial_address = initial_address;
                     *out_i = i;
 
-                    i = m_self.mod_add(i);
+                    i = m_self.m_sizing.mod_add(i);
                     return true;
                 }
             }

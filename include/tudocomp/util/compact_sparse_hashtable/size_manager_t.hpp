@@ -76,6 +76,21 @@ public:
 
         return harg;
     }
+
+
+    /// Adds the `add` value to `v`, and wraps it around the current capacity.
+    template<typename int_t>
+    inline int_t mod_add(int_t v, int_t add = 1) {
+        size_t mask = capacity() - 1;
+        return (v + add) & mask;
+    }
+
+    /// Subtracts the `sub` value to `v`, and wraps it around the current capacity.
+    template<typename int_t>
+    inline int_t mod_sub(int_t v, int_t sub = 1) {
+        size_t mask = capacity() - 1;
+        return (v - sub) & mask;
+    }
 };
 
 }}
