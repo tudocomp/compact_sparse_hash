@@ -204,9 +204,10 @@ public:
         }
         return nullptr;
     }
-// -----------------------
-// For tests and debugging
-// -----------------------
+
+    // -----------------------
+    // Debugging
+    // -----------------------
 
     /// Returns a human-readable string representation
     /// of the entire state of the hashtable
@@ -671,21 +672,22 @@ private:
         return nullptr;
     }
 
+    /// Inserts a new key-value pair after an existing
+    /// group, shifting all following entries one to the right as needed.
     template<typename handler_t>
-    inline void table_insert_value_after_group(Group const& res,
+    inline void table_insert_value_after_group(Group const& group,
                                                decomposed_key_t const& dkey,
                                                handler_t&& handler)
     {
-        // this will insert the value at the end of the range defined by res
-        if (table_pos_is_empty(res.group_end)) {
+        if (table_pos_is_empty(group.group_end)) {
             // if there is no following group, just append the new entry
-            table_set_at_empty(res.group_end,
+            table_set_at_empty(group.group_end,
                                dkey.stored_quotient,
                                std::move(handler));
         } else {
-            // else, shift all following elements
-            table_shift_groups_and_insert(res.group_end,
-                                          res.groups_terminator,
+            // else, shift all following elements one to the right
+            table_shift_groups_and_insert(group.group_end,
+                                          group.groups_terminator,
                                           dkey.stored_quotient,
                                           std::move(handler));
         }
