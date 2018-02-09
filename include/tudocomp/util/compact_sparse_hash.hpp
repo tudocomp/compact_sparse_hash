@@ -132,8 +132,8 @@ class compact_sparse_hashtable_t {
     /// larger than `key_width()`.
     ///
     /// Specifically, there are currently two cases:
-    /// - If all bits of the the key fit into the initial_address space,
-    ///   then the stored_quot bitvector inside the buckets would
+    /// - If all bits of the the key fit into the initial-address space,
+    ///   then the quotient bitvector inside the buckets would
     ///   have to store integers of width 0. This is undefined behavior
     ///   with the current code, so we add a padding bit.
     /// - Otherwise the current maximum key width `m_width`
@@ -142,8 +142,9 @@ class compact_sparse_hashtable_t {
         return std::max<size_t>(m_sizing.capacity_log2() + 1, m_width);
     }
 
+    /// Decompose a key into its initial address and quotient.
     inline decomposed_key_t decompose_key(uint64_t key) {
-        DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not";
+        DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
 
         uint64_t hres = hash_t::hashfn(key, real_width());
 
@@ -152,11 +153,12 @@ class compact_sparse_hashtable_t {
         return m_sizing.decompose_hashed_value(hres);
     }
 
+    /// Compose a key from its initial address and quotient.
     inline uint64_t compose_key(uint64_t initial_address, uint64_t quotient) {
         uint64_t harg = m_sizing.compose_hashed_value(initial_address, quotient);
         uint64_t key = hash_t::reverse_hashfn(harg, real_width());
 
-        DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not";
+        DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
         return key;
     }
 
