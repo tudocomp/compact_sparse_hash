@@ -439,31 +439,33 @@ private:
             bool const group_exists = get_v(dkey.initial_address);
 
             if (group_exists) {
-                auto const res = search_existing_group(dkey);
+                auto const group = search_existing_group(dkey);
 
                 // check if element already exists
-                auto p = search(res, dkey.stored_quotient);
+                auto p = search_in_group(group, dkey.stored_quotient);
                 if (p != nullptr) {
+                    // There is a value for this key already.
                     handler.on_existing(*p);
                 } else {
-                    insert_after(res, dkey, std::move(handler));
+                    // Insert a new value
+                    table_insert_value_after_group(group, dkey, std::move(handler));
                     m_sizing.set_size(m_sizing.size() + 1);
                 }
             } else {
                 // insert a new group
 
                 // pretend we already inserted the new group
-                // this makes insert_after() find the group
+                // this makes table_insert_value_after_group() find the group
                 // at the location _before_ the new group
                 set_v(dkey.initial_address, true);
-                auto const res = search_existing_group(dkey);
+                auto const group = search_existing_group(dkey);
 
                 // insert the element after the found group
-                insert_after(res, dkey, std::move(handler));
+                table_insert_value_after_group(group, dkey, std::move(handler));
 
                 // mark the inserted element as the start of a new group,
                 // thus fixing-up the v <-> c mapping
-                set_c(res.group_end, true);
+                set_c(group.group_end, true);
 
                 m_sizing.set_size(m_sizing.size() + 1);
             }
@@ -588,8 +590,8 @@ private:
         return ret;
     }
 
-    inline val_t* search(SearchedGroup const& res, uint64_t stored_quotient) {
-        for(size_t i = res.group_start; i != res.group_end; i = m_sizing.mod_add(i)) {
+    inline val_t* search_in_group(SearchedGroup const& group, uint64_t stored_quotient) {
+        for(size_t i = group.group_start; i != group.group_end; i = m_sizing.mod_add(i)) {
             auto sparse_entry = sparse_get_at(i);
 
             if (sparse_entry.get_quotient() == stored_quotient) {
@@ -602,15 +604,15 @@ private:
     inline val_t* search(uint64_t key) {
         auto dkey = decompose_key(key);
         if (get_v(dkey.initial_address)) {
-            return search(search_existing_group(dkey), dkey.stored_quotient);
+            return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
         return nullptr;
     }
 
     template<typename handler_t>
-    inline void insert_after(SearchedGroup const& res,
-                             decomposed_key_t const& dkey,
-                             handler_t&& handler)
+    inline void table_insert_value_after_group(SearchedGroup const& res,
+                                               decomposed_key_t const& dkey,
+                                               handler_t&& handler)
     {
         // this will insert the value at the end of the range defined by res
 
