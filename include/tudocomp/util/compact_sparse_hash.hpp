@@ -241,7 +241,7 @@ public:
         while(iter.next(&initial_address, &j)) {
             std::stringstream ss2;
 
-            auto kv = sparse_get_at(j);
+            auto kv = get_bucket_elem_at(j);
             auto stored_quotient = kv.get_quotient();
             auto& val = kv.val();
             key_t key = compose_key(initial_address, stored_quotient);
@@ -603,7 +603,7 @@ private:
         // after the previous insert and a potential reallocation,
         // notify the handler about the address of the new value.
         auto new_loc = sparse_pos(from);
-        value_handler.new_location(sparse_get_at(new_loc).val());
+        value_handler.new_location(get_bucket_elem_at(new_loc).val());
     }
 
     /// A Group is a half-open range [group_start, group_end)
@@ -663,7 +663,7 @@ private:
     /// otherwise.
     inline val_t* search_in_group(Group const& group, uint64_t stored_quotient) {
         for(size_t i = group.group_start; i != group.group_end; i = m_sizing.mod_add(i)) {
-            auto sparse_entry = sparse_get_at(i);
+            auto sparse_entry = get_bucket_elem_at(i);
 
             if (sparse_entry.get_quotient() == stored_quotient) {
                 return &sparse_entry.val();
@@ -780,7 +780,7 @@ private:
     };
 
     /// Check the current key width and table site against the arguments,
-    /// and grows the table size of quotient bitvectors as needed.
+    /// and grows the table or quotient bitvectors as needed.
     inline void grow_if_needed(size_t new_size, size_t new_width) {
         auto needs_capacity_change = [&]() {
             return(m_sizing.capacity() / 2) <= new_size;
@@ -796,6 +796,10 @@ private:
                 << ", size: " << m_sizing.size()
                 << "\n";
         */
+
+        // TODO: Could reuse the existing table if only m_width changes
+        // TODO: The iterators is inefficient since it does redundant
+        // memory lookups and address calculations.
 
         if (needs_realloc()) {
             size_t new_capacity;
@@ -835,7 +839,7 @@ private:
                     bucket = p.bucket_pos;
                 }
 
-                auto kv = sparse_get_at(p);
+                auto kv = get_bucket_elem_at(p);
                 auto stored_quotient = kv.get_quotient();
                 auto& val = kv.val();
                 key_t key = compose_key(initial_address, stored_quotient);
@@ -849,12 +853,11 @@ private:
         DCHECK(!needs_realloc());
     }
 
+    /// Insert a key-value pair into a empty location in the table.
     template<typename handler_t>
     inline void table_set_at_empty(size_t pos, key_t quot, handler_t&& handler) {
         auto data = sparse_pos(pos);
         DCHECK(!data.exists_in_bucket());
-
-        // TODO: Check that the sparse_pos to a invalid position works correctly
 
         // figure out which bucket to access
         auto& bucket = m_buckets[data.bucket_pos];
@@ -865,7 +868,12 @@ private:
         auto&& val = value_handler.get();
 
         // insert element & grow bucket as appropriate
-        insert_in_bucket(bucket, data.offset_in_bucket(), data.b_mask, qw, std::move(val), quot);
+        insert_in_bucket(bucket,
+                         data.offset_in_bucket(),
+                         data.b_mask,
+                         qw,
+                         std::move(val),
+                         quot);
 
         // notify handler with location of new element
         auto new_loc = bucket.at(data.offset_in_bucket(), qw);
@@ -884,9 +892,9 @@ private:
         return sparse_pos(i).exists_in_bucket();
     }
 
-    // shifts all elements one to the right,
-    // inserts val and quot at the from position,
-    // and stores the old from element in val and quot.
+    /// Shifts all elements one to the right,
+    /// inserts val and quot at the from position,
+    /// and stores the old from element in val and quot.
     inline void sparse_shift(size_t from, size_t to, val_t& val, key_t& quot) {
         // pseudo-iterator for iterating over bucket elements
         // NB: does not wrap around!
@@ -957,7 +965,7 @@ private:
         auto dst = iter(*this, sparse_pos(to));
 
         // move the element at the last position to a temporary position
-        auto  tmp_p    = sparse_get_at(last);
+        auto  tmp_p    = get_bucket_elem_at(last);
         val_t tmp_val  = std::move(tmp_p.val());
         key_t tmp_quot = tmp_p.get_quotient();
 
@@ -977,7 +985,7 @@ private:
         }
 
         // move new element into empty from position
-        auto from_p = sparse_get_at(from_loc);
+        auto from_p = get_bucket_elem_at(from_loc);
         from_p.val() = std::move(val);
         from_p.set_quotient(quot);
 
@@ -992,15 +1000,15 @@ private:
         return SparsePos { pos, m_buckets };
     }
 
-    inline BucketElem<val_t> sparse_get_at(SparsePos pos) {
+    inline BucketElem<val_t> get_bucket_elem_at(SparsePos pos) {
         DCHECK(pos.exists_in_bucket());
         size_t qw = quotient_width();
 
         return m_buckets[pos.bucket_pos].at(pos.offset_in_bucket(), qw);
     }
 
-    inline BucketElem<val_t> sparse_get_at(size_t pos) {
-        return sparse_get_at(sparse_pos(pos));
+    inline BucketElem<val_t> get_bucket_elem_at(size_t pos) {
+        return get_bucket_elem_at(sparse_pos(pos));
     }
 };
 
