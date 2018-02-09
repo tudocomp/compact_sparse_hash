@@ -529,11 +529,16 @@ private:
         }
     };
 
+    /// Shifts all values and `c` bits of the half-open range [from, to)
+    /// inside the table one to the right, and inserts the new value
+    /// at the now-empty location `from`.
+    ///
+    /// The position `to` needs to be empty.
     template<typename handler_t>
-    inline void table_shift_elements_and_insert(size_t from,
-                                                size_t to,
-                                                uint64_t quot,
-                                                handler_t&& handler) {
+    inline void table_shift_groups_and_insert(size_t from,
+                                              size_t to,
+                                              uint64_t quot,
+                                              handler_t&& handler) {
         DCHECK_NE(from, to);
 
         for(size_t i = to; i != from;) {
@@ -543,54 +548,114 @@ private:
 
             i = next_i;
         }
-        shift_insert_sparse_handler(from, to, quot, std::move(handler));
-
         set_c(from, false);
+
+        table_shift_elements_and_insert(from, to, quot, std::move(handler));
     }
 
-    struct SearchedGroup {
-        size_t group_start;       // group that belongs to the key
-        size_t group_end;         // it's a half-open range: [start .. end)
-        size_t groups_terminator; // next free location
+    /// Shifts all values of the half-open range [from, to)
+    /// inside the table one to the right, and inserts the new value
+    /// at the now-empty location `from`.
+    ///
+    /// The position `to` needs to be empty.
+    template<typename handler_t>
+    inline void table_shift_elements_and_insert(size_t from,
+                                                size_t to,
+                                                key_t quot,
+                                                handler_t&& handler) {
+        // move from...to one to the right, then insert at from
+
+        DCHECK(from != to);
+
+        auto value_handler = handler.on_new();
+        auto&& val = value_handler.get();
+
+        if (to < from) {
+            // if the range wraps around, we decompose into two ranges:
+            // [   |      |      ]
+            // | to^      ^from  |
+            // ^start         end^
+            // [ 2 ]      [  1   ]
+            //
+            // NB: because we require from != to, and insert 1 additional element,
+            // we are always dealing with a minimum 2 element range,
+            // and thus can not end up with a split range with length == 0.
+
+            // inserts the new element at the start of the range,
+            // and temporarily stores the element at the end of the range
+            // in `val` and `quot`.
+            sparse_shift(from,  table_size(), val, quot);
+            sparse_shift(0, to, val, quot);
+        } else {
+            // inserts the new element at the start of the range,
+            // and temporarily stores the element at the end of the range
+            // in `val` and `quot`.
+            sparse_shift(from, to, val, quot);
+        }
+
+        // insert the element from the end of the range at the free
+        // position to the right of it.
+        auto insert = InsertHandler(std::move(val));
+        table_set_at_empty(to, quot, std::move(insert));
+
+        // after the previous insert and a potential reallocation,
+        // notify the handler about the address of the new value.
+        auto new_loc = sparse_pos(from);
+        value_handler.new_location(sparse_get_at(new_loc).val());
+    }
+
+    /// A Group is a half-open range [group_start, group_end)
+    /// that corresponds to a group of elements in the hashtable that
+    /// belong to the same initial_address.
+    ///
+    /// This means that `c[group_start] == 1`, and
+    /// `c[group_start < x < group_end] == 0`.
+    ///
+    /// `groups_terminator` points to the next free location
+    /// inside the hashtable.
+    struct Group {
+        size_t group_start;       // Group that belongs to the key.
+        size_t group_end;         // It's a half-open range: [start .. end).
+        size_t groups_terminator; // Next free location.
     };
 
-    // assumption: there exists a group at the location indicated by key
-    // this group is either the group belonging to key,
-    // or the one after it in the case that no group for key exists yet
-    inline SearchedGroup search_existing_group(decomposed_key_t const& key) {
-        auto ret = SearchedGroup();
+    // Assumption: There exists a group at the initial address of `key`.
+    // This group is either the group belonging to key,
+    // or the one after it in the case that no group for `key` exists yet.
+    inline Group search_existing_group(decomposed_key_t const& key) {
+        auto ret = Group();
+        size_t cursor = key.initial_address;
 
-        // walk forward from the initial address until we find a empty location
+        // Walk forward from the initial address until we find a empty location.
         // TODO: This search could maybe be accelerated by:
         // - checking whole blocks in the bucket bitvector for == or != 0
-        size_t cursor = key.initial_address;
         size_t v_counter = 0;
         DCHECK_EQ(get_v(cursor), true);
-
         for(; table_pos_contains_value(cursor); cursor = m_sizing.mod_add(cursor)) {
             v_counter += get_v(cursor);
         }
         DCHECK_GE(v_counter, 1);
         ret.groups_terminator = cursor;
 
-        // walk back again to find start of group belong to the initial address
+        // Walk back again to find the end of the group
+        // belonging to the initial address.
         size_t c_counter = v_counter;
         for(; c_counter != 1; cursor = m_sizing.mod_sub(cursor)) {
             c_counter -= get_c(m_sizing.mod_sub(cursor));
         }
-
         ret.group_end = cursor;
 
+        // Walk further back to find the start of the group
+        // belonging to the initial address
         for(; c_counter != 0; cursor = m_sizing.mod_sub(cursor)) {
             c_counter -= get_c(m_sizing.mod_sub(cursor));
         }
-
         ret.group_start = cursor;
 
         return ret;
     }
 
-    inline val_t* search_in_group(SearchedGroup const& group, uint64_t stored_quotient) {
+    inline val_t* search_in_group(Group const& group, uint64_t stored_quotient) {
         for(size_t i = group.group_start; i != group.group_end; i = m_sizing.mod_add(i)) {
             auto sparse_entry = sparse_get_at(i);
 
@@ -610,25 +675,22 @@ private:
     }
 
     template<typename handler_t>
-    inline void table_insert_value_after_group(SearchedGroup const& res,
+    inline void table_insert_value_after_group(Group const& res,
                                                decomposed_key_t const& dkey,
                                                handler_t&& handler)
     {
         // this will insert the value at the end of the range defined by res
-
         if (table_pos_is_empty(res.group_end)) {
             // if there is no following group, just append the new entry
-
             table_set_at_empty(res.group_end,
                                dkey.stored_quotient,
                                std::move(handler));
         } else {
             // else, shift all following elements
-
-            table_shift_elements_and_insert(res.group_end,
-                                            res.groups_terminator,
-                                            dkey.stored_quotient,
-                                            std::move(handler));
+            table_shift_groups_and_insert(res.group_end,
+                                          res.groups_terminator,
+                                          dkey.stored_quotient,
+                                          std::move(handler));
         }
     }
 
@@ -912,53 +974,6 @@ private:
         val = std::move(tmp_val);
         quot = tmp_quot;
     }
-
-    template<typename handler_t>
-    inline void shift_insert_sparse_handler(size_t from,
-                                            size_t to,
-                                            key_t quot,
-                                            handler_t&& handler) {
-        // move from...to one to the right, then insert at from
-
-        DCHECK(from != to);
-
-        auto value_handler = handler.on_new();
-        auto&& val = value_handler.get();
-
-        if (to < from) {
-            // if the range wraps around, we decompose into two ranges:
-            // [   |      |      ]
-            // | to^      ^from  |
-            // ^start         end^
-            // [ 2 ]      [  1   ]
-            //
-            // NB: because we require from != to, and insert 1 additional element,
-            // we are always dealing with a minimum 2 element range,
-            // and thus can not end up with a split range with length == 0
-
-            // inserts the new element at the start of the range,
-            // and temporarily stores the element at the end of the range
-            // in `val` and `quot`
-            sparse_shift(from,  table_size(), val, quot);
-            sparse_shift(0, to, val, quot);
-        } else {
-            // inserts the new element at the start of the range,
-            // and temporarily stores the element at the end of the range
-            // in `val` and `quot`
-            sparse_shift(from, to, val, quot);
-        }
-
-        // insert the element from the end of the range at the free
-        // position to the right of it
-        auto insert = InsertHandler(std::move(val));
-        table_set_at_empty(to, quot, std::move(insert));
-
-        // after the previous insert and a potential reallocation,
-        // notify the handler about the address of the new value
-        auto new_loc = sparse_pos(from);
-        value_handler.new_location(sparse_get_at(new_loc).val());
-    }
-
 
     using SparsePos = sparse_pos_t<buckets_t, bucket_layout_t>;
 
