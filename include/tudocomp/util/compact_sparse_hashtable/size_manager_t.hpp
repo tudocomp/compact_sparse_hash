@@ -34,12 +34,13 @@ public:
         m_capacity_log2 = log2_upper(capacity);
     }
 
-    inline size_t& size() {
+    inline size_t size() const {
         return m_size;
     }
 
-    inline size_t const& size() const {
-        return m_size;
+    inline void set_size(size_t new_size) {
+        DCHECK_LT(new_size, capacity());
+        m_size = new_size;
     }
 
     inline size_t capacity() const {

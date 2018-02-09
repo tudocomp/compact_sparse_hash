@@ -433,7 +433,7 @@ private:
             // we created a new group, so update the bitflags
             set_v(dkey.initial_address, true);
             set_c(dkey.initial_address, true);
-            m_sizing.size()++;
+            m_sizing.set_size(m_sizing.size() + 1);
         } else {
             // check if there already is a group for this key
             bool const group_exists = get_v(dkey.initial_address);
@@ -447,7 +447,7 @@ private:
                     handler.on_existing(*p);
                 } else {
                     insert_after(res, dkey, std::move(handler));
-                    m_sizing.size()++;
+                    m_sizing.set_size(m_sizing.size() + 1);
                 }
             } else {
                 // insert a new group
@@ -465,7 +465,7 @@ private:
                 // thus fixing-up the v <-> c mapping
                 set_c(res.group_end, true);
 
-                m_sizing.size()++;
+                m_sizing.set_size(m_sizing.size() + 1);
             }
         }
     }
