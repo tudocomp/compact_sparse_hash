@@ -530,10 +530,10 @@ private:
     };
 
     template<typename handler_t>
-    inline void shift_insert_handler(size_t from,
-                                     size_t to,
-                                     uint64_t quot,
-                                     handler_t&& handler) {
+    inline void table_shift_elements_and_insert(size_t from,
+                                                size_t to,
+                                                uint64_t quot,
+                                                handler_t&& handler) {
         DCHECK_NE(from, to);
 
         for(size_t i = to; i != from;) {
@@ -620,15 +620,15 @@ private:
             // if there is no following group, just append the new entry
 
             table_set_at_empty(res.group_end,
-                                        dkey.stored_quotient,
-                                        std::move(handler));
+                               dkey.stored_quotient,
+                               std::move(handler));
         } else {
             // else, shift all following elements
 
-            shift_insert_handler(res.group_end,
-                                 res.groups_terminator,
-                                 dkey.stored_quotient,
-                                 std::move(handler));
+            table_shift_elements_and_insert(res.group_end,
+                                            res.groups_terminator,
+                                            dkey.stored_quotient,
+                                            std::move(handler));
         }
     }
 
