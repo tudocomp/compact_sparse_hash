@@ -11,6 +11,16 @@ using namespace tdc::compact_sparse_hashtable;
 template<typename val_t>
 using compact_hash = compact_sparse_hashtable_t<val_t>;
 
+/// Assert that a element exists in the hashtable
+template<typename table_t>
+inline void debug_check_single(table_t& table, uint64_t key, typename table_t::value_type const& val) {
+    auto ptr = table.search(key);
+    ASSERT_NE(ptr, nullptr) << "key " << key << " not found!";
+    if (ptr != nullptr) {
+        ASSERT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+    }
+}
+
 bool print_init = false;
 
 static uint64_t global_c = 0;
@@ -149,13 +159,13 @@ TEST(hash, insert_move_wrap) {
     //std::cout << ch.debug_state() << "\n";
     //std::cout << "=======================\n";
 
-    ch.debug_check_single(3,      Init(0));
-    ch.debug_check_single(3 + 8,  Init(1));
-    ch.debug_check_single(5,      Init(2));
-    ch.debug_check_single(5 + 8,  Init(3));
-    ch.debug_check_single(5 + 16, Init(4));
-    ch.debug_check_single(5 + 24, Init(5));
-    ch.debug_check_single(4,      Init(6));
+    debug_check_single(ch, 3,      Init(0));
+    debug_check_single(ch, 3 + 8,  Init(1));
+    debug_check_single(ch, 5,      Init(2));
+    debug_check_single(ch, 5 + 8,  Init(3));
+    debug_check_single(ch, 5 + 16, Init(4));
+    debug_check_single(ch, 5 + 24, Init(5));
+    debug_check_single(ch, 4,      Init(6));
 }
 
 TEST(hash, cornercase) {
@@ -165,8 +175,8 @@ TEST(hash, cornercase) {
     ch.insert(0, Init());
     ch.insert(0 + 8, Init());
 
-    ch.debug_check_single(0,      Init(0));
-    ch.debug_check_single(0 + 8,  Init(1));
+    debug_check_single(ch, 0,      Init(0));
+    debug_check_single(ch, 0 + 8,  Init(1));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
@@ -186,7 +196,7 @@ TEST(hash, grow) {
         //inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
-            ch.debug_check_single(kv.first, kv.second);
+            debug_check_single(ch, kv.first, kv.second);
         }
     };
 
@@ -217,7 +227,7 @@ TEST(hash, grow_bits) {
         //inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
-            ch.debug_check_single(kv.first, kv.second);
+            debug_check_single(ch, kv.first, kv.second);
         }
     };
 
@@ -248,7 +258,7 @@ TEST(hash, grow_bits_larger) {
         inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
-            ch.debug_check_single(kv.first, kv.second);
+            debug_check_single(ch, kv.first, kv.second);
         }
     };
 
@@ -274,7 +284,7 @@ TEST(hash, grow_bits_larger_address) {
         inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
-            ch.debug_check_single(kv.first, kv.second);
+            debug_check_single(ch, kv.first, kv.second);
         }
     };
 

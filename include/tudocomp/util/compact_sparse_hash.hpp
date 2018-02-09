@@ -44,6 +44,9 @@ class compact_sparse_hashtable_t {
     uint8_t m_width;
 
 public:
+    using value_type = val_t;
+    using key_type = key_t;
+
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE, size_t key_width = DEFAULT_KEY_WIDTH):
@@ -189,6 +192,18 @@ public:
         return real_width() - m_sizing.capacity_log2();
     }
 
+    // TODO: STL-conform API?
+    /// Search for a key inside the hashtable.
+    ///
+    /// This returns a pointer to the value if its found, or null
+    /// otherwise.
+    inline val_t* search(uint64_t key) {
+        auto dkey = decompose_key(key);
+        if (get_v(dkey.initial_address)) {
+            return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
+        }
+        return nullptr;
+    }
 // -----------------------
 // For tests and debugging
 // -----------------------
@@ -263,20 +278,6 @@ public:
         ss << "]";
 
         return ss.str();
-    }
-
-    /// Assert that a element exists in the hashtable
-    inline void debug_check_single(uint64_t key, val_t const& val) {
-        auto ptr = search(key);
-        ASSERT_NE(ptr, nullptr) << "key " << key << " not found!";
-        if (ptr != nullptr) {
-            ASSERT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
-        }
-    }
-
-    /// Prints the state of the table to cout
-    inline void debug_print() {
-        std::cout << debug_state() << "\n";
     }
 
 private:
@@ -655,6 +656,10 @@ private:
         return ret;
     }
 
+    /// Search a quotient inside an existing Group.
+    ///
+    /// This returns a pointer to the value if its found, or null
+    /// otherwise.
     inline val_t* search_in_group(Group const& group, uint64_t stored_quotient) {
         for(size_t i = group.group_start; i != group.group_end; i = m_sizing.mod_add(i)) {
             auto sparse_entry = sparse_get_at(i);
@@ -662,14 +667,6 @@ private:
             if (sparse_entry.get_quotient() == stored_quotient) {
                 return &sparse_entry.val();
             }
-        }
-        return nullptr;
-    }
-
-    inline val_t* search(uint64_t key) {
-        auto dkey = decompose_key(key);
-        if (get_v(dkey.initial_address)) {
-            return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
         return nullptr;
     }
