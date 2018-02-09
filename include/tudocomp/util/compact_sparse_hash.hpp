@@ -17,7 +17,7 @@
 
 namespace tdc {namespace compact_sparse_hashtable {
 
-template<typename val_t>
+template<typename val_t, typename hash_t = xorshift_t>
 class compact_sparse_hashtable_t {
     using key_t = uint64_t;
     using buckets_t = std::vector<Bucket<val_t>>;
@@ -157,9 +157,9 @@ private:
     inline DecomposedKey decompose_key(uint64_t key) {
         DCHECK(dcheck_key_width(key)) << "Attempt to insert key " << key << ", which requires more bits than the current set maximum of " << m_width << " Bits";
 
-        uint64_t hres = compact_hashfn(key, real_width());
+        uint64_t hres = hash_t::hashfn(key, real_width());
 
-        DCHECK_EQ(compact_reverse_hashfn(hres, real_width()), key);
+        DCHECK_EQ(hash_t::reverse_hashfn(hres, real_width()), key);
 
         uint64_t shift = table_size_log2();
 
@@ -188,7 +188,7 @@ private:
             harg = (quotient << shift) | initial_address;
         }
 
-        uint64_t key = compact_reverse_hashfn(harg, real_width());
+        uint64_t key = hash_t::reverse_hashfn(harg, real_width());
         dcheck_key_width(key);
         return key;
     }

@@ -76,8 +76,8 @@ bool operator==(Init const& lhs, Init const& rhs) {
 TEST(hash, xorshift) {
     for(size_t w = 10; w < 65; w++) {
         for (size_t i = 0; i < 1000; i++) {
-            auto hi = compact_hashfn(i, w);
-            auto hhi = compact_reverse_hashfn(hi, w);
+            auto hi = xorshift_t::hashfn(i, w);
+            auto hhi = xorshift_t::reverse_hashfn(hi, w);
             /*std::cout
                 << i << ", "
                 << hi << ", "

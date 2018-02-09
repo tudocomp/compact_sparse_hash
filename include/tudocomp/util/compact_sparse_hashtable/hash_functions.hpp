@@ -19,20 +19,27 @@ static unsigned long long x=88172645463325252LL;
 xˆ=(x<<13); xˆ=(x>>7); return (xˆ=(x<<17));
 */
 
-inline uint64_t compact_hashfn(uint64_t x, uint64_t w)  {
-    uint64_t j = (w / 2ull) + 1;
-    DCHECK_LT((w / 2ull), j);
-    DCHECK_NE(w, 0);
+struct xorshift_t {
+    /// This takes a value `x` with a width of `w` bits,
+    /// and calculates a hash value with a width of `w` bits.
+    static inline uint64_t hashfn(uint64_t x, uint64_t w)  {
+        uint64_t j = (w / 2ull) + 1;
+        DCHECK_LT((w / 2ull), j);
+        DCHECK_NE(w, 0);
 
-    // NB: Two shifts because a single shift with w == 64 is undefined
-    // behavior
-    uint64_t w_mask = (1ull << (w - 1ull) << 1ull) - 1ull;
+        // NB: Two shifts because a single shift with w == 64 is undefined
+        // behavior according to the C++ standard
+        uint64_t w_mask = (1ull << (w - 1ull) << 1ull) - 1ull;
 
-    return (x xor ((x << j) & w_mask)) & w_mask;
-}
+        return (x xor ((x << j) & w_mask)) & w_mask;
+    }
 
-inline uint64_t compact_reverse_hashfn(uint64_t x, uint64_t w)  {
-    return compact_hashfn(x, w);
-}
+    /// This takes a hash value `x` with a width of `w` bits,
+    /// and reverses the hash function to the original value.
+    static inline uint64_t reverse_hashfn(uint64_t x, uint64_t w)  {
+        return hashfn(x, w);
+    }
+};
+
 
 }}
