@@ -31,6 +31,7 @@ class compact_sparse_hashtable_t {
     // TODO: Change this, and fix tests
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 16;
+    static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
     /// Compact table data (c and v bitvectors)
     IntVector<uint_t<2>> m_cv;
@@ -324,7 +325,7 @@ class compact_sparse_hashtable_t {
 
     template<typename handler_t>
     inline void insert_handler(uint64_t key, size_t key_width, handler_t&& handler) {
-        grow_if_needed(key_width);
+        grow_if_needed(size() + 1, key_width);
         auto const dkey = decompose_key(key);
 
         DCHECK_EQ(key, compose_key(dkey.initial_address, dkey.stored_quotient));
@@ -471,9 +472,9 @@ class compact_sparse_hashtable_t {
         }
     };
 
-    inline void grow_if_needed(size_t new_width) {
+    inline void grow_if_needed(size_t new_size, size_t new_width) {
         auto needs_capacity_change = [&]() {
-            return(m_sizing.capacity() / 2) <= (m_sizing.size() + 1);
+            return(m_sizing.capacity() / 2) <= new_size;
         };
 
         auto needs_realloc = [&]() {
@@ -737,14 +738,14 @@ class compact_sparse_hashtable_t {
     }
 
 public:
-    inline compact_sparse_hashtable_t(size_t size, size_t key_width = DEFAULT_KEY_WIDTH):
+    /// Constructs a hashtable with a initial table size `size`,
+    /// and a initial key bit-width `key_width`.
+    inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE, size_t key_width = DEFAULT_KEY_WIDTH):
         m_sizing(size),
         m_width(key_width)
     {
         size_t cv_size = table_size();
         size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
-
-        // std::cout << "cv_size: " << cv_size << ", buckets_size: " << buckets_size << "\n";
 
         m_cv.reserve(cv_size);
         m_cv.resize(cv_size);
@@ -753,6 +754,8 @@ public:
     }
 
     inline ~compact_sparse_hashtable_t() {
+        // NB: destroying the buckets vector will just destroy the bucket in it,
+        /// which will not destroy their elements.
         run_destructors_of_bucket_elements();
     }
 
@@ -765,6 +768,8 @@ public:
     }
 
     inline compact_sparse_hashtable_t& operator=(compact_sparse_hashtable_t&& other) {
+        // NB: overwriting the buckets vector will just destroy the bucket in it,
+        /// which will not destroy their elements.
         run_destructors_of_bucket_elements();
 
         m_cv = std::move(other.m_cv);
@@ -775,10 +780,26 @@ public:
         return *this;
     }
 
-    // TODO: This is not a std interface
+    // TODO: Change to STL-conform interface?
+    /// Inserts a key-value pair into the hashtable,
+    /// assuming that `key` does not exceed the current `key_width()`.
+    ///
+    /// The hashtable will grow as needed to fit the new element.
     inline void insert(uint64_t key, val_t&& value) {
         insert(key, std::move(value), m_width);
     }
+
+    /// Inserts a key-value pair into the hashtable,
+    /// where `key` has a width of `key_width` bits.
+    ///
+    /// The hashtable will grow and increases its `key_width()`
+    /// as needed to fit the new element.
+    ///
+    /// Note: Calling this for incrementally inserting
+    /// new elements with increasing key widths is more efficient
+    /// than calling `grow_key_width()` separately,
+    /// since it fuses the reallocation needed for both a key-width change
+    /// and a table size increase.
     inline void insert(uint64_t key, val_t&& value, size_t key_width) {
         insert_handler(key, key_width, InsertHandler {
             std::move(value)
@@ -799,6 +820,15 @@ public:
         DCHECK(addr != nullptr);
 
         return *addr;
+    }
+
+    /// Increase the width of the stored keys to `key_width` bits.
+    ///
+    /// Note: Calling this for incrementally inserting
+    /// new elements with increasing key widths is _less_ efficient
+    /// than calling `insert()` with the new key width.
+    inline void grow_key_width(size_t key_width) {
+        grow_if_needed(size(), key_width);
     }
 
     inline size_t size() const {
