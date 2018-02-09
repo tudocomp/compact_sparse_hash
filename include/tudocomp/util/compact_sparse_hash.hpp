@@ -323,8 +323,10 @@ class compact_sparse_hashtable_t {
         }
     }
 
+    /// Access the element represented by `handler` under
+    /// the key `key` with the, possibly new, width of `key_width` bits.
     template<typename handler_t>
-    inline void insert_handler(uint64_t key, size_t key_width, handler_t&& handler) {
+    inline void access_handler(uint64_t key, size_t key_width, handler_t&& handler) {
         grow_if_needed(size() + 1, key_width);
         auto const dkey = decompose_key(key);
 
@@ -792,7 +794,7 @@ public:
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
     inline void insert(uint64_t key, val_t&& value, size_t key_width) {
-        insert_handler(key, key_width, InsertHandler {
+        access_handler(key, key_width, InsertHandler {
             std::move(value)
         });
     }
@@ -814,7 +816,7 @@ public:
     inline val_t& index(uint64_t key, size_t key_width) {
         val_t* addr = nullptr;
 
-        insert_handler(key, key_width, AddressDefaultHandler {
+        access_handler(key, key_width, AddressDefaultHandler {
             &addr
         });
 
