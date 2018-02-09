@@ -400,6 +400,133 @@ private:
         return key;
     }
 
+    /// Access the element represented by `handler` under
+    /// the key `key` with the, possibly new, width of `key_width` bits.
+    ///
+    /// `handler` is a type that allows reacting correctly to different ways
+    /// to access or create a new or existing value in the hashtable.
+    /// See `InsertHandler` and `AddressDefaultHandler` below.
+    template<typename handler_t>
+    inline void access_handler(uint64_t key, size_t key_width, handler_t&& handler) {
+        grow_if_needed(size() + 1, key_width);
+        auto const dkey = decompose_key(key);
+
+        DCHECK_EQ(key, compose_key(dkey.initial_address, dkey.stored_quotient));
+
+        // cases:
+        // - initial address empty.
+        // - initial address occupied, there is an element for this key
+        //   (v[initial address] = 1).
+        // - initial address occupied, there is no element for this key
+        //   (v[initial address] = 0).
+
+        DCHECK_LT(bucket_layout_t::table_pos_to_idx_of_bucket(dkey.initial_address),
+                  m_buckets.size());
+
+        if (sparse_is_empty(dkey.initial_address)) {
+            // check if we can insert directly
+
+            sparse_set_at_empty_handler(dkey.initial_address,
+                                        dkey.stored_quotient,
+                                        std::move(handler));
+
+            // we created a new group, so update the bitflags
+            set_v(dkey.initial_address, true);
+            set_c(dkey.initial_address, true);
+            m_sizing.size()++;
+        } else {
+            // check if there already is a group for this key
+            bool const group_exists = get_v(dkey.initial_address);
+
+            if (group_exists) {
+                auto const res = search_existing_group(dkey);
+
+                // check if element already exists
+                auto p = search(res, dkey.stored_quotient);
+                if (p != nullptr) {
+                    handler.on_existing(*p);
+                } else {
+                    insert_after(res, dkey, std::move(handler));
+                    m_sizing.size()++;
+                }
+            } else {
+                // insert a new group
+
+                // pretend we already inserted the new group
+                // this makes insert_after() find the group
+                // at the location _before_ the new group
+                set_v(dkey.initial_address, true);
+                auto const res = search_existing_group(dkey);
+
+                // insert the element after the found group
+                insert_after(res, dkey, std::move(handler));
+
+                // mark the inserted element as the start of a new group,
+                // thus fixing-up the v <-> c mapping
+                set_c(res.group_end, true);
+
+                m_sizing.size()++;
+            }
+        }
+    }
+
+    /// Handler for inserting an element that exists as a rvalue reference.
+    /// This will overwrite an existing element.
+    class InsertHandler {
+        val_t&& m_value;
+    public:
+        InsertHandler(val_t&& value): m_value(std::move(value)) {}
+
+        inline auto on_new() {
+            struct InsertHandlerOnNew {
+                val_t&& m_value;
+                inline val_t&& get() {
+                    return std::move(m_value);
+                }
+                inline void new_location(val_t& value) {
+                }
+            };
+
+            return InsertHandlerOnNew {
+                std::move(m_value),
+            };
+        }
+
+        inline void on_existing(val_t& value) {
+            m_value = std::move(value);
+        }
+    };
+
+    /// Handler for getting the address of an element in the map.
+    /// If none exists yet, it will be default constructed.
+    class AddressDefaultHandler {
+        val_t** m_address = nullptr;
+    public:
+        AddressDefaultHandler(val_t** address): m_address(address) {}
+
+        inline auto on_new() {
+            struct AddressDefaultHandlerOnNew {
+                val_t m_value;
+                val_t** m_address;
+                inline val_t&& get() {
+                    return std::move(m_value);
+                }
+                inline void new_location(val_t& value) {
+                    *m_address = &value;
+                }
+            };
+
+            return AddressDefaultHandlerOnNew {
+                val_t(),
+                m_address,
+            };
+        }
+
+        inline void on_existing(val_t& value) {
+            *m_address = &value;
+        }
+    };
+
     template<typename handler_t>
     inline void shift_insert_handler(size_t from,
                                      size_t to,
@@ -480,63 +607,6 @@ private:
         return nullptr;
     }
 
-    /// Handler for inserting an element that exists as a rvalue reference.
-    /// This will overwrite an existing element.
-    class InsertHandler {
-        val_t&& m_value;
-    public:
-        InsertHandler(val_t&& value): m_value(std::move(value)) {}
-
-        inline auto on_new() {
-            struct InsertHandlerOnNew {
-                val_t&& m_value;
-                inline val_t& get() {
-                    return m_value;
-                }
-                inline void new_location(val_t& value) {
-                }
-            };
-
-            return InsertHandlerOnNew {
-                std::move(m_value),
-            };
-        }
-
-        inline void on_existing(val_t& value) {
-            m_value = std::move(value);
-        }
-    };
-
-    /// Handler for getting the address of an element in the map.
-    /// If none exists yet, it will be default constructed.
-    class AddressDefaultHandler {
-        val_t** m_address = nullptr;
-    public:
-        AddressDefaultHandler(val_t** address): m_address(address) {}
-
-        inline auto on_new() {
-            struct AddressDefaultHandlerOnNew {
-                val_t m_value;
-                val_t** m_address;
-                inline val_t& get() {
-                    return m_value;
-                }
-                inline void new_location(val_t& value) {
-                    *m_address = &value;
-                }
-            };
-
-            return AddressDefaultHandlerOnNew {
-                val_t(),
-                m_address,
-            };
-        }
-
-        inline void on_existing(val_t& value) {
-            *m_address = &value;
-        }
-    };
-
     template<typename handler_t>
     inline void insert_after(SearchedGroup const& res,
                              decomposed_key_t const& dkey,
@@ -557,70 +627,6 @@ private:
                                  res.groups_terminator,
                                  dkey.stored_quotient,
                                  std::move(handler));
-        }
-    }
-
-    /// Access the element represented by `handler` under
-    /// the key `key` with the, possibly new, width of `key_width` bits.
-    template<typename handler_t>
-    inline void access_handler(uint64_t key, size_t key_width, handler_t&& handler) {
-        grow_if_needed(size() + 1, key_width);
-        auto const dkey = decompose_key(key);
-
-        DCHECK_EQ(key, compose_key(dkey.initial_address, dkey.stored_quotient));
-
-        // cases:
-        // - initial address empty
-        // - initial address full, v[initial address] = 1
-        // - initial address full, v[initial address] = 0
-
-        DCHECK_LT(bucket_layout_t::table_pos_to_idx_of_bucket(dkey.initial_address),
-                  m_buckets.size());
-
-        if (sparse_is_empty(dkey.initial_address)) {
-            // check if we can insert directly
-
-            sparse_set_at_empty_handler(dkey.initial_address,
-                                        dkey.stored_quotient,
-                                        std::move(handler));
-
-            // we created a new group, so update the bitflags
-            set_v(dkey.initial_address, true);
-            set_c(dkey.initial_address, true);
-            m_sizing.size()++;
-        } else {
-            // check if there already is a group for this key
-            bool const group_exists = get_v(dkey.initial_address);
-
-            if (group_exists) {
-                auto const res = search_existing_group(dkey);
-
-                // check if element already exists
-                auto p = search(res, dkey.stored_quotient);
-                if (p != nullptr) {
-                    handler.on_existing(*p);
-                } else {
-                    insert_after(res, dkey, std::move(handler));
-                    m_sizing.size()++;
-                }
-            } else {
-                // insert a new group
-
-                // pretend we already inserted the new group
-                // this makes insert_after() find the group
-                // at the location _before_ the new group
-                set_v(dkey.initial_address, true);
-                auto const res = search_existing_group(dkey);
-
-                // insert the element after the found group
-                insert_after(res, dkey, std::move(handler));
-
-                // mark the inserted element as the start of a new group,
-                // thus fixing-up the v <-> c mapping
-                set_c(res.group_end, true);
-
-                m_sizing.size()++;
-            }
         }
     }
 
@@ -781,7 +787,7 @@ private:
 
         // we will insert a new element
         auto value_handler = handler.on_new();
-        auto& val = value_handler.get();
+        auto&& val = value_handler.get();
 
         // insert element & grow bucket as appropriate
         insert_in_bucket(bucket, data.offset_in_bucket(), data.b_mask, qw, std::move(val), quot);
@@ -911,7 +917,7 @@ private:
         DCHECK(from != to);
 
         auto value_handler = handler.on_new();
-        auto& val = value_handler.get();
+        auto&& val = value_handler.get();
 
         if (to < from) {
             // if the range wraps around, we decompose into two ranges:
