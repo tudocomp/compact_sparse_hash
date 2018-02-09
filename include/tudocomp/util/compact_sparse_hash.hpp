@@ -43,6 +43,243 @@ class compact_sparse_hashtable_t {
     size_manager_t m_sizing;
     uint8_t m_width;
 
+public:
+    /// Constructs a hashtable with a initial table size `size`,
+    /// and a initial key bit-width `key_width`.
+    inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE, size_t key_width = DEFAULT_KEY_WIDTH):
+        m_sizing(size),
+        m_width(key_width)
+    {
+        size_t cv_size = table_size();
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
+
+        m_cv.reserve(cv_size);
+        m_cv.resize(cv_size);
+        m_buckets.reserve(buckets_size);
+        m_buckets.resize(buckets_size);
+    }
+
+    inline ~compact_sparse_hashtable_t() {
+        // NB: destroying the buckets vector will just destroy the bucket in it,
+        /// which will not destroy their elements.
+        run_destructors_of_bucket_elements();
+    }
+
+    inline compact_sparse_hashtable_t(compact_sparse_hashtable_t&& other):
+        m_cv(std::move(other.m_cv)),
+        m_buckets(std::move(other.m_buckets)),
+        m_sizing(std::move(other.m_sizing)),
+        m_width(std::move(other.m_width))
+    {
+    }
+
+    inline compact_sparse_hashtable_t& operator=(compact_sparse_hashtable_t&& other) {
+        // NB: overwriting the buckets vector will just destroy the bucket in it,
+        /// which will not destroy their elements.
+        run_destructors_of_bucket_elements();
+
+        m_cv = std::move(other.m_cv);
+        m_buckets = std::move(other.m_buckets);
+        m_sizing = std::move(other.m_sizing);
+        m_width = std::move(other.m_width);
+
+        return *this;
+    }
+
+    /// Inserts a key-value pair into the hashtable,
+    /// where `key` has a width of `key_width` bits.
+    ///
+    /// The hashtable will grow and increases its `key_width()`
+    /// as needed to fit the new element.
+    ///
+    /// Note: Calling this for incrementally inserting
+    /// new elements with increasing key widths is more efficient
+    /// than calling `grow_key_width()` separately,
+    /// since it fuses the reallocation needed for both a key-width change
+    /// and a table size increase.
+    inline void insert(uint64_t key, val_t&& value, size_t key_width) {
+        access_handler(key, key_width, InsertHandler {
+            std::move(value)
+        });
+    }
+
+    /// Returns a reference to the element with key `key`,
+    /// where `key` has a width of `key_width` bits.
+    ///
+    /// The hashtable will grow and increases its `key_width()`
+    /// as needed to fit the new element.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    ///
+    /// Note: Calling this for incrementally inserting
+    /// new elements with increasing key widths is more efficient
+    /// than calling `grow_key_width()` separately,
+    /// since it fuses the reallocation needed for both a key-width change
+    /// and a table size increase.
+    inline val_t& index(uint64_t key, size_t key_width) {
+        val_t* addr = nullptr;
+
+        access_handler(key, key_width, AddressDefaultHandler {
+            &addr
+        });
+
+        DCHECK(addr != nullptr);
+
+        return *addr;
+    }
+
+    // TODO: Change to STL-conform interface?
+    // TODO: Instead of 2 vs 1 key paramter, have
+    //       a Key+width types as index type?
+
+    /// Inserts a key-value pair into the hashtable.
+    ///
+    /// It assumes that `key` does not exceed the current `key_width()`.
+    ///
+    /// The hashtable will grow as needed to fit the new element.
+    ///
+    /// See comments on the 3-parameter `insert()` for the efficiency
+    /// of handling different bit width for `key`.
+    inline void insert(uint64_t key, val_t&& value) {
+        insert(key, std::move(value), m_width);
+    }
+
+    /// Returns a reference to the element with key `key`.
+    ///
+    /// It assumes that `key` does not exceed the current `key_width()`.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    ///
+    /// See comments on the 2-parameter `index()` for the efficiency
+    /// of handling different bit width for `key`.
+    inline val_t& operator[](uint64_t key) {
+        return index(key, m_width);
+    }
+
+    /// Increase the width of the stored keys to `key_width` bits.
+    ///
+    /// Note: Calling this for incrementally inserting
+    /// new elements with increasing key widths is _less_ efficient
+    /// than calling `insert()` with the new key width.
+    inline void grow_key_width(size_t key_width) {
+        grow_if_needed(size(), key_width);
+    }
+
+    /// Returns the amount of elements inside the datastructure.
+    inline size_t size() const {
+        return m_sizing.size();
+    }
+
+    /// Current width of the keys stored in this datastructure.
+    inline size_t key_width() {
+        return m_width;
+    }
+
+    /// Amount of bits of the key, that are stored implicitly
+    /// by its position in the table.
+    inline size_t initial_address_width() {
+        return m_sizing.capacity_log2();
+    }
+
+    /// Amount of bits of the key, that are stored explicitly
+    /// in the buckets.
+    inline size_t quotient_width() {
+        return real_width() - m_sizing.capacity_log2();
+    }
+
+// -----------------------
+// For tests and debugging
+// -----------------------
+
+    /// Returns a human-readable string representation
+    /// of the entire state of the hashtable
+    inline std::string debug_state() {
+        std::stringstream ss;
+
+        bool gap_active = false;
+        size_t gap_start;
+        size_t gap_end;
+
+        auto print_gap = [&](){
+            if (gap_active) {
+                gap_active = false;
+                ss << "    [" << gap_start << " to " << gap_end << " empty]\n";
+            }
+        };
+
+        auto add_gap = [&](size_t i){
+            if (!gap_active) {
+                gap_active = true;
+                gap_start = i;
+            }
+            gap_end = i;
+        };
+
+        std::vector<std::string> lines(table_size());
+
+        uint64_t initial_address;
+        size_t j;
+        auto iter = iter_all_t(*this);
+        while(iter.next(&initial_address, &j)) {
+            std::stringstream ss2;
+
+            auto kv = sparse_get_at(j);
+            auto stored_quotient = kv.get_quotient();
+            auto& val = kv.val();
+            key_t key = compose_key(initial_address, stored_quotient);
+
+            ss2 << j
+                << "\t: v = " << get_v(j)
+                << ", c = " << get_c(j)
+                << ", quot = " << stored_quotient
+                << ", iadr = " << initial_address
+                << "\t, key = " << key
+                << "\t, value = " << val
+                << "\t (" << &val << ")";
+
+            lines.at(j) = ss2.str();
+        }
+
+        ss << "key_width(): " << key_width() << "\n";
+        ss << "size: " << size() << "\n";
+        ss << "[\n";
+        for (size_t i = 0; i < table_size(); i++) {
+            bool cv_exist = lines.at(i) != "";
+
+            DCHECK_EQ(cv_exist, sparse_exists(i));
+
+            if (cv_exist) {
+                print_gap();
+                ss << "    "
+                    << lines.at(i)
+                    << "\n";
+            } else {
+                add_gap(i);
+            }
+        }
+        print_gap();
+        ss << "]";
+
+        return ss.str();
+    }
+
+    /// Assert that a element exists in the hashtable
+    inline void debug_check_single(uint64_t key, val_t const& val) {
+        auto ptr = search(key);
+        ASSERT_NE(ptr, nullptr) << "key " << key << " not found!";
+        if (ptr != nullptr) {
+            ASSERT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+        }
+    }
+
+    /// Prints the state of the table to cout
+    inline void debug_print() {
+        std::cout << debug_state() << "\n";
+    }
+
+private:
     /// Maps hashtable position to position of the corresponding bucket,
     /// and the position inside of it.
     struct bucket_layout_t {
@@ -737,238 +974,6 @@ class compact_sparse_hashtable_t {
 
     inline BucketElem<val_t> sparse_get_at(size_t pos) {
         return sparse_get_at(sparse_pos(pos));
-    }
-
-public:
-    /// Constructs a hashtable with a initial table size `size`,
-    /// and a initial key bit-width `key_width`.
-    inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE, size_t key_width = DEFAULT_KEY_WIDTH):
-        m_sizing(size),
-        m_width(key_width)
-    {
-        size_t cv_size = table_size();
-        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
-
-        m_cv.reserve(cv_size);
-        m_cv.resize(cv_size);
-        m_buckets.reserve(buckets_size);
-        m_buckets.resize(buckets_size);
-    }
-
-    inline ~compact_sparse_hashtable_t() {
-        // NB: destroying the buckets vector will just destroy the bucket in it,
-        /// which will not destroy their elements.
-        run_destructors_of_bucket_elements();
-    }
-
-    inline compact_sparse_hashtable_t(compact_sparse_hashtable_t&& other):
-        m_cv(std::move(other.m_cv)),
-        m_buckets(std::move(other.m_buckets)),
-        m_sizing(std::move(other.m_sizing)),
-        m_width(std::move(other.m_width))
-    {
-    }
-
-    inline compact_sparse_hashtable_t& operator=(compact_sparse_hashtable_t&& other) {
-        // NB: overwriting the buckets vector will just destroy the bucket in it,
-        /// which will not destroy their elements.
-        run_destructors_of_bucket_elements();
-
-        m_cv = std::move(other.m_cv);
-        m_buckets = std::move(other.m_buckets);
-        m_sizing = std::move(other.m_sizing);
-        m_width = std::move(other.m_width);
-
-        return *this;
-    }
-
-    /// Inserts a key-value pair into the hashtable,
-    /// where `key` has a width of `key_width` bits.
-    ///
-    /// The hashtable will grow and increases its `key_width()`
-    /// as needed to fit the new element.
-    ///
-    /// Note: Calling this for incrementally inserting
-    /// new elements with increasing key widths is more efficient
-    /// than calling `grow_key_width()` separately,
-    /// since it fuses the reallocation needed for both a key-width change
-    /// and a table size increase.
-    inline void insert(uint64_t key, val_t&& value, size_t key_width) {
-        access_handler(key, key_width, InsertHandler {
-            std::move(value)
-        });
-    }
-
-    /// Returns a reference to the element with key `key`,
-    /// where `key` has a width of `key_width` bits.
-    ///
-    /// The hashtable will grow and increases its `key_width()`
-    /// as needed to fit the new element.
-    ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
-    ///
-    /// Note: Calling this for incrementally inserting
-    /// new elements with increasing key widths is more efficient
-    /// than calling `grow_key_width()` separately,
-    /// since it fuses the reallocation needed for both a key-width change
-    /// and a table size increase.
-    inline val_t& index(uint64_t key, size_t key_width) {
-        val_t* addr = nullptr;
-
-        access_handler(key, key_width, AddressDefaultHandler {
-            &addr
-        });
-
-        DCHECK(addr != nullptr);
-
-        return *addr;
-    }
-
-    // TODO: Change to STL-conform interface?
-    // TODO: Instead of 2 vs 1 key paramter, have
-    //       a Key+width types as index type?
-
-    /// Inserts a key-value pair into the hashtable.
-    ///
-    /// It assumes that `key` does not exceed the current `key_width()`.
-    ///
-    /// The hashtable will grow as needed to fit the new element.
-    ///
-    /// See comments on the 3-parameter `insert()` for the efficiency
-    /// of handling different bit width for `key`.
-    inline void insert(uint64_t key, val_t&& value) {
-        insert(key, std::move(value), m_width);
-    }
-
-    /// Returns a reference to the element with key `key`.
-    ///
-    /// It assumes that `key` does not exceed the current `key_width()`.
-    ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
-    ///
-    /// See comments on the 2-parameter `index()` for the efficiency
-    /// of handling different bit width for `key`.
-    inline val_t& operator[](uint64_t key) {
-        return index(key, m_width);
-    }
-
-    /// Increase the width of the stored keys to `key_width` bits.
-    ///
-    /// Note: Calling this for incrementally inserting
-    /// new elements with increasing key widths is _less_ efficient
-    /// than calling `insert()` with the new key width.
-    inline void grow_key_width(size_t key_width) {
-        grow_if_needed(size(), key_width);
-    }
-
-    /// Returns the amount of elements inside the datastructure.
-    inline size_t size() const {
-        return m_sizing.size();
-    }
-
-    /// Current width of the keys stored in this datastructure.
-    inline size_t key_width() {
-        return m_width;
-    }
-
-    /// Amount of bits of the key, that are stored implicitly
-    /// by its position in the table.
-    inline size_t initial_address_width() {
-        return m_sizing.capacity_log2();
-    }
-
-    /// Amount of bits of the key, that are stored explicitly
-    /// in the buckets.
-    inline size_t quotient_width() {
-        return real_width() - m_sizing.capacity_log2();
-    }
-
-// -----------------------
-// For tests and debugging
-// -----------------------
-
-    inline std::string debug_state() {
-        std::stringstream ss;
-
-        bool gap_active = false;
-        size_t gap_start;
-        size_t gap_end;
-
-        auto print_gap = [&](){
-            if (gap_active) {
-                gap_active = false;
-                ss << "    [" << gap_start << " to " << gap_end << " empty]\n";
-            }
-        };
-
-        auto add_gap = [&](size_t i){
-            if (!gap_active) {
-                gap_active = true;
-                gap_start = i;
-            }
-            gap_end = i;
-        };
-
-        std::vector<std::string> lines(table_size());
-
-        uint64_t initial_address;
-        size_t j;
-        auto iter = iter_all_t(*this);
-        while(iter.next(&initial_address, &j)) {
-            std::stringstream ss2;
-
-            auto kv = sparse_get_at(j);
-            auto stored_quotient = kv.get_quotient();
-            auto& val = kv.val();
-            key_t key = compose_key(initial_address, stored_quotient);
-
-            ss2 << j
-                << "\t: v = " << get_v(j)
-                << ", c = " << get_c(j)
-                << ", quot = " << stored_quotient
-                << ", iadr = " << initial_address
-                << "\t, key = " << key
-                << "\t, value = " << val
-                << "\t (" << &val << ")";
-
-            lines.at(j) = ss2.str();
-        }
-
-        ss << "[\n";
-        for (size_t i = 0; i < table_size(); i++) {
-            bool cv_exist = lines.at(i) != "";
-
-            DCHECK_EQ(cv_exist, sparse_exists(i));
-
-            if (cv_exist) {
-                print_gap();
-                ss << "    "
-                    << lines.at(i)
-                    << "\n";
-            } else {
-                add_gap(i);
-            }
-        }
-        print_gap();
-        ss << "]";
-
-        return ss.str();
-    }
-
-    inline void debug_check_single(uint64_t key, val_t const& val) {
-        auto ptr = search(key);
-        ASSERT_NE(ptr, nullptr) << "key " << key << " not found!";
-        if (ptr != nullptr) {
-            ASSERT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
-        }
-    }
-
-    inline void debug_print() {
-        std::cout << "m_width: " << uint32_t(m_width) << "\n",
-        std::cout << "size: " << size() << "\n",
-        std::cout << debug_state() << "\n";
     }
 };
 
