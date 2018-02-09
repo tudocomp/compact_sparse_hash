@@ -47,6 +47,14 @@ public:
         return 1ull << m_capacity_log2;
     }
 
+    inline bool needs_to_grow_capacity(size_t new_size) const {
+        return(capacity() / 2) <= new_size;
+    }
+
+    inline size_t grown_capacity() const {
+        return capacity() * 2;
+    }
+
     inline decomposed_key_t decompose_hashed_value(uint64_t hres) {
         uint64_t shift = capacity_log2();
 

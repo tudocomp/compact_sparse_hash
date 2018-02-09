@@ -782,12 +782,12 @@ private:
     /// Check the current key width and table site against the arguments,
     /// and grows the table or quotient bitvectors as needed.
     inline void grow_if_needed(size_t new_size, size_t new_width) {
-        auto needs_capacity_change = [&]() {
-            return(m_sizing.capacity() / 2) <= new_size;
+        auto needs_to_grow_capacity = [&]() {
+            return m_sizing.needs_to_grow_capacity(new_size);
         };
 
         auto needs_realloc = [&]() {
-            return needs_capacity_change() || (new_width != m_width);
+            return needs_to_grow_capacity() || (new_width != m_width);
         };
 
         /*
@@ -802,11 +802,9 @@ private:
         // memory lookups and address calculations.
 
         if (needs_realloc()) {
-            size_t new_capacity;
-            if (needs_capacity_change()) {
-                new_capacity = m_sizing.capacity() * 2;
-            } else {
-                new_capacity = m_sizing.capacity();
+            size_t new_capacity = m_sizing.capacity();
+            if (needs_to_grow_capacity()) {
+                new_capacity = m_sizing.grown_capacity();
             }
             auto new_table = compact_sparse_hashtable_t(new_capacity, new_width);
 
