@@ -693,6 +693,9 @@ private:
         }
     }
 
+    /// A non-STL conformer iterator for iterating over all elements
+    /// of the hashtable exactly once,
+    /// wrapping around at the end as needed.
     struct iter_all_t {
         compact_sparse_hashtable_t<val_t>& m_self;
         size_t i = 0;
@@ -701,7 +704,7 @@ private:
         enum {
             EMPTY_LOCATIONS,
             FULL_LOCATIONS
-        } state = EMPTY_LOCATIONS;
+        } state;
 
         inline iter_all_t(compact_sparse_hashtable_t<val_t>& self): m_self(self) {
             // first, skip forward to the first empty location
@@ -722,9 +725,16 @@ private:
             // We proceed to the next position so that we can iterate until
             // we reach `original_start` again.
             i = m_self.m_sizing.mod_add(i);
+
+            // We start iterating from an empty location
+            state = EMPTY_LOCATIONS;
         }
 
         inline bool next(uint64_t* out_initial_address, size_t* out_i) {
+            // TODO: Simplify the logic here.
+            // In principle, it is just a loop that
+            // skips empty locations, and yields on each occupied one.
+
             while(true) {
                 if (state == EMPTY_LOCATIONS) {
                     // skip empty locations
@@ -769,6 +779,8 @@ private:
         }
     };
 
+    /// Check the current key width and table site against the arguments,
+    /// and grows the table size of quotient bitvectors as needed.
     inline void grow_if_needed(size_t new_size, size_t new_width) {
         auto needs_capacity_change = [&]() {
             return(m_sizing.capacity() / 2) <= new_size;
