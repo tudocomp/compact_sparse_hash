@@ -10,7 +10,7 @@
 namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t>
-class Bucket;
+class bucket_t;
 
 /// Represents a pair of pointers to value and quotient inside a bucket.
 template<typename val_t>
@@ -18,7 +18,7 @@ class bucket_element_t {
     val_t* m_val_ptr;
     QuotPtr m_quot_ptr;
 
-    friend class Bucket<val_t>;
+    friend class bucket_t<val_t>;
 
     inline bucket_element_t(val_t* val_ptr,
                       QuotPtr quot_ptr):

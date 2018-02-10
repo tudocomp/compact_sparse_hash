@@ -26,7 +26,7 @@ namespace tdc {namespace compact_sparse_hashtable {
 template<typename val_t, typename hash_t = xorshift_t>
 class compact_sparse_hashtable_t {
     using key_t = uint64_t;
-    using buckets_t = std::vector<Bucket<val_t>>;
+    using buckets_t = std::vector<bucket_t<val_t>>;
 
     // TODO: Change this, and fix tests
     /// Default value of the `key_width` parameter of the constructor.
@@ -336,7 +336,7 @@ private:
         DCHECK_LT(i, m_buckets.size());
         size_t qw = quotient_width();
         m_buckets[i].destroy_vals(qw);
-        m_buckets[i] = Bucket<val_t>();
+        m_buckets[i] = bucket_t<val_t>();
     }
 
     /// Run the destructors of the bucket elements,
@@ -346,10 +346,10 @@ private:
     /// before an operation that would call the destructors of the buckets
     /// themselves, like in the destructor of the hashtable.
     ///
-    /// The reason this exists is that a Bucket does not
+    /// The reason this exists is that a bucket_t does not
     /// initialize or destroy the elements in it automatically,
     /// to prevent unneeded empty-constructions of its elements.
-    /// TODO: Is this still a useful semantic? A Bucket can manage its own data.
+    /// TODO: Is this still a useful semantic? A bucket_t can manage its own data.
     inline void run_destructors_of_bucket_elements() {
         size_t qw = quotient_width();
         for(size_t i = 0; i < m_buckets.size(); i++) {
@@ -897,7 +897,7 @@ private:
         // pseudo-iterator for iterating over bucket elements
         // NB: does not wrap around!
         struct iter {
-            Bucket<val_t> const* m_bucket;
+            bucket_t<val_t> const* m_bucket;
             bucket_element_t<val_t>    m_b_start;
             bucket_element_t<val_t>    m_b_end;
             size_t               m_quotient_width;

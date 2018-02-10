@@ -55,7 +55,7 @@ public:
         // bitvector of the bucket
         uint64_t bv = bucket().bv();
 
-        return __builtin_popcountll(bv & (bit_mask_in_bucket - 1));
+        return popcount(bv & (bit_mask_in_bucket - 1));
     }
 };
 
