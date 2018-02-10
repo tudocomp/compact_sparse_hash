@@ -10,7 +10,7 @@
 namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t>
-class BucketElem;
+class bucket_element_t;
 
 template<typename val_t>
 class Bucket {
@@ -138,13 +138,13 @@ public:
     inline Bucket(Bucket&& other) = default;
     inline Bucket& operator=(Bucket&& other) = default;
 
-    inline BucketElem<val_t> at(size_t pos, size_t quot_width) const {
+    inline bucket_element_t<val_t> at(size_t pos, size_t quot_width) const {
         if(!is_empty()) {
             auto ps = ptrs(quot_width);
-            return BucketElem<val_t>(ps.vals_ptr + pos, ps.quots_ptr + pos);
+            return bucket_element_t<val_t>(ps.vals_ptr + pos, ps.quots_ptr + pos);
         } else {
             DCHECK_EQ(pos, 0);
-            return BucketElem<val_t>(nullptr, make_quot_ptr(nullptr, quot_width));
+            return bucket_element_t<val_t>(nullptr, make_quot_ptr(nullptr, quot_width));
         }
     }
 };

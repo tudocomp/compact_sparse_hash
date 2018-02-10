@@ -898,8 +898,8 @@ private:
         // NB: does not wrap around!
         struct iter {
             Bucket<val_t> const* m_bucket;
-            BucketElem<val_t>    m_b_start;
-            BucketElem<val_t>    m_b_end;
+            bucket_element_t<val_t>    m_b_start;
+            bucket_element_t<val_t>    m_b_end;
             size_t               m_quotient_width;
 
             inline void set_bucket_elem_range(size_t end_offset) {
@@ -922,11 +922,11 @@ private:
                 if(pos.idx_of_bucket < table.m_buckets.size()) {
                     set_bucket_elem_range(pos.offset_in_bucket());
                 } else {
-                    // use default constructed nullptr BucketElems
+                    // use default constructed nullptr bucket_element_ts
                 }
             }
 
-            inline BucketElem<val_t> get() {
+            inline bucket_element_t<val_t> get() {
                 return m_b_end;
             }
 
@@ -998,14 +998,14 @@ private:
         return SparsePos { pos, m_buckets };
     }
 
-    inline BucketElem<val_t> get_bucket_elem_at(SparsePos pos) {
+    inline bucket_element_t<val_t> get_bucket_elem_at(SparsePos pos) {
         DCHECK(pos.exists_in_bucket());
         size_t qw = quotient_width();
 
         return pos.bucket().at(pos.offset_in_bucket(), qw);
     }
 
-    inline BucketElem<val_t> get_bucket_elem_at(size_t pos) {
+    inline bucket_element_t<val_t> get_bucket_elem_at(size_t pos) {
         return get_bucket_elem_at(sparse_pos(pos));
     }
 };
