@@ -30,7 +30,7 @@ class compact_sparse_hashtable_t {
 
     // TODO: Change this, and fix tests
     /// Default value of the `key_width` parameter of the constructor.
-    static constexpr size_t DEFAULT_KEY_WIDTH = 16;
+    static constexpr size_t DEFAULT_KEY_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
     /// Compact table data (c and v bitvectors)
