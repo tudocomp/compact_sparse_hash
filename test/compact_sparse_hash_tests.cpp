@@ -507,7 +507,7 @@ TEST(hash, lookup_bug2) {
 }
 
 void load_factor_test(float z) {
-    auto table = compact_sparse_hashtable_t(0, 1);
+    auto table = compact_sparse_hashtable_t<uint64_t>(0, 1);
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
         table.insert(i, i*2, bits_for(i));
