@@ -30,7 +30,7 @@ class compact_sparse_hashtable_t {
 
     // TODO: Change this, and fix tests
     /// Default value of the `key_width` parameter of the constructor.
-    static constexpr size_t DEFAULT_KEY_WIDTH = 16;
+    static constexpr size_t DEFAULT_KEY_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
     /// Compact table data (c and v bitvectors)
@@ -173,6 +173,13 @@ public:
     /// Returns the amount of elements inside the datastructure.
     inline size_t size() const {
         return m_sizing.size();
+    }
+
+    /// Returns the current size of the hashtable.
+    /// This value is greater-or-equal the amount of the elements
+    /// currently contained in it, which is represented by `size()`.
+    inline size_t table_size() {
+        return m_sizing.capacity();
     }
 
     /// Current width of the keys stored in this datastructure.
@@ -352,13 +359,6 @@ private:
             return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
         }
     };
-
-    /// Returns the current size of the hashtable.
-    /// This value is greater-or-equal the amount of the elements
-    /// currently contained in it, which is represented by `size()`.
-    inline size_t table_size() {
-        return m_sizing.capacity();
-    }
 
     /// Getter for the v bit at table position `pos`.
     inline bool get_v(size_t pos) {

@@ -101,7 +101,7 @@ TEST(hash, xorshift) {
 TEST(hash, insert) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(256);
+    auto ch = compact_hash<Init>(256, 16);
     ch.insert(44, Init());
     ch.insert(45, Init());
     ch.insert(45, Init());
@@ -129,7 +129,7 @@ TEST(hash, insert) {
 TEST(hash, insert_wrap) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(4);
+    auto ch = compact_hash<Init>(4, 16);
     ch.insert(3, Init());
     ch.insert(7, Init());
     ch.insert(15, Init());
@@ -143,7 +143,7 @@ TEST(hash, insert_wrap) {
 TEST(hash, insert_move_wrap) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(8);
+    auto ch = compact_hash<Init>(8, 16);
 
     ch.insert(3, Init());
     ch.insert(3 + 8, Init());
@@ -171,7 +171,7 @@ TEST(hash, insert_move_wrap) {
 TEST(hash, cornercase) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(8);
+    auto ch = compact_hash<Init>(8, 16);
     ch.insert(0, Init());
     ch.insert(0 + 8, Init());
 
@@ -299,7 +299,8 @@ TEST(hash, grow_bits_larger_address) {
 }
 
 struct find_or_insert_tracer_t {
-    compact_hash<uint64_t> ch {0};
+    compact_hash<uint64_t> ch;
+    find_or_insert_tracer_t(size_t bit_width): ch {0, bit_width} {}
     size_t i = 0;
     bool abort = false;
     std::string last;
@@ -326,7 +327,7 @@ struct find_or_insert_tracer_t {
 };
 
 TEST(hash, lookup_bug) {
-    auto tracer = find_or_insert_tracer_t {};
+    auto tracer = find_or_insert_tracer_t {16};
 
     tracer.find_or_insert(0, 0, 0);
     tracer.find_or_insert(97, 1, 1);
@@ -343,7 +344,9 @@ TEST(hash, lookup_bug) {
     tracer.find_or_insert(99, 3, 9);
 }
 
-void long_test(find_or_insert_tracer_t& tracer) {
+TEST(hash, lookup_bug2) {
+    auto tracer = find_or_insert_tracer_t {16};
+
     tracer.find_or_insert(0, 0, 0);
     tracer.find_or_insert(97, 1, 1);
     tracer.find_or_insert(115, 2, 2);
@@ -503,29 +506,8 @@ void long_test(find_or_insert_tracer_t& tracer) {
     tracer.find_or_insert(6243, 34, 34);
 }
 
-TEST(hash, lookup_bug2) {
-    auto tracer = find_or_insert_tracer_t {};
-    long_test(tracer);
-
-}
-
-TEST(hash, stats) {
-    auto tracer = find_or_insert_tracer_t {};
-    long_test(tracer);
-    auto& table = tracer.ch;
-
-    auto stats = table.stat_gather();
-
-    std::cout << "stats.buckets: " << stats.buckets << "\n";
-    std::cout << "stats.allocated_buckets: " << stats.allocated_buckets << "\n";
-    std::cout << "stats.buckets_real_allocated_capacity_in_bytes: " << stats.buckets_real_allocated_capacity_in_bytes << "\n";
-    std::cout << "stats.real_allocated_capacity_in_bytes: " << stats.real_allocated_capacity_in_bytes << "\n";
-    std::cout << "stats.theoretical_minimum_size_in_bits: " << stats.theoretical_minimum_size_in_bits << "\n";
-}
-
 void load_factor_test(float z) {
-    auto tracer = find_or_insert_tracer_t {};
-    auto& table = tracer.ch;
+    auto table = compact_sparse_hashtable_t<uint64_t>(0, 1);
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
         table.insert(i, i*2, bits_for(i));
