@@ -175,6 +175,13 @@ public:
         return m_sizing.size();
     }
 
+    /// Returns the current size of the hashtable.
+    /// This value is greater-or-equal the amount of the elements
+    /// currently contained in it, which is represented by `size()`.
+    inline size_t table_size() {
+        return m_sizing.capacity();
+    }
+
     /// Current width of the keys stored in this datastructure.
     inline size_t key_width() {
         return m_width;
@@ -352,13 +359,6 @@ private:
             return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
         }
     };
-
-    /// Returns the current size of the hashtable.
-    /// This value is greater-or-equal the amount of the elements
-    /// currently contained in it, which is represented by `size()`.
-    inline size_t table_size() {
-        return m_sizing.capacity();
-    }
 
     /// Getter for the v bit at table position `pos`.
     inline bool get_v(size_t pos) {
