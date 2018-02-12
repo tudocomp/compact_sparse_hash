@@ -99,6 +99,14 @@ public:
         return m_data.get() == nullptr;
     }
 
+    inline size_t stat_allocation_size_in_bytes(size_t quot_width) const {
+        if (!is_empty()) {
+            return calc_sizes(size(), quot_width).overall_qword_size * sizeof(uint64_t);
+        } else {
+            return 0;
+        }
+    }
+
 private:
     static inline bool is_aligned(void const* const pointer, size_t byte_count) {
         return (uintptr_t)pointer % byte_count == 0;

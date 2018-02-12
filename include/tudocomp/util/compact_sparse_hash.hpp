@@ -206,8 +206,47 @@ public:
     }
 
     // -----------------------
-    // Debugging
+    // Evaluation and Debugging
     // -----------------------
+
+    struct statistics_t {
+        size_t buckets = 0;
+        size_t allocated_buckets = 0;
+        size_t buckets_real_allocated_capacity_in_bytes = 0;
+
+        size_t real_allocated_capacity_in_bytes = 0;
+        uint64_t theoretical_minimum_size_in_bits = 0;
+    };
+    inline statistics_t stat_gather() {
+        statistics_t r;
+
+        r.buckets = m_buckets.size();
+
+        for (auto const& b : m_buckets) {
+            r.allocated_buckets += (!b.is_empty());
+            r.buckets_real_allocated_capacity_in_bytes += b.stat_allocation_size_in_bytes(quotient_width());
+        }
+
+        // Calculate real allocated bytes
+        // NB: Sizes of members with constant size are not included (eg, sizeof(m_buckets))
+        // Size of buckets vector
+        r.real_allocated_capacity_in_bytes += m_buckets.capacity() * sizeof(bucket_t<val_t>);
+        r.real_allocated_capacity_in_bytes += r.buckets_real_allocated_capacity_in_bytes;
+        // Size of cv bitvectors
+        r.real_allocated_capacity_in_bytes += m_cv.stat_allocation_size_in_bytes();
+
+        // Calculate minimum bits needed
+        // Occupation bitvector inside allocated buckets
+        r.theoretical_minimum_size_in_bits += r.allocated_buckets;
+        // Quotient bitvectors across all buckets
+        r.theoretical_minimum_size_in_bits += size() * quotient_width();
+        // Values across all buckets
+        r.theoretical_minimum_size_in_bits += size() * sizeof(val_t) * CHAR_BIT;
+        // Size of cv bitvectors
+        r.theoretical_minimum_size_in_bits += size() * 2;
+
+        return r;
+    }
 
     /// Returns a human-readable string representation
     /// of the entire state of the hashtable
