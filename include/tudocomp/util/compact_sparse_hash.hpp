@@ -205,6 +205,19 @@ public:
         return nullptr;
     }
 
+    /// Sets the maximum load factor
+    /// (how full the table can get before re-allocating).
+    ///
+    /// Expects a value `0.0 < z < 1.0`.
+    inline void max_load_factor(float z) {
+        m_sizing.max_load_factor(z);
+    }
+
+    /// Returns the maximum load factor.
+    inline float max_load_factor() const noexcept {
+        return m_sizing.max_load_factor();
+    }
+
     // -----------------------
     // Evaluation and Debugging
     // -----------------------
@@ -822,7 +835,7 @@ private:
     /// and grows the table or quotient bitvectors as needed.
     inline void grow_if_needed(size_t new_size, size_t new_width) {
         auto needs_to_grow_capacity = [&]() {
-            return m_sizing.needs_to_grow_capacity(new_size);
+            return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
         };
 
         auto needs_realloc = [&]() {
@@ -842,10 +855,11 @@ private:
 
         if (needs_realloc()) {
             size_t new_capacity = m_sizing.capacity();
-            if (needs_to_grow_capacity()) {
-                new_capacity = m_sizing.grown_capacity();
+            while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
+                new_capacity = m_sizing.grown_capacity(new_capacity);
             }
             auto new_table = compact_sparse_hashtable_t(new_capacity, new_width);
+            new_table.max_load_factor(this->max_load_factor());
 
             /*
             std::cout

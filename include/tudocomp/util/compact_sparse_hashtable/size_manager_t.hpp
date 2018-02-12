@@ -15,6 +15,7 @@ class size_manager_t {
 
     uint8_t m_capacity_log2;
     size_t m_size;
+    float m_load_factor = 0.5;
 
     /// Adjust the user-specified size of the table as needed
     /// by the current implementation.
@@ -59,13 +60,21 @@ public:
 
     /// Check if the capacity needs to grow for the size given as the
     /// argument.
-    inline bool needs_to_grow_capacity(size_t new_size) const {
-        return(capacity() / 2) <= new_size;
+    inline bool needs_to_grow_capacity(size_t capacity, size_t new_size) const {
+        // Capacity, at which a re-allocation is needed
+        size_t trigger_capacity = size_t(float(capacity) * m_load_factor);
+
+        // Make sure we have always a minimum of 1 free space in the table.
+        trigger_capacity = std::min(capacity - 1, trigger_capacity);
+
+        bool ret = trigger_capacity < new_size;
+        return ret;
     }
 
     /// Returns the new capacity after growth.
-    inline size_t grown_capacity() const {
-        return capacity() * 2;
+    inline size_t grown_capacity(size_t capacity) const {
+        DCHECK_GE(capacity, 1);
+        return capacity * 2;
     }
 
     /// Decompose the hash value such that `initial_address`
@@ -99,6 +108,21 @@ public:
     inline int_t mod_sub(int_t v, int_t sub = 1) {
         size_t mask = capacity() - 1;
         return (v - sub) & mask;
+    }
+
+    /// Sets the maximum load factor
+    /// (how full the table can get before re-allocating).
+    ///
+    /// Expects a value `0.0 < z < 1.0`.
+    inline void max_load_factor(float z) {
+        DCHECK_GT(z, 0.0);
+        DCHECK_LE(z, 1.0);
+        m_load_factor = z;
+    }
+
+    /// Returns the maximum load factor.
+    inline float max_load_factor() const noexcept {
+        return m_load_factor;
     }
 };
 

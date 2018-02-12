@@ -343,10 +343,7 @@ TEST(hash, lookup_bug) {
     tracer.find_or_insert(99, 3, 9);
 }
 
-
-TEST(hash, lookup_bug2) {
-    auto tracer = find_or_insert_tracer_t {};
-
+void long_test(find_or_insert_tracer_t& tracer) {
     tracer.find_or_insert(0, 0, 0);
     tracer.find_or_insert(97, 1, 1);
     tracer.find_or_insert(115, 2, 2);
@@ -504,12 +501,79 @@ TEST(hash, lookup_bug2) {
     tracer.find_or_insert(3706, 77, 77);
     tracer.find_or_insert(113, 24, 24);
     tracer.find_or_insert(6243, 34, 34);
+}
 
-    auto stats = tracer.ch.stat_gather();
+TEST(hash, lookup_bug2) {
+    auto tracer = find_or_insert_tracer_t {};
+    long_test(tracer);
+
+}
+
+TEST(hash, stats) {
+    auto tracer = find_or_insert_tracer_t {};
+    long_test(tracer);
+    auto& table = tracer.ch;
+
+    auto stats = table.stat_gather();
 
     std::cout << "stats.buckets: " << stats.buckets << "\n";
     std::cout << "stats.allocated_buckets: " << stats.allocated_buckets << "\n";
     std::cout << "stats.buckets_real_allocated_capacity_in_bytes: " << stats.buckets_real_allocated_capacity_in_bytes << "\n";
     std::cout << "stats.real_allocated_capacity_in_bytes: " << stats.real_allocated_capacity_in_bytes << "\n";
     std::cout << "stats.theoretical_minimum_size_in_bits: " << stats.theoretical_minimum_size_in_bits << "\n";
+}
+
+void load_factor_test(float z) {
+    auto tracer = find_or_insert_tracer_t {};
+    auto& table = tracer.ch;
+    table.max_load_factor(z);
+    for(size_t i = 0; i < 100000; i++) {
+        table.insert(i, i*2, bits_for(i));
+    }
+    for(size_t i = 0; i < 100000; i++) {
+        auto p = table.search(i);
+        ASSERT_NE(p, nullptr);
+        ASSERT_EQ(*p, i*2);
+    }
+    auto p = table.search(100000);
+    ASSERT_EQ(p, nullptr);
+
+    auto stats = table.stat_gather();
+
+    std::cout << "stats.buckets: " << stats.buckets << "\n";
+    std::cout << "stats.allocated_buckets: " << stats.allocated_buckets << "\n";
+    std::cout << "stats.buckets_real_allocated_capacity_in_bytes: " << stats.buckets_real_allocated_capacity_in_bytes << "\n";
+    std::cout << "stats.real_allocated_capacity_in_bytes: " << stats.real_allocated_capacity_in_bytes << "\n";
+    std::cout << "stats.theoretical_minimum_size_in_bits: " << stats.theoretical_minimum_size_in_bits << "\n";
+}
+
+TEST(hash, max_load_10) {
+    load_factor_test(0.1);
+}
+TEST(hash, max_load_20) {
+    load_factor_test(0.2);
+}
+TEST(hash, max_load_30) {
+    load_factor_test(0.3);
+}
+TEST(hash, max_load_40) {
+    load_factor_test(0.4);
+}
+TEST(hash, max_load_50) {
+    load_factor_test(0.5);
+}
+TEST(hash, max_load_60) {
+    load_factor_test(0.6);
+}
+TEST(hash, max_load_70) {
+    load_factor_test(0.7);
+}
+TEST(hash, max_load_80) {
+    load_factor_test(0.8);
+}
+TEST(hash, max_load_90) {
+    load_factor_test(0.9);
+}
+TEST(hash, max_load_100) {
+    load_factor_test(1.0);
 }
