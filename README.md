@@ -11,19 +11,21 @@ The main idea is to use the compact sparse hash table as a dynamic dictionary fo
 maintaining a set of (key,value)-pairs, or shortly kv-pairs, where the keys are integer values.
 It is especially useful if memory efficiency is in focus, since the table stores the keys bit-aligned.
 Therefore, it is crucial to specify the bit width of a key. The bit width can be updated online.
+For instance, compact hash tables and sparse hash tables are already used for computing LZ78 [2].
 
 # Usage
 
 A minimal example is
-``
+```C++
 #include <tudocomp/util/compact_sparse_hash.hpp>
+...
 // creates a hash table with zero entries, set the bit-width of the keys to four
 auto map = tdc::compact_sparse_hashtable::compact_sparse_hashtable_t<int>(0, 4); 
-for(int i = 0; i <= 15; ++i) { // interval [0..15] can be represented by 4-bits 
+for(int i = 0; i <= 15; ++i) { // interval [0..15] can be represented by four bits 
 	map.insert(i, std::move(i*i)); // insert key i, value i*i 
-	std::cout << i << " -> " << map[i] << std::endl; // map[i] returns value with key i 
+	std::cout << i << " -> " << map[i] << std::endl; // map[i] returns value i*i with key i 
 } 
-``
+```
 
 # How it works
 The idea of a hash table is to maintain a set of (key,value)-pairs, or shortly kv-pairs.
@@ -107,9 +109,10 @@ The code in this repository is published under the
 * Support variable bucket sizes `B`
 
 # Related Work
-* [Dynpdt: dynamic path-decomposed trie](https://github.com/kampersanda/dynpdt) a space-efficient dynamic keyword dictionary. It supports strings as values.
-* [mame-Bonsai](https://github.com/Poyias/mBonsai) a compact hash table implementation used as a trie data structure
-* [Bonsai trie reimplementation](https://github.com/kampersanda/bonsais) a reimplementation of the previous trie data structure
+* [Dynpdt: dynamic path-decomposed trie](https://github.com/kampersanda/dynpdt), a space-efficient dynamic keyword dictionary. It supports strings as values.
+* [mame-Bonsai](https://github.com/Poyias/mBonsai), a compact hash table implementation used as a trie data structure
+* [Bonsai trie reimplementation](https://github.com/kampersanda/bonsais), a reimplementation of the previous trie data structure
 
 # References
-[1] J. G. Cleary. Compact hash tables using bidirectional linear probing. IEEE Trans. Computers, 33(9): 828-834, 1984.
+* [1] J. G. Cleary. Compact hash tables using bidirectional linear probing. IEEE Trans. Computers, 33(9): 828-834, 1984.
+* [2] J. Fischer, D. Köppl: Practical Evaluation of Lempel-Ziv-78 and Lempel-Ziv-Welch Tries. SPIRE 2017: 191-207.
