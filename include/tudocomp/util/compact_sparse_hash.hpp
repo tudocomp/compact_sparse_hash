@@ -257,7 +257,7 @@ public:
 
         // Calculate minimum bits needed
         // Occupation bitvector inside allocated buckets
-        r.theoretical_minimum_size_in_bits += r.allocated_buckets;
+        r.theoretical_minimum_size_in_bits += r.allocated_buckets * 64;
         // Quotient bitvectors across all buckets
         r.theoretical_minimum_size_in_bits += size() * quotient_width();
         // Values across all buckets
