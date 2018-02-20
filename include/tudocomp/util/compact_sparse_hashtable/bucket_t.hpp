@@ -115,24 +115,35 @@ private:
 
     /// Calculates the offsets of the two different arrays inside the allocation.
     struct Layout {
-        size_t vals_qword_offset;
-        size_t quots_qword_offset;
+        int_vector::maybe_bit_packed_layout_element_t<val_t> vals_layout;
+        int_vector::maybe_bit_packed_layout_element_t<dynamic_t> quots_layout;
         size_t overall_qword_size;
     };
     inline static Layout calc_sizes(size_t size, size_t quot_width) {
+        using namespace int_vector;
+
         DCHECK_NE(size, 0);
         DCHECK_LE(alignof(val_t), alignof(uint64_t));
 
-        size_t vals_size_in_bytes = sizeof(val_t) * size;
-        size_t vals_size_in_qwords = (vals_size_in_bytes + 7) / 8;
+        auto layout = bit_layout_t();
+        auto quots_width = maybe_bit_packed_width_t<dynamic_t>(quot_width);
 
-        uint64_t quots_size_in_bits = quot_width * size;
-        size_t quots_size_in_qwords = (quots_size_in_bits + 63ull) / 64ull;
+        // The initial occupation bv
+        layout.aligned_elements<uint64_t>(1);
+
+        // The values
+        auto values = layout.aligned_elements<val_t>(size);
+
+        // Aligning the quotients to the next qword
+        layout.aligned_elements<uint64_t>(0);
+
+        // The quotients
+        auto quots = layout.maybe_bit_packed_elements<dynamic_t>(size, quots_width);
 
         Layout r;
-        r.vals_qword_offset = 1;
-        r.quots_qword_offset = r.vals_qword_offset + vals_size_in_qwords;
-        r.overall_qword_size = 1 + vals_size_in_qwords + quots_size_in_qwords;
+        r.vals_layout = values;
+        r.quots_layout = quots;
+        r.overall_qword_size = layout.get_size_in_uint64_t_units();
         return r;
     }
 
@@ -146,18 +157,9 @@ private:
         DCHECK(!is_empty());
         auto layout = calc_sizes(size(), quot_width);
 
-        uint64_t* const vals_start = &m_data[layout.vals_qword_offset];
-        uint64_t* const quots_start = &m_data[layout.quots_qword_offset];
-
-        val_t* const vals_ptr = reinterpret_cast<val_t*>(vals_start);
-        uint64_t* const quots_ptr = quots_start;
-
-        DCHECK(is_aligned(vals_ptr, alignof(val_t))) << (void*)vals_ptr << ", " << alignof(val_t);
-        DCHECK(is_aligned(quots_ptr, alignof(uint64_t)));
-
         return Ptrs {
-            vals_ptr,
-            make_quot_ptr(quots_ptr, quot_width),
+            layout.vals_layout.ptr_relative_to(m_data.get()),
+            layout.quots_layout.ptr_relative_to(m_data.get()),
         };
     }
 };
