@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include <tudocomp/ds/IntPtr.hpp>
+#include <tudocomp/util/bit_packed_layout_t.hpp>
 
 namespace tdc {namespace compact_sparse_hashtable {
 
@@ -21,12 +21,9 @@ inline bool is_pot(size_t n) {
     return (n > 0ull && ((n & (n - 1ull)) == 0ull));
 }
 
-using QuotPtr = IntPtr<dynamic_t>;
-inline QuotPtr make_quot_ptr(uint64_t* ptr, size_t quot_width) {
-    using namespace int_vector;
-
-    return IntPtrBase<QuotPtr>(ptr, 0, quot_width);
-}
+using QuotPtr = typename int_vector::maybe_bit_packed_pointer_t<dynamic_t>;
+template<typename val_t>
+using ValPtr = typename int_vector::maybe_bit_packed_pointer_t<val_t>;
 
 inline size_t popcount(uint64_t value) {
     return __builtin_popcountll(value);

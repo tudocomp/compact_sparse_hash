@@ -15,12 +15,12 @@ class bucket_t;
 /// Represents a pair of pointers to value and quotient inside a bucket.
 template<typename val_t>
 class bucket_element_t {
-    val_t* m_val_ptr;
+    ValPtr<val_t> m_val_ptr;
     QuotPtr m_quot_ptr;
 
     friend class bucket_t<val_t>;
 
-    inline bucket_element_t(val_t* val_ptr,
+    inline bucket_element_t(ValPtr<val_t> val_ptr,
                       QuotPtr quot_ptr):
         m_val_ptr(val_ptr),
         m_quot_ptr(quot_ptr)

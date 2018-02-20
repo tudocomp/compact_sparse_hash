@@ -147,7 +147,7 @@ private:
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
     struct Ptrs {
-        val_t* vals_ptr;
+        ValPtr<val_t> vals_ptr;
         QuotPtr quots_ptr;
     };
     inline Ptrs ptrs(size_t quot_width) const {
