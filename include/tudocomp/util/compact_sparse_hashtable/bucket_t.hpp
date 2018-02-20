@@ -134,9 +134,6 @@ private:
         // The values
         auto values = layout.aligned_elements<val_t>(size);
 
-        // Aligning the quotients to the next qword
-        layout.aligned_elements<uint64_t>(0);
-
         // The quotients
         auto quots = layout.maybe_bit_packed_elements<dynamic_t>(size, quots_width);
 
