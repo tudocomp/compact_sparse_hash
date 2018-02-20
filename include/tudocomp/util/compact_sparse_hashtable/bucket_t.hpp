@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include "util.hpp"
+#include <tudocomp/util/bit_packed_layout_t.hpp>
 
 namespace tdc {namespace compact_sparse_hashtable {
 
