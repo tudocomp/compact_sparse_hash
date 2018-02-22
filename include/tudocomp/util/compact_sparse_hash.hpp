@@ -89,6 +89,8 @@ public:
         return *this;
     }
 
+    // TODO: Change to STL-conform interface?
+
     /// Inserts a key-value pair into the hashtable,
     /// where `key` has a width of `key_width` bits.
     ///
@@ -120,33 +122,16 @@ public:
     /// than calling `grow_key_width()` separately,
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
-    inline ValRef<val_t> index(uint64_t key, size_t key_width) {
+    inline ValRef<val_t> operator[](Key key) {
         ValPtr<val_t> addr = ValPtr<val_t>();
 
-        access_with_handler(key, key_width, AddressDefaultHandler {
+        access_with_handler(key.value(), std::max(key.width(), m_width), AddressDefaultHandler {
             &addr
         });
 
         DCHECK(addr != ValPtr<val_t>());
 
         return *addr;
-    }
-
-    // TODO: Change to STL-conform interface?
-    // TODO: Instead of 2 vs 1 key paramter, have
-    //       a Key+width types as index type?
-
-    /// Returns a reference to the element with key `key`.
-    ///
-    /// It assumes that `key` does not exceed the current `key_width()`.
-    ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
-    ///
-    /// See comments on the 2-parameter `index()` for the efficiency
-    /// of handling different bit width for `key`.
-    inline ValRef<val_t> operator[](uint64_t key) {
-        return index(key, m_width);
     }
 
     /// Increase the width of the stored keys to `key_width` bits.

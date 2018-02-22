@@ -280,7 +280,7 @@ TEST(hash, grow_bits_larger_address) {
     auto add = [&](auto key, auto&& v1) {
         bits = std::max(bits, bits_for(key));
 
-        ASSERT_EQ(ch.index(key, bits), v1);
+        ASSERT_EQ((ch[{key, bits}]), v1);
         inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
@@ -512,7 +512,7 @@ void load_factor_test(float z) {
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
         if (use_index) {
-            table.index(i, bits_for(i)) = i*2;
+            table[{i, bits_for(i)}] = i*2;
         } else {
             table.insert({i, bits_for(i)}, i*2);
         }
