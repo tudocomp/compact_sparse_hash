@@ -506,19 +506,20 @@ TEST(hash, lookup_bug2) {
     tracer.find_or_insert(6243, 34, 34);
 }
 
+template<typename val_t = uint64_t>
 void load_factor_test(float z) {
-    auto table = compact_sparse_hashtable_t<uint64_t>(0, 1);
+    auto table = compact_sparse_hashtable_t<val_t>(0, 1);
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
         table.insert(i, i*2, bits_for(i));
     }
     for(size_t i = 0; i < 100000; i++) {
         auto p = table.search(i);
-        ASSERT_NE(p, nullptr);
+        ASSERT_NE(p, ValPtr<val_t>());
         ASSERT_EQ(*p, i*2);
     }
     auto p = table.search(100000);
-    ASSERT_EQ(p, nullptr);
+    ASSERT_EQ(p, ValPtr<val_t>());
 
     auto stats = table.stat_gather();
 
@@ -558,4 +559,17 @@ TEST(hash, max_load_90) {
 }
 TEST(hash, max_load_100) {
     load_factor_test(1.0);
+}
+
+TEST(hash, bit_value_100_50) {
+    load_factor_test<uint_t<50>>(1.0);
+}
+TEST(hash, bit_value_100_40) {
+    load_factor_test<uint_t<40>>(1.0);
+}
+TEST(hash, bit_value_100_20) {
+    load_factor_test<uint_t<20>>(1.0);
+}
+TEST(hash, bit_value_100_19) {
+    load_factor_test<uint_t<19>>(1.0);
 }

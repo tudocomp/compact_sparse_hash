@@ -29,7 +29,7 @@ class bucket_element_t {
 
 public:
     inline bucket_element_t():
-        m_val_ptr(nullptr), m_quot_ptr() {}
+        m_val_ptr(), m_quot_ptr() {}
 
     inline uint64_t get_quotient() {
         return uint64_t(*m_quot_ptr);
@@ -45,12 +45,8 @@ public:
         *m_quot_ptr = tmp;
     }
 
-    inline val_t& val() {
-        return *m_val_ptr;
-    }
-
-    inline val_t const& val() const {
-        return *m_val_ptr;
+    inline ValPtr<val_t> val_ptr() const {
+        return m_val_ptr;
     }
 
     inline void increment_ptr() {

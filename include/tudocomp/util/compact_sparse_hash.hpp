@@ -121,7 +121,7 @@ public:
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
     inline val_t& index(uint64_t key, size_t key_width) {
-        val_t* addr = nullptr;
+        ValPtr<val_t> addr = nullptr;
 
         access_with_handler(key, key_width, AddressDefaultHandler {
             &addr
@@ -204,12 +204,12 @@ public:
     ///
     /// This returns a pointer to the value if its found, or null
     /// otherwise.
-    inline val_t* search(uint64_t key) {
+    inline ValPtr<val_t> search(uint64_t key) {
         auto dkey = decompose_key(key);
         if (get_v(dkey.initial_address)) {
             return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
-        return nullptr;
+        return ValPtr<val_t>();
     }
 
     /// Sets the maximum load factor
@@ -302,7 +302,7 @@ public:
 
             auto kv = get_bucket_elem_at(j);
             auto stored_quotient = kv.get_quotient();
-            auto& val = kv.val();
+            auto val_ptr = kv.val_ptr();
             key_t key = compose_key(initial_address, stored_quotient);
 
             ss2 << j
@@ -311,8 +311,8 @@ public:
                 << ", quot = " << stored_quotient
                 << ", iadr = " << initial_address
                 << "\t, key = " << key
-                << "\t, value = " << val
-                << "\t (" << &val << ")";
+                << "\t, value = " << *val_ptr
+                << "\t (" << val_ptr << ")";
 
             lines.at(j) = ss2.str();
         }
@@ -497,9 +497,9 @@ private:
 
                 // check if element already exists
                 auto p = search_in_group(group, dkey.stored_quotient);
-                if (p != nullptr) {
+                if (p != ValPtr<val_t>()) {
                     // There is a value for this key already.
-                    handler.on_existing(*p);
+                    handler.on_existing(p);
                 } else {
                     // Insert a new value
                     table_insert_value_after_group(group, dkey, std::move(handler));
@@ -539,7 +539,8 @@ private:
                 inline val_t&& get() {
                     return std::move(m_value);
                 }
-                inline void new_location(val_t& value) {
+                inline void new_location(ValPtr<val_t> value) {
+                    // don't care
                 }
             };
 
@@ -548,27 +549,27 @@ private:
             };
         }
 
-        inline void on_existing(val_t& value) {
-            m_value = std::move(value);
+        inline void on_existing(ValPtr<val_t> value) {
+            *value = std::move(m_value);
         }
     };
 
     /// Handler for getting the address of an element in the map.
     /// If none exists yet, it will be default constructed.
     class AddressDefaultHandler {
-        val_t** m_address = nullptr;
+        ValPtr<val_t>* m_address = nullptr;
     public:
-        AddressDefaultHandler(val_t** address): m_address(address) {}
+        AddressDefaultHandler(ValPtr<val_t>* address): m_address(address) {}
 
         inline auto on_new() {
             struct AddressDefaultHandlerOnNew {
                 val_t m_value;
-                val_t** m_address;
+                ValPtr<val_t>* m_address;
                 inline val_t&& get() {
                     return std::move(m_value);
                 }
-                inline void new_location(val_t& value) {
-                    *m_address = &value;
+                inline void new_location(ValPtr<val_t> value) {
+                    *m_address = value;
                 }
             };
 
@@ -578,8 +579,8 @@ private:
             };
         }
 
-        inline void on_existing(val_t& value) {
-            *m_address = &value;
+        inline void on_existing(ValPtr<val_t> value) {
+            *m_address = value;
         }
     };
 
@@ -655,7 +656,7 @@ private:
         // after the previous insert and a potential reallocation,
         // notify the handler about the address of the new value.
         auto new_loc = sparse_pos(from);
-        value_handler.new_location(get_bucket_elem_at(new_loc).val());
+        value_handler.new_location(get_bucket_elem_at(new_loc).val_ptr());
     }
 
     /// A Group is a half-open range [group_start, group_end)
@@ -713,15 +714,15 @@ private:
     ///
     /// This returns a pointer to the value if its found, or null
     /// otherwise.
-    inline val_t* search_in_group(Group const& group, uint64_t stored_quotient) {
+    inline ValPtr<val_t> search_in_group(Group const& group, uint64_t stored_quotient) {
         for(size_t i = group.group_start; i != group.group_end; i = m_sizing.mod_add(i)) {
             auto sparse_entry = get_bucket_elem_at(i);
 
             if (sparse_entry.get_quotient() == stored_quotient) {
-                return &sparse_entry.val();
+                return sparse_entry.val_ptr();
             }
         }
-        return nullptr;
+        return ValPtr<val_t>();
     }
 
     /// Inserts a new key-value pair after an existing
@@ -892,10 +893,10 @@ private:
 
                 auto kv = get_bucket_elem_at(p);
                 auto stored_quotient = kv.get_quotient();
-                auto& val = kv.val();
+
                 key_t key = compose_key(initial_address, stored_quotient);
 
-                new_table.insert(key, std::move(val));
+                new_table.insert(key, std::move(*kv.val_ptr()));
             }
 
             *this = std::move(new_table);
@@ -928,7 +929,7 @@ private:
 
         // notify handler with location of new element
         auto new_loc = bucket.at(data.offset_in_bucket(), qw);
-        value_handler.new_location(new_loc.val());
+        value_handler.new_location(new_loc.val_ptr());
     }
 
     /// Returns true if there is no element at the index `i`
@@ -1017,7 +1018,7 @@ private:
 
         // move the element at the last position to a temporary position
         auto  tmp_p    = get_bucket_elem_at(last);
-        val_t tmp_val  = std::move(tmp_p.val());
+        val_t tmp_val  = std::move(*tmp_p.val_ptr());
         key_t tmp_quot = tmp_p.get_quotient();
 
         // move all elements one to the right
@@ -1031,13 +1032,13 @@ private:
             auto dst_be = dst.get();
 
             // Copy value/quotient over
-            dst_be.val() = std::move(src_be.val());
+            *dst_be.val_ptr() = std::move(*src_be.val_ptr());
             dst_be.set_quotient(src_be.get_quotient());
         }
 
         // move new element into empty from position
         auto from_p = get_bucket_elem_at(from_loc);
-        from_p.val() = std::move(val);
+        *from_p.val_ptr() = std::move(val);
         from_p.set_quotient(quot);
 
         // move temporary element into the parameters

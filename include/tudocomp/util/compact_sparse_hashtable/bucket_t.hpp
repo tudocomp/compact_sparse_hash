@@ -75,11 +75,11 @@ public:
         if (!is_empty()) {
             size_t size = this->size();
 
-            val_t* start = ptrs(quot_width).vals_ptr;
-            val_t* end = start + size;
+            auto start = ptrs(quot_width).vals_ptr;
+            auto end = start + size;
 
             for(; start != end; start++) {
-                start->~val_t();
+                int_vector::call_destructor<val_t>(start);
             }
         }
     }
@@ -186,14 +186,14 @@ inline void insert_in_bucket(bucket_t<val_t>& bucket,
         auto old_elem = bucket.at(i, qw);
 
         new_elem.set_quotient(old_elem.get_quotient());
-        new(&new_elem.val()) val_t(std::move(old_elem.val()));
+        int_vector::construct_val_from_ptr<val_t>(new_elem.val_ptr(), old_elem.val_ptr());
     }
 
     // move new element into its location in the new bucket
     {
         auto new_elem = new_bucket.at(new_elem_bucket_pos, qw);
         new_elem.set_quotient(quot);
-        new(&new_elem.val()) val_t(std::move(val));
+        int_vector::construct_val_from_rval<val_t>(new_elem.val_ptr(), std::move(val));
     }
 
     // move all elements after the new element's location from old bucket into new bucket
@@ -203,7 +203,7 @@ inline void insert_in_bucket(bucket_t<val_t>& bucket,
         auto old_elem = bucket.at(i, qw);
 
         new_elem.set_quotient(old_elem.get_quotient());
-        new(&new_elem.val()) val_t(std::move(old_elem.val()));
+        int_vector::construct_val_from_ptr<val_t>(new_elem.val_ptr(), old_elem.val_ptr());
     }
 
     // destroy old empty elements, and overwrite with new bucket
