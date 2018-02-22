@@ -21,11 +21,11 @@ inline bool is_pot(size_t n) {
     return (n > 0ull && ((n & (n - 1ull)) == 0ull));
 }
 
-using QuotPtr = typename int_vector::maybe_bit_packed_pointer_t<dynamic_t>;
+using QuotPtr = typename cbp::cbp_repr_t<dynamic_t>::pointer_t;
 template<typename val_t>
-using ValPtr = typename int_vector::maybe_bit_packed_pointer_t<val_t>;
+using ValPtr = typename cbp::cbp_repr_t<val_t>::pointer_t;
 template<typename val_t>
-using ValRef = typename int_vector::maybe_bit_packed_reference_t<val_t>;
+using ValRef = typename cbp::cbp_repr_t<val_t>::reference_t;
 
 inline size_t popcount(uint64_t value) {
     return __builtin_popcountll(value);

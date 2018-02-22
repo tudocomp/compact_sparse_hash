@@ -79,7 +79,7 @@ public:
             auto end = start + size;
 
             for(; start != end; start++) {
-                int_vector::call_destructor<val_t>(start);
+                cbp::cbp_repr_t<val_t>::call_destructor(start);
             }
         }
     }
@@ -115,18 +115,16 @@ private:
 
     /// Calculates the offsets of the two different arrays inside the allocation.
     struct Layout {
-        int_vector::maybe_bit_packed_layout_element_t<val_t> vals_layout;
-        int_vector::maybe_bit_packed_layout_element_t<dynamic_t> quots_layout;
+        cbp::cbp_layout_element_t<val_t> vals_layout;
+        cbp::cbp_layout_element_t<dynamic_t> quots_layout;
         size_t overall_qword_size;
     };
     inline static Layout calc_sizes(size_t size, size_t quot_width) {
-        using namespace int_vector;
-
         DCHECK_NE(size, 0);
         DCHECK_LE(alignof(val_t), alignof(uint64_t));
 
-        auto layout = bit_layout_t();
-        auto quots_width = maybe_bit_packed_width_t<dynamic_t>(quot_width);
+        auto layout = cbp::bit_layout_t();
+        auto quots_width = cbp::cbp_repr_t<dynamic_t>::width_repr_t(quot_width);
 
         // The initial occupation bv
         layout.aligned_elements<uint64_t>(1);
@@ -135,7 +133,7 @@ private:
         auto values = layout.aligned_elements<val_t>(size);
 
         // The quotients
-        auto quots = layout.maybe_bit_packed_elements<dynamic_t>(size, quots_width);
+        auto quots = layout.cbp_elements<dynamic_t>(size, quots_width);
 
         Layout r;
         r.vals_layout = values;
@@ -186,14 +184,14 @@ inline void insert_in_bucket(bucket_t<val_t>& bucket,
         auto old_elem = bucket.at(i, qw);
 
         new_elem.set_quotient(old_elem.get_quotient());
-        int_vector::construct_val_from_ptr<val_t>(new_elem.val_ptr(), old_elem.val_ptr());
+        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_elem.val_ptr(), old_elem.val_ptr());
     }
 
     // move new element into its location in the new bucket
     {
         auto new_elem = new_bucket.at(new_elem_bucket_pos, qw);
         new_elem.set_quotient(quot);
-        int_vector::construct_val_from_rval<val_t>(new_elem.val_ptr(), std::move(val));
+        cbp::cbp_repr_t<val_t>::construct_val_from_rval(new_elem.val_ptr(), std::move(val));
     }
 
     // move all elements after the new element's location from old bucket into new bucket
@@ -203,7 +201,7 @@ inline void insert_in_bucket(bucket_t<val_t>& bucket,
         auto old_elem = bucket.at(i, qw);
 
         new_elem.set_quotient(old_elem.get_quotient());
-        int_vector::construct_val_from_ptr<val_t>(new_elem.val_ptr(), old_elem.val_ptr());
+        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_elem.val_ptr(), old_elem.val_ptr());
     }
 
     // destroy old empty elements, and overwrite with new bucket
