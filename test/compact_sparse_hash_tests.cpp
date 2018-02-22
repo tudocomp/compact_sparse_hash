@@ -223,7 +223,7 @@ TEST(hash, grow_bits) {
     auto add = [&](auto key, auto&& v0, auto&& v1) {
         bits = std::max(bits, bits_for(key));
 
-        ch.insert(key, std::move(v0), bits);
+        ch.insert({key, bits}, std::move(v0));
         //inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
@@ -254,7 +254,7 @@ TEST(hash, grow_bits_larger) {
     auto add = [&](auto key, auto&& v0, auto&& v1) {
         bits = std::max(bits, bits_for(key));
 
-        ch.insert(key, std::move(v0), bits);
+        ch.insert({key, bits}, std::move(v0));
         inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
@@ -514,7 +514,7 @@ void load_factor_test(float z) {
         if (use_index) {
             table.index(i, bits_for(i)) = i*2;
         } else {
-            table.insert(i, i*2, bits_for(i));
+            table.insert({i, bits_for(i)}, i*2);
         }
     }
     for(size_t i = 0; i < 100000; i++) {

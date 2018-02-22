@@ -100,8 +100,8 @@ public:
     /// than calling `grow_key_width()` separately,
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
-    inline void insert(uint64_t key, val_t&& value, size_t key_width) {
-        access_with_handler(key, key_width, InsertHandler {
+    inline void insert(Key key, val_t&& value) {
+        access_with_handler(key.value(), std::max(key.width(), m_width), InsertHandler {
             std::move(value)
         });
     }
@@ -135,18 +135,6 @@ public:
     // TODO: Change to STL-conform interface?
     // TODO: Instead of 2 vs 1 key paramter, have
     //       a Key+width types as index type?
-
-    /// Inserts a key-value pair into the hashtable.
-    ///
-    /// It assumes that `key` does not exceed the current `key_width()`.
-    ///
-    /// The hashtable will grow as needed to fit the new element.
-    ///
-    /// See comments on the 3-parameter `insert()` for the efficiency
-    /// of handling different bit width for `key`.
-    inline void insert(uint64_t key, val_t&& value) {
-        insert(key, std::move(value), m_width);
-    }
 
     /// Returns a reference to the element with key `key`.
     ///
