@@ -100,47 +100,57 @@ public:
 
     // TODO: Change to STL-conform interface?
 
-    /// Inserts a key-value pair into the hashtable,
-    /// where `key` has a width of `key_width` bits.
-    ///
-    /// The hashtable will grow and increases its `key_width()`
-    /// as needed to fit the new element.
-    ///
-    /// Note: Calling this for incrementally inserting
-    /// new elements with increasing key widths is more efficient
-    /// than calling `grow_key_width()` separately,
-    /// since it fuses the reallocation needed for both a key-width change
-    /// and a table size increase.
-    inline void insert(Key key, value_type&& value) {
-        auto raw_key = key.value();
-        auto raw_key_width = std::max(key.width(), m_key_width.get_width());
+    /// Inserts a key-value pair into the hashtable.
+    inline void insert(uint64_t key, value_type&& value) {
+        insert_kv_width(key, std::move(value), key_width(), value_width());
+    }
 
-        access_with_handler(raw_key, raw_key_width, InsertHandler {
+    /// Inserts a key-value pair into the hashtable,
+    /// and grow the key width as needed.
+    inline void insert_key_width(uint64_t key, value_type&& value, uint8_t key_width) {
+        insert_kv_width(key, std::move(value), key_width, value_width());
+    }
+
+    /// Inserts a key-value pair into the hashtable,
+    /// and grow the key and value width as needed.
+    inline void insert_kv_width(uint64_t key, value_type&& value, uint8_t key_width, uint8_t value_width) {
+        auto raw_key_width = std::max(key_width, m_key_width.get_width());
+        auto raw_val_width = std::max(value_width, m_val_width.get_width());
+
+        access_with_handler(key, raw_key_width, InsertHandler {
             std::move(value)
         });
     }
 
-    /// Returns a reference to the element with key `key`,
-    /// where `key` has a width of `key_width` bits.
-    ///
-    /// The hashtable will grow and increases its `key_width()`
-    /// as needed to fit the new element.
+    /// Returns a reference to the element with key `key`.
     ///
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
+    inline ValRef<val_t> access(uint64_t key) {
+        return access_kv_width(key, key_width(), value_width());
+    }
+
+    /// Returns a reference to the element with key `key`,
+    /// and grow the key width as needed.
     ///
-    /// Note: Calling this for incrementally inserting
-    /// new elements with increasing key widths is more efficient
-    /// than calling `grow_key_width()` separately,
-    /// since it fuses the reallocation needed for both a key-width change
-    /// and a table size increase.
-    inline ValRef<val_t> operator[](Key key) {
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    inline ValRef<val_t> access_key_width(uint64_t key, uint8_t key_width) {
+        return access_kv_width(key, key_width, value_width());
+    }
+
+    /// Returns a reference to the element with key `key`,
+    /// and grow the key and value width as needed.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    inline ValRef<val_t> access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
         ValPtr<val_t> addr = ValPtr<val_t>();
 
-        auto raw_key = key.value();
-        auto raw_key_width = std::max(key.width(), m_key_width.get_width());
+        auto raw_key_width = std::max(key_width, m_key_width.get_width());
+        auto raw_val_width = std::max(value_width, m_val_width.get_width());
 
-        access_with_handler(raw_key, raw_key_width, AddressDefaultHandler {
+        access_with_handler(key, raw_key_width, AddressDefaultHandler {
             &addr
         });
 
@@ -149,13 +159,29 @@ public:
         return *addr;
     }
 
-    /// Increase the width of the stored keys to `key_width` bits.
+    /// Returns a reference to the element with key `key`.
     ///
-    /// Note: Calling this for incrementally inserting
-    /// new elements with increasing key widths is _less_ efficient
-    /// than calling `insert()` with the new key width.
+    /// This has the same semantic is `access(key)`.
+    inline ValRef<val_t> operator[](uint64_t key) {
+        return access(key);
+    }
+
+    /// Grow the key width as needed.
+    ///
+    /// Note that it is more efficient to change the width directly during
+    /// insertion of a new value.
     inline void grow_key_width(size_t key_width) {
         auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
+        grow_if_needed(size(), raw_key_width);
+    }
+
+    /// Grow the key and value width as needed.
+    ///
+    /// Note that it is more efficient to change the width directly during
+    /// insertion of a new value.
+    inline void grow_kv_width(size_t key_width, size_t value_width) {
+        auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
+        auto raw_val_width = std::max<size_t>(value_width, m_val_width.get_width());
         grow_if_needed(size(), raw_key_width);
     }
 
@@ -176,6 +202,11 @@ public:
         return m_key_width.get_width();
     }
 
+    /// Current width of the values stored in this datastructure.
+    inline size_t value_width() {
+        return m_val_width.get_width();
+    }
+
     /// Amount of bits of the key, that are stored implicitly
     /// by its position in the table.
     inline size_t initial_address_width() {
@@ -188,19 +219,13 @@ public:
         return real_width() - m_sizing.capacity_log2();
     }
 
-    /// Amount of bits of the value, that are stored explicitly
-    /// in the buckets.
-    inline size_t value_width() {
-        return sizeof(val_t) * CHAR_BIT;
-    }
-
     // TODO: STL-conform API?
     /// Search for a key inside the hashtable.
     ///
     /// This returns a pointer to the value if its found, or null
     /// otherwise.
-    inline ValPtr<val_t> search(Key key) {
-        auto dkey = decompose_key(key.value());
+    inline ValPtr<val_t> search(uint64_t key) {
+        auto dkey = decompose_key(key);
         if (get_v(dkey.initial_address)) {
             return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
