@@ -854,13 +854,15 @@ private:
 
     /// Check the current key width and table site against the arguments,
     /// and grows the table or quotient bitvectors as needed.
-    inline void grow_if_needed(size_t new_size, size_t new_width, size_t new_value_width) {
+    inline void grow_if_needed(size_t new_size, size_t new_key_width, size_t new_value_width) {
         auto needs_to_grow_capacity = [&]() {
             return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
         };
 
         auto needs_realloc = [&]() {
-            return needs_to_grow_capacity() || (new_width != m_key_width.get_width());
+            return needs_to_grow_capacity()
+                || (new_key_width != key_width())
+                || (new_value_width != value_width());
         };
 
         /*
@@ -879,7 +881,7 @@ private:
             while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
                 new_capacity = m_sizing.grown_capacity(new_capacity);
             }
-            auto new_table = compact_sparse_hashtable_t(new_capacity, new_width);
+            auto new_table = compact_sparse_hashtable_t(new_capacity, new_key_width, new_value_width);
             new_table.max_load_factor(this->max_load_factor());
 
             /*
