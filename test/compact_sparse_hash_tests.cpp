@@ -506,12 +506,16 @@ TEST(hash, lookup_bug2) {
     tracer.find_or_insert(6243, 34, 34);
 }
 
-template<typename val_t = uint64_t>
+template<typename val_t = uint64_t, bool use_index = false>
 void load_factor_test(float z) {
     auto table = compact_sparse_hashtable_t<val_t>(0, 1);
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
-        table.insert(i, i*2, bits_for(i));
+        if (use_index) {
+            table.index(i, bits_for(i)) = i*2;
+        } else {
+            table.insert(i, i*2, bits_for(i));
+        }
     }
     for(size_t i = 0; i < 100000; i++) {
         auto p = table.search(i);
@@ -561,15 +565,27 @@ TEST(hash, max_load_100) {
     load_factor_test(1.0);
 }
 
-TEST(hash, bit_value_100_50) {
+TEST(hash, bit_value_100_50_a) {
     load_factor_test<uint_t<50>>(1.0);
 }
-TEST(hash, bit_value_100_40) {
+TEST(hash, bit_value_100_40_a) {
     load_factor_test<uint_t<40>>(1.0);
 }
-TEST(hash, bit_value_100_20) {
+TEST(hash, bit_value_100_20_a) {
     load_factor_test<uint_t<20>>(1.0);
 }
-TEST(hash, bit_value_100_19) {
+TEST(hash, bit_value_100_19_a) {
     load_factor_test<uint_t<19>>(1.0);
+}
+TEST(hash, bit_value_100_50_b) {
+    load_factor_test<uint_t<50>, true>(1.0);
+}
+TEST(hash, bit_value_100_40_b) {
+    load_factor_test<uint_t<40>, true>(1.0);
+}
+TEST(hash, bit_value_100_20_b) {
+    load_factor_test<uint_t<20>, true>(1.0);
+}
+TEST(hash, bit_value_100_19_b) {
+    load_factor_test<uint_t<19>, true>(1.0);
 }

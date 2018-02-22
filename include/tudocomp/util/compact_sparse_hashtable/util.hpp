@@ -24,6 +24,8 @@ inline bool is_pot(size_t n) {
 using QuotPtr = typename int_vector::maybe_bit_packed_pointer_t<dynamic_t>;
 template<typename val_t>
 using ValPtr = typename int_vector::maybe_bit_packed_pointer_t<val_t>;
+template<typename val_t>
+using ValRef = typename int_vector::maybe_bit_packed_reference_t<val_t>;
 
 inline size_t popcount(uint64_t value) {
     return __builtin_popcountll(value);

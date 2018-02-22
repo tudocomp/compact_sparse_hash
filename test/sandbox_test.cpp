@@ -28,7 +28,7 @@ std::cout << "Update all values, set to i -> i" << std::endl;
    std::cout << "Size: " << map.size() << std::endl;
    std::cout << "Add 10 additional elements with key-width 9" << std::endl;
    for(int i = 1; i < 11; ++i) { // interval [0..15]<<5 can be represented by 9-bits
-	   map.insert(i<<5, std::move(i+1), 9); // insert key i<<5, value i, key have a width of 9 
+	   map.insert(i<<5, std::move(i+1), 9); // insert key i<<5, value i, key have a width of 9
 	   std::cout << (i<<5) << " -> " << map[i<<5] << std::endl; // map[i] returns value with key i
    }
     std::cout << "Key Width: " << map.key_width() << std::endl;
@@ -39,5 +39,3 @@ std::cout << "Update all values, set to i -> i" << std::endl;
    }
 
  }
-
-

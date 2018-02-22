@@ -120,14 +120,14 @@ public:
     /// than calling `grow_key_width()` separately,
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
-    inline val_t& index(uint64_t key, size_t key_width) {
-        ValPtr<val_t> addr = nullptr;
+    inline ValRef<val_t> index(uint64_t key, size_t key_width) {
+        ValPtr<val_t> addr = ValPtr<val_t>();
 
         access_with_handler(key, key_width, AddressDefaultHandler {
             &addr
         });
 
-        DCHECK(addr != nullptr);
+        DCHECK(addr != ValPtr<val_t>());
 
         return *addr;
     }
@@ -157,7 +157,7 @@ public:
     ///
     /// See comments on the 2-parameter `index()` for the efficiency
     /// of handling different bit width for `key`.
-    inline val_t& operator[](uint64_t key) {
+    inline ValRef<val_t> operator[](uint64_t key) {
         return index(key, m_width);
     }
 
@@ -197,6 +197,12 @@ public:
     /// in the buckets.
     inline size_t quotient_width() {
         return real_width() - m_sizing.capacity_log2();
+    }
+
+    /// Amount of bits of the value, that are stored explicitly
+    /// in the buckets.
+    inline size_t value_width() {
+        return sizeof(val_t) * CHAR_BIT;
     }
 
     // TODO: STL-conform API?
@@ -261,7 +267,7 @@ public:
         // Quotient bitvectors across all buckets
         r.theoretical_minimum_size_in_bits += size() * quotient_width();
         // Values across all buckets
-        r.theoretical_minimum_size_in_bits += size() * sizeof(val_t) * CHAR_BIT;
+        r.theoretical_minimum_size_in_bits += size() * value_width();
         // Size of cv bitvectors
         r.theoretical_minimum_size_in_bits += size() * 2;
 
