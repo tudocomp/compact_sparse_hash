@@ -44,8 +44,8 @@ class compact_sparse_hashtable_t {
     uint8_t m_width;
 
 public:
+    // TODO: Fix to use real value type
     using value_type = val_t;
-    using key_type = key_t;
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
@@ -140,7 +140,7 @@ public:
     /// new elements with increasing key widths is _less_ efficient
     /// than calling `insert()` with the new key width.
     inline void grow_key_width(size_t key_width) {
-        grow_if_needed(size(), key_width);
+        grow_if_needed(size(), std::max<size_t>(key_width, m_width));
     }
 
     /// Returns the amount of elements inside the datastructure.
@@ -183,8 +183,8 @@ public:
     ///
     /// This returns a pointer to the value if its found, or null
     /// otherwise.
-    inline ValPtr<val_t> search(uint64_t key) {
-        auto dkey = decompose_key(key);
+    inline ValPtr<val_t> search(Key key) {
+        auto dkey = decompose_key(key.value());
         if (get_v(dkey.initial_address)) {
             return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
