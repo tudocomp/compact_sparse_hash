@@ -117,7 +117,7 @@ public:
         auto raw_key_width = std::max(key_width, m_key_width.get_width());
         auto raw_val_width = std::max(value_width, m_val_width.get_width());
 
-        access_with_handler(key, raw_key_width, InsertHandler {
+        access_with_handler(key, raw_key_width, raw_val_width, InsertHandler {
             std::move(value)
         });
     }
@@ -150,7 +150,7 @@ public:
         auto raw_key_width = std::max(key_width, m_key_width.get_width());
         auto raw_val_width = std::max(value_width, m_val_width.get_width());
 
-        access_with_handler(key, raw_key_width, AddressDefaultHandler {
+        access_with_handler(key, raw_key_width, raw_val_width, AddressDefaultHandler {
             &addr
         });
 
@@ -172,7 +172,7 @@ public:
     /// insertion of a new value.
     inline void grow_key_width(size_t key_width) {
         auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
-        grow_if_needed(size(), raw_key_width);
+        grow_if_needed(size(), raw_key_width, value_width());
     }
 
     /// Grow the key and value width as needed.
@@ -182,7 +182,7 @@ public:
     inline void grow_kv_width(size_t key_width, size_t value_width) {
         auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
         auto raw_val_width = std::max<size_t>(value_width, m_val_width.get_width());
-        grow_if_needed(size(), raw_key_width);
+        grow_if_needed(size(), raw_key_width, raw_val_width);
     }
 
     /// Returns the amount of elements inside the datastructure.
@@ -481,8 +481,8 @@ private:
     /// to access or create a new or existing value in the hashtable.
     /// See `InsertHandler` and `AddressDefaultHandler` below.
     template<typename handler_t>
-    inline void access_with_handler(uint64_t key, size_t key_width, handler_t&& handler) {
-        grow_if_needed(size() + 1, key_width);
+    inline void access_with_handler(uint64_t key, size_t key_width, size_t value_width, handler_t&& handler) {
+        grow_if_needed(size() + 1, key_width, value_width);
         auto const dkey = decompose_key(key);
 
         DCHECK_EQ(key, compose_key(dkey.initial_address, dkey.stored_quotient));
@@ -854,7 +854,7 @@ private:
 
     /// Check the current key width and table site against the arguments,
     /// and grows the table or quotient bitvectors as needed.
-    inline void grow_if_needed(size_t new_size, size_t new_width) {
+    inline void grow_if_needed(size_t new_size, size_t new_width, size_t new_value_width) {
         auto needs_to_grow_capacity = [&]() {
             return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
         };
