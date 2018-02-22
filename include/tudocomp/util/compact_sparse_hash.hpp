@@ -49,8 +49,7 @@ class compact_sparse_hashtable_t {
     val_width_t m_val_width;
 
 public:
-    // TODO: Fix to use real value type
-    using value_type = val_t;
+    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
@@ -112,8 +111,11 @@ public:
     /// than calling `grow_key_width()` separately,
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
-    inline void insert(Key key, val_t&& value) {
-        access_with_handler(key.value(), std::max(key.width(), m_key_width.get_width()), InsertHandler {
+    inline void insert(Key key, value_type&& value) {
+        auto raw_key = key.value();
+        auto raw_key_width = std::max(key.width(), m_key_width.get_width());
+
+        access_with_handler(raw_key, raw_key_width, InsertHandler {
             std::move(value)
         });
     }
@@ -135,7 +137,10 @@ public:
     inline ValRef<val_t> operator[](Key key) {
         ValPtr<val_t> addr = ValPtr<val_t>();
 
-        access_with_handler(key.value(), std::max(key.width(), m_key_width.get_width()), AddressDefaultHandler {
+        auto raw_key = key.value();
+        auto raw_key_width = std::max(key.width(), m_key_width.get_width());
+
+        access_with_handler(raw_key, raw_key_width, AddressDefaultHandler {
             &addr
         });
 
@@ -150,7 +155,8 @@ public:
     /// new elements with increasing key widths is _less_ efficient
     /// than calling `insert()` with the new key width.
     inline void grow_key_width(size_t key_width) {
-        grow_if_needed(size(), std::max<size_t>(key_width, m_key_width.get_width()));
+        auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
+        grow_if_needed(size(), raw_key_width);
     }
 
     /// Returns the amount of elements inside the datastructure.
