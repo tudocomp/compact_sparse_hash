@@ -169,7 +169,7 @@ inline void insert_in_bucket(bucket_t<val_t>& bucket,
                                       uint64_t new_elem_bv_bit,
                                       size_t qw,
                                       size_t vw,
-                                      val_t&& val,
+                                      typename cbp::cbp_repr_t<val_t>::value_type&& val,
                                       uint64_t quot)
 {
     // Just a sanity check that can not live inside or outside `bucket_t` itself.

@@ -551,14 +551,14 @@ private:
     /// Handler for inserting an element that exists as a rvalue reference.
     /// This will overwrite an existing element.
     class InsertHandler {
-        val_t&& m_value;
+        value_type&& m_value;
     public:
-        InsertHandler(val_t&& value): m_value(std::move(value)) {}
+        InsertHandler(value_type&& value): m_value(std::move(value)) {}
 
         inline auto on_new() {
             struct InsertHandlerOnNew {
-                val_t&& m_value;
-                inline val_t&& get() {
+                value_type&& m_value;
+                inline value_type&& get() {
                     return std::move(m_value);
                 }
                 inline void new_location(ValPtr<val_t> value) {
@@ -585,9 +585,9 @@ private:
 
         inline auto on_new() {
             struct AddressDefaultHandlerOnNew {
-                val_t m_value;
+                value_type m_value;
                 ValPtr<val_t>* m_address;
-                inline val_t&& get() {
+                inline value_type&& get() {
                     return std::move(m_value);
                 }
                 inline void new_location(ValPtr<val_t> value) {
@@ -596,7 +596,7 @@ private:
             };
 
             return AddressDefaultHandlerOnNew {
-                val_t(),
+                value_type(),
                 m_address,
             };
         }
@@ -973,7 +973,7 @@ private:
     /// Shifts all elements one to the right,
     /// inserts val and quot at the from position,
     /// and stores the old from element in val and quot.
-    inline void sparse_shift(size_t from, size_t to, val_t& val, key_t& quot) {
+    inline void sparse_shift(size_t from, size_t to, value_type& val, key_t& quot) {
         // pseudo-iterator for iterating over bucket elements
         // NB: does not wrap around!
         struct iter {
@@ -1046,7 +1046,7 @@ private:
 
         // move the element at the last position to a temporary position
         auto  tmp_p    = get_bucket_elem_at(last);
-        val_t tmp_val  = std::move(*tmp_p.val_ptr());
+        value_type tmp_val  = std::move(*tmp_p.val_ptr());
         key_t tmp_quot = tmp_p.get_quotient();
 
         // move all elements one to the right

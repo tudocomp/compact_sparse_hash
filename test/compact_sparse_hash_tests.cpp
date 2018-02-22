@@ -506,15 +506,25 @@ TEST(hash, lookup_bug2) {
     tracer.find_or_insert(6243, 34, 34);
 }
 
-template<typename val_t = uint64_t, bool use_index = false>
+template<typename val_t = uint64_t, bool use_index = false, bool grow_values = false>
 void load_factor_test(float z) {
     auto table = compact_sparse_hashtable_t<val_t>(0, 1);
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
-        if (use_index) {
-            table.access_key_width(i, bits_for(i)) = i*2;
+        auto new_value = i * 2;
+
+        if (grow_values) {
+            if (use_index) {
+                table.access_kv_width(i, bits_for(i), bits_for(new_value)) = new_value;
+            } else {
+                table.insert_kv_width(i, size_t(new_value), bits_for(i), bits_for(new_value));
+            }
         } else {
-            table.insert_key_width(i, i*2, bits_for(i));
+            if (use_index) {
+                table.access_key_width(i, bits_for(i)) = new_value;
+            } else {
+                table.insert_key_width(i, size_t(new_value), bits_for(i));
+            }
         }
     }
     for(size_t i = 0; i < 100000; i++) {
@@ -534,58 +544,89 @@ void load_factor_test(float z) {
     std::cout << "stats.theoretical_minimum_size_in_bits: " << stats.theoretical_minimum_size_in_bits << "\n";
 }
 
-TEST(hash, max_load_10) {
+TEST(hash_load, max_load_10) {
     load_factor_test(0.1);
 }
-TEST(hash, max_load_20) {
+TEST(hash_load, max_load_20) {
     load_factor_test(0.2);
 }
-TEST(hash, max_load_30) {
+TEST(hash_load, max_load_30) {
     load_factor_test(0.3);
 }
-TEST(hash, max_load_40) {
+TEST(hash_load, max_load_40) {
     load_factor_test(0.4);
 }
-TEST(hash, max_load_50) {
+TEST(hash_load, max_load_50) {
     load_factor_test(0.5);
 }
-TEST(hash, max_load_60) {
+TEST(hash_load, max_load_60) {
     load_factor_test(0.6);
 }
-TEST(hash, max_load_70) {
+TEST(hash_load, max_load_70) {
     load_factor_test(0.7);
 }
-TEST(hash, max_load_80) {
+TEST(hash_load, max_load_80) {
     load_factor_test(0.8);
 }
-TEST(hash, max_load_90) {
+TEST(hash_load, max_load_90) {
     load_factor_test(0.9);
 }
-TEST(hash, max_load_100) {
+TEST(hash_load, max_load_100) {
     load_factor_test(1.0);
 }
 
-TEST(hash, bit_value_100_50_a) {
+TEST(hash_bit_value_a, bit_value_100_50_a) {
     load_factor_test<uint_t<50>>(1.0);
 }
-TEST(hash, bit_value_100_40_a) {
+TEST(hash_bit_value_a, bit_value_100_40_a) {
     load_factor_test<uint_t<40>>(1.0);
 }
-TEST(hash, bit_value_100_20_a) {
+TEST(hash_bit_value_a, bit_value_100_20_a) {
     load_factor_test<uint_t<20>>(1.0);
 }
-TEST(hash, bit_value_100_19_a) {
+TEST(hash_bit_value_a, bit_value_100_19_a) {
     load_factor_test<uint_t<19>>(1.0);
 }
-TEST(hash, bit_value_100_50_b) {
+TEST(hash_bit_value_b, bit_value_100_50_b) {
     load_factor_test<uint_t<50>, true>(1.0);
 }
-TEST(hash, bit_value_100_40_b) {
+TEST(hash_bit_value_b, bit_value_100_40_b) {
     load_factor_test<uint_t<40>, true>(1.0);
 }
-TEST(hash, bit_value_100_20_b) {
+TEST(hash_bit_value_b, bit_value_100_20_b) {
     load_factor_test<uint_t<20>, true>(1.0);
 }
-TEST(hash, bit_value_100_19_b) {
+TEST(hash_bit_value_b, bit_value_100_19_b) {
     load_factor_test<uint_t<19>, true>(1.0);
+}
+
+TEST(hash_max_dynamic, max_load_10) {
+    load_factor_test<dynamic_t, true, true>(0.1);
+}
+TEST(hash_max_dynamic, max_load_20) {
+    load_factor_test<dynamic_t, true, true>(0.2);
+}
+TEST(hash_max_dynamic, max_load_30) {
+    load_factor_test<dynamic_t, true, true>(0.3);
+}
+TEST(hash_max_dynamic, max_load_40) {
+    load_factor_test<dynamic_t, true, true>(0.4);
+}
+TEST(hash_max_dynamic, max_load_50) {
+    load_factor_test<dynamic_t, true, true>(0.5);
+}
+TEST(hash_max_dynamic, max_load_60) {
+    load_factor_test<dynamic_t, true, true>(0.6);
+}
+TEST(hash_max_dynamic, max_load_70) {
+    load_factor_test<dynamic_t, true, true>(0.7);
+}
+TEST(hash_max_dynamic, max_load_80) {
+    load_factor_test<dynamic_t, true, true>(0.8);
+}
+TEST(hash_max_dynamic, max_load_90) {
+    load_factor_test<dynamic_t, true, true>(0.9);
+}
+TEST(hash_max_dynamic, max_load_100) {
+    load_factor_test<dynamic_t, true, true>(1.0);
 }
