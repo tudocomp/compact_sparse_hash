@@ -264,7 +264,7 @@ public:
 
         for (auto const& b : m_buckets) {
             r.allocated_buckets += (!b.is_empty());
-            r.buckets_real_allocated_capacity_in_bytes += b.stat_allocation_size_in_bytes(quotient_width());
+            r.buckets_real_allocated_capacity_in_bytes += b.stat_allocation_size_in_bytes(quotient_width(), value_width());
         }
 
         // Calculate real allocated bytes
@@ -407,7 +407,8 @@ private:
     inline void drop_bucket(size_t i) {
         DCHECK_LT(i, m_buckets.size());
         size_t qw = quotient_width();
-        m_buckets[i].destroy_vals(qw);
+        size_t vw = value_width();
+        m_buckets[i].destroy_vals(qw, vw);
         m_buckets[i] = bucket_t<val_t>();
     }
 
@@ -424,8 +425,9 @@ private:
     /// TODO: Is this still a useful semantic? A bucket_t can manage its own data.
     inline void run_destructors_of_bucket_elements() {
         size_t qw = quotient_width();
+        size_t vw = value_width();
         for(size_t i = 0; i < m_buckets.size(); i++) {
-            m_buckets[i].destroy_vals(qw);
+            m_buckets[i].destroy_vals(qw, vw);
         }
     }
 
@@ -936,6 +938,7 @@ private:
         // figure out which bucket to access
         auto& bucket = data.bucket();
         size_t const qw = quotient_width();
+        size_t const vw = value_width();
 
         // we will insert a new element
         auto value_handler = handler.on_new();
@@ -946,11 +949,12 @@ private:
                          data.offset_in_bucket(),
                          data.bit_mask_in_bucket,
                          qw,
+                         vw,
                          std::move(val),
                          quot);
 
         // notify handler with location of new element
-        auto new_loc = bucket.at(data.offset_in_bucket(), qw);
+        auto new_loc = bucket.at(data.offset_in_bucket(), qw, vw);
         value_handler.new_location(new_loc.val_ptr());
     }
 
@@ -977,18 +981,20 @@ private:
             bucket_element_t<val_t>    m_b_start;
             bucket_element_t<val_t>    m_b_end;
             size_t               m_quotient_width;
+            size_t               m_value_width;
 
             inline void set_bucket_elem_range(size_t end_offset) {
                 size_t start_offset = 0;
                 DCHECK_LE(start_offset, end_offset);
 
-                m_b_start = m_bucket->at(start_offset, m_quotient_width);
-                m_b_end   = m_bucket->at(end_offset, m_quotient_width);
+                m_b_start = m_bucket->at(start_offset, m_quotient_width, m_value_width);
+                m_b_end   = m_bucket->at(end_offset, m_quotient_width, m_value_width);
             }
 
             inline iter(compact_sparse_hashtable_t& table,
                         SparsePos const& pos) {
                 m_quotient_width = table.quotient_width();
+                m_value_width = table.value_width();
 
                 // NB: Using pointer arithmetic here, because
                 // we can (intentionally) end up with the address 1-past
@@ -1077,8 +1083,9 @@ private:
     inline bucket_element_t<val_t> get_bucket_elem_at(SparsePos pos) {
         DCHECK(pos.exists_in_bucket());
         size_t qw = quotient_width();
+        size_t vw = value_width();
 
-        return pos.bucket().at(pos.offset_in_bucket(), qw);
+        return pos.bucket().at(pos.offset_in_bucket(), qw, vw);
     }
 
     inline bucket_element_t<val_t> get_bucket_elem_at(size_t pos) {
