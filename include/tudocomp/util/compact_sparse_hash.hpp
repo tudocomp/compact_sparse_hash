@@ -28,9 +28,13 @@ class compact_sparse_hashtable_t {
     using key_t = uint64_t;
     using buckets_t = std::vector<bucket_t<val_t>>;
 
+    using key_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
+    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
+
     // TODO: Change this, and fix tests
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
+    static constexpr size_t DEFAULT_VALUE_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
     /// Compact table data (c and v bitvectors)
@@ -39,9 +43,10 @@ class compact_sparse_hashtable_t {
     /// Sparse table data (buckets)
     buckets_t m_buckets;
 
-    /// Size of table, and width of the stored keys
+    /// Size of table, and width of the stored keys and values
     size_manager_t m_sizing;
-    uint8_t m_width;
+    key_width_t m_key_width;
+    val_width_t m_val_width;
 
 public:
     // TODO: Fix to use real value type
@@ -49,9 +54,12 @@ public:
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
-    inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE, size_t key_width = DEFAULT_KEY_WIDTH):
+    inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
+                                      size_t key_width = DEFAULT_KEY_WIDTH,
+                                      size_t value_width = DEFAULT_VALUE_WIDTH):
         m_sizing(size),
-        m_width(key_width)
+        m_key_width(key_width),
+        m_val_width(value_width)
     {
         size_t cv_size = table_size();
         size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
@@ -64,7 +72,7 @@ public:
 
     inline ~compact_sparse_hashtable_t() {
         // NB: destroying the buckets vector will just destroy the bucket in it,
-        /// which will not destroy their elements.
+        // which will not destroy their elements.
         run_destructors_of_bucket_elements();
     }
 
@@ -72,7 +80,8 @@ public:
         m_cv(std::move(other.m_cv)),
         m_buckets(std::move(other.m_buckets)),
         m_sizing(std::move(other.m_sizing)),
-        m_width(std::move(other.m_width))
+        m_key_width(std::move(other.m_key_width)),
+        m_val_width(std::move(other.m_val_width))
     {
     }
 
@@ -84,7 +93,8 @@ public:
         m_cv = std::move(other.m_cv);
         m_buckets = std::move(other.m_buckets);
         m_sizing = std::move(other.m_sizing);
-        m_width = std::move(other.m_width);
+        m_key_width = std::move(other.m_key_width);
+        m_val_width = std::move(other.m_val_width);
 
         return *this;
     }
@@ -103,7 +113,7 @@ public:
     /// since it fuses the reallocation needed for both a key-width change
     /// and a table size increase.
     inline void insert(Key key, val_t&& value) {
-        access_with_handler(key.value(), std::max(key.width(), m_width), InsertHandler {
+        access_with_handler(key.value(), std::max(key.width(), m_key_width.get_width()), InsertHandler {
             std::move(value)
         });
     }
@@ -125,7 +135,7 @@ public:
     inline ValRef<val_t> operator[](Key key) {
         ValPtr<val_t> addr = ValPtr<val_t>();
 
-        access_with_handler(key.value(), std::max(key.width(), m_width), AddressDefaultHandler {
+        access_with_handler(key.value(), std::max(key.width(), m_key_width.get_width()), AddressDefaultHandler {
             &addr
         });
 
@@ -140,7 +150,7 @@ public:
     /// new elements with increasing key widths is _less_ efficient
     /// than calling `insert()` with the new key width.
     inline void grow_key_width(size_t key_width) {
-        grow_if_needed(size(), std::max<size_t>(key_width, m_width));
+        grow_if_needed(size(), std::max<size_t>(key_width, m_key_width.get_width()));
     }
 
     /// Returns the amount of elements inside the datastructure.
@@ -157,7 +167,7 @@ public:
 
     /// Current width of the keys stored in this datastructure.
     inline size_t key_width() {
-        return m_width;
+        return m_key_width.get_width();
     }
 
     /// Amount of bits of the key, that are stored implicitly
@@ -391,7 +401,7 @@ private:
     /// Debug check that a key does not occupy more bits than the
     /// hashtable currently allows.
     inline bool dcheck_key_width(uint64_t key) {
-        uint64_t key_mask = (1ull << (m_width - 1ull) << 1ull) - 1ull;
+        uint64_t key_mask = (1ull << (m_key_width.get_width() - 1ull) << 1ull) - 1ull;
         bool key_is_too_large = key & ~key_mask;
         return !key_is_too_large;
     }
@@ -407,10 +417,10 @@ private:
     ///   then the quotient bitvector inside the buckets would
     ///   have to store integers of width 0. This is undefined behavior
     ///   with the current code, so we add a padding bit.
-    /// - Otherwise the current maximum key width `m_width`
+    /// - Otherwise the current maximum key width `m_key_width`
     ///   determines the real width.
     inline size_t real_width() {
-        return std::max<size_t>(m_sizing.capacity_log2() + 1, m_width);
+        return std::max<size_t>(m_sizing.capacity_log2() + 1, m_key_width.get_width());
     }
 
     /// Decompose a key into its initial address and quotient.
@@ -819,7 +829,7 @@ private:
         };
 
         auto needs_realloc = [&]() {
-            return needs_to_grow_capacity() || (new_width != m_width);
+            return needs_to_grow_capacity() || (new_width != m_key_width.get_width());
         };
 
         /*
@@ -829,7 +839,7 @@ private:
                 << "\n";
         */
 
-        // TODO: Could reuse the existing table if only m_width changes
+        // TODO: Could reuse the existing table if only m_key_width changes
         // TODO: The iterators is inefficient since it does redundant
         // memory lookups and address calculations.
 
@@ -844,7 +854,7 @@ private:
             /*
             std::cout
                 << "grow to cap " << new_table.table_size()
-                << ", m_width: " << int(new_table.m_width)
+                << ", m_key_width: " << int(new_table.m_key_width)
                 << ", real_width: " << new_table.real_width()
                 << ", quot width: " << new_table.quotient_width()
                 << "\n";

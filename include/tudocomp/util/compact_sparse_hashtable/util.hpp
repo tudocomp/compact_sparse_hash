@@ -29,8 +29,6 @@ template<typename val_t>
 using ValPtr = typename cbp::cbp_repr_t<val_t>::pointer_t;
 template<typename val_t>
 using ValRef = typename cbp::cbp_repr_t<val_t>::reference_t;
-template<typename val_t>
-using Val = cbp::cbp_sized_value_t<val_t>;
 
 inline size_t popcount(uint64_t value) {
     return __builtin_popcountll(value);
