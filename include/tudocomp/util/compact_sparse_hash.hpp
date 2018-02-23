@@ -49,7 +49,12 @@ class compact_sparse_hashtable_t {
     val_width_t m_val_width;
 
 public:
+    /// By-value representation of a value
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+    /// Reference to a value
+    using reference_type = ValRef<val_t>;
+    /// Pointer to a value
+    using pointer_type = ValPtr<val_t>;
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
@@ -126,7 +131,7 @@ public:
     ///
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
-    inline ValRef<val_t> access(uint64_t key) {
+    inline reference_type access(uint64_t key) {
         return access_kv_width(key, key_width(), value_width());
     }
 
@@ -135,7 +140,7 @@ public:
     ///
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
-    inline ValRef<val_t> access_key_width(uint64_t key, uint8_t key_width) {
+    inline reference_type access_key_width(uint64_t key, uint8_t key_width) {
         return access_kv_width(key, key_width, value_width());
     }
 
@@ -144,8 +149,8 @@ public:
     ///
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
-    inline ValRef<val_t> access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
-        ValPtr<val_t> addr = ValPtr<val_t>();
+    inline reference_type access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
+        pointer_type addr = pointer_type();
 
         auto raw_key_width = std::max(key_width, m_key_width.get_width());
         auto raw_val_width = std::max(value_width, m_val_width.get_width());
@@ -154,7 +159,7 @@ public:
             &addr
         });
 
-        DCHECK(addr != ValPtr<val_t>());
+        DCHECK(addr != pointer_type());
 
         return *addr;
     }
@@ -162,7 +167,7 @@ public:
     /// Returns a reference to the element with key `key`.
     ///
     /// This has the same semantic is `access(key)`.
-    inline ValRef<val_t> operator[](uint64_t key) {
+    inline reference_type operator[](uint64_t key) {
         return access(key);
     }
 
@@ -224,12 +229,12 @@ public:
     ///
     /// This returns a pointer to the value if its found, or null
     /// otherwise.
-    inline ValPtr<val_t> search(uint64_t key) {
+    inline pointer_type search(uint64_t key) {
         auto dkey = decompose_key(key);
         if (get_v(dkey.initial_address)) {
             return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
-        return ValPtr<val_t>();
+        return pointer_type();
     }
 
     /// Sets the maximum load factor
@@ -519,7 +524,7 @@ private:
 
                 // check if element already exists
                 auto p = search_in_group(group, dkey.stored_quotient);
-                if (p != ValPtr<val_t>()) {
+                if (p != pointer_type()) {
                     // There is a value for this key already.
                     handler.on_existing(p);
                 } else {
@@ -561,7 +566,7 @@ private:
                 inline value_type&& get() {
                     return std::move(m_value);
                 }
-                inline void new_location(ValPtr<val_t> value) {
+                inline void new_location(pointer_type value) {
                     // don't care
                 }
             };
@@ -571,7 +576,7 @@ private:
             };
         }
 
-        inline void on_existing(ValPtr<val_t> value) {
+        inline void on_existing(pointer_type value) {
             *value = std::move(m_value);
         }
     };
@@ -579,18 +584,18 @@ private:
     /// Handler for getting the address of an element in the map.
     /// If none exists yet, it will be default constructed.
     class AddressDefaultHandler {
-        ValPtr<val_t>* m_address = nullptr;
+        pointer_type* m_address = nullptr;
     public:
-        AddressDefaultHandler(ValPtr<val_t>* address): m_address(address) {}
+        AddressDefaultHandler(pointer_type* address): m_address(address) {}
 
         inline auto on_new() {
             struct AddressDefaultHandlerOnNew {
                 value_type m_value;
-                ValPtr<val_t>* m_address;
+                pointer_type* m_address;
                 inline value_type&& get() {
                     return std::move(m_value);
                 }
-                inline void new_location(ValPtr<val_t> value) {
+                inline void new_location(pointer_type value) {
                     *m_address = value;
                 }
             };
@@ -601,7 +606,7 @@ private:
             };
         }
 
-        inline void on_existing(ValPtr<val_t> value) {
+        inline void on_existing(pointer_type value) {
             *m_address = value;
         }
     };
@@ -736,7 +741,7 @@ private:
     ///
     /// This returns a pointer to the value if its found, or null
     /// otherwise.
-    inline ValPtr<val_t> search_in_group(Group const& group, uint64_t stored_quotient) {
+    inline pointer_type search_in_group(Group const& group, uint64_t stored_quotient) {
         for(size_t i = group.group_start; i != group.group_end; i = m_sizing.mod_add(i)) {
             auto sparse_entry = get_bucket_elem_at(i);
 
@@ -744,7 +749,7 @@ private:
                 return sparse_entry.val_ptr();
             }
         }
-        return ValPtr<val_t>();
+        return pointer_type();
     }
 
     /// Inserts a new key-value pair after an existing
