@@ -509,6 +509,8 @@ TEST(hash, lookup_bug2) {
 template<typename val_t = uint64_t, bool use_index = false, bool grow_values = false>
 void load_factor_test(float z) {
     auto table = compact_sparse_hashtable_t<val_t>(0, 1);
+    table.debug_state();
+
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
         auto new_value = i * 2;
