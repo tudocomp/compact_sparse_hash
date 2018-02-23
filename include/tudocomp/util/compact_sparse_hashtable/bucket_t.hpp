@@ -181,31 +181,33 @@ inline void insert_in_bucket(bucket_t<val_t>& bucket,
     // create a new bucket with enough size for the new element
     auto new_bucket = bucket_t<val_t>(bucket.bv() | new_elem_bv_bit, qw, vw);
 
-    // move all elements before the new element's location from old bucket into new bucket
-    for(size_t i = 0; i < new_elem_bucket_pos; i++) {
-        // TODO: Iterate pointers instead?
-        auto new_elem = new_bucket.at(i, qw, vw);
-        auto old_elem = bucket.at(i, qw, vw);
+    auto new_iter = new_bucket.at(0, qw, vw);
+    auto old_iter = bucket.at(0, qw, vw);
 
-        new_elem.set_quotient(old_elem.get_quotient());
-        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_elem.val_ptr(), old_elem.val_ptr());
+    auto const new_iter_midpoint = new_bucket.at(new_elem_bucket_pos, qw, vw);
+    auto const new_iter_end = new_bucket.at(new_bucket.size(), qw, vw);
+
+    // move all elements before the new element's location from old bucket into new bucket
+    while(!new_iter.ptr_eq(new_iter_midpoint)) {
+        new_iter.set_quotient(old_iter.get_quotient());
+        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
+        new_iter.increment_ptr();
+        old_iter.increment_ptr();
     }
 
     // move new element into its location in the new bucket
     {
-        auto new_elem = new_bucket.at(new_elem_bucket_pos, qw, vw);
-        new_elem.set_quotient(quot);
-        cbp::cbp_repr_t<val_t>::construct_val_from_rval(new_elem.val_ptr(), std::move(val));
+        new_iter.set_quotient(quot);
+        cbp::cbp_repr_t<val_t>::construct_val_from_rval(new_iter.val_ptr(), std::move(val));
+        new_iter.increment_ptr();
     }
 
     // move all elements after the new element's location from old bucket into new bucket
-    for(size_t i = new_elem_bucket_pos; i < bucket.size(); i++) {
-        // TODO: Iterate pointers instead?
-        auto new_elem = new_bucket.at(i + 1, qw, vw);
-        auto old_elem = bucket.at(i, qw, vw);
-
-        new_elem.set_quotient(old_elem.get_quotient());
-        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_elem.val_ptr(), old_elem.val_ptr());
+    while(!new_iter.ptr_eq(new_iter_end)) {
+        new_iter.set_quotient(old_iter.get_quotient());
+        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
+        new_iter.increment_ptr();
+        old_iter.increment_ptr();
     }
 
     // destroy old empty elements, and overwrite with new bucket

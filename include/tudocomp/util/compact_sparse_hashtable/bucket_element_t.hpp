@@ -16,7 +16,7 @@ class bucket_t;
 template<typename val_t>
 class bucket_element_t {
     ValPtr<val_t> m_val_ptr;
-    QuotPtr m_quot_ptr;
+    mutable QuotPtr m_quot_ptr;
 
     friend class bucket_t<val_t>;
 
@@ -31,15 +31,15 @@ public:
     inline bucket_element_t():
         m_val_ptr(), m_quot_ptr() {}
 
-    inline uint64_t get_quotient() {
+    inline uint64_t get_quotient() const {
         return uint64_t(*m_quot_ptr);
     }
 
-    inline void set_quotient(uint64_t v) {
+    inline void set_quotient(uint64_t v) const {
         *m_quot_ptr = v;
     }
 
-    inline void swap_quotient(uint64_t& other) {
+    inline void swap_quotient(uint64_t& other) const {
         uint64_t tmp = uint64_t(*m_quot_ptr);
         std::swap(other, tmp);
         *m_quot_ptr = tmp;
