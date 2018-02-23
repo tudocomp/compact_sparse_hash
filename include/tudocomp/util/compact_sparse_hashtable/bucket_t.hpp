@@ -121,6 +121,9 @@ private:
         cbp::cbp_layout_element_t<val_t> vals_layout;
         cbp::cbp_layout_element_t<dynamic_t> quots_layout;
         size_t overall_qword_size;
+
+        inline Layout(): vals_layout(), quots_layout(), overall_qword_size(0) {
+        }
     };
     inline static Layout calc_sizes(size_t size, size_t quot_width, val_width_t const& val_width) {
         DCHECK_NE(size, 0);
