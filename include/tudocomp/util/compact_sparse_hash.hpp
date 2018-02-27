@@ -23,7 +23,7 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - buckets
 // - elements in buckets
 
-template<typename val_t, typename hash_t = xorshift_t>
+template<typename val_t, typename hash_t = poplar_xorshift_t>
 class compact_sparse_hashtable_t {
     using key_t = uint64_t;
     using buckets_t = std::vector<bucket_t<val_t>>;
