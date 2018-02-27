@@ -83,19 +83,35 @@ bool operator==(Init const& lhs, Init const& rhs) {
     return lhs.c == rhs.c && lhs.empty == rhs.empty;
 }
 
-TEST(hash, xorshift) {
-    for(size_t w = 10; w < 65; w++) {
-        for (size_t i = 0; i < 1000; i++) {
-            auto hi = xorshift_t::hashfn(i, w);
-            auto hhi = xorshift_t::reverse_hashfn(hi, w);
-            /*std::cout
+template<typename hashfn_t>
+void test_hashfn() {
+    for(uint32_t w = 1; w < 64; w++) {
+        hashfn_t fn { w };
+
+        size_t max_val = std::min<size_t>(((1 << w) - 1), 1000);
+
+        for (size_t i = 0; i < (max_val + 1); i++) {
+            auto hi = fn.hash(i);
+            auto hhi = fn.hash_inv(hi);
+            /*
+            std::cout
+                << w << ", "
                 << i << ", "
                 << hi << ", "
-                << hhi << "\n";*/
+                << hhi << "\n";
+            */
 
             ASSERT_EQ(i, hhi);
         }
     }
+}
+
+TEST(hashfn, xorshift) {
+    test_hashfn<xorshift_t>();
+}
+
+TEST(hashfn, poplar_xorshift) {
+    test_hashfn<poplar_xorshift_t>();
 }
 
 TEST(hash, insert) {

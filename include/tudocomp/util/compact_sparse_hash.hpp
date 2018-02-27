@@ -48,6 +48,9 @@ class compact_sparse_hashtable_t {
     key_width_t m_key_width;
     val_width_t m_val_width;
 
+    /// Hash function
+    hash_t m_hash {1};
+
 public:
     /// By-value representation of a value
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
@@ -72,6 +75,8 @@ public:
         m_cv.resize(cv_size);
         m_buckets.reserve(buckets_size);
         m_buckets.resize(buckets_size);
+
+        m_hash = hash_t(real_width());
     }
 
     inline ~compact_sparse_hashtable_t() {
@@ -85,7 +90,8 @@ public:
         m_buckets(std::move(other.m_buckets)),
         m_sizing(std::move(other.m_sizing)),
         m_key_width(std::move(other.m_key_width)),
-        m_val_width(std::move(other.m_val_width))
+        m_val_width(std::move(other.m_val_width)),
+        m_hash(std::move(other.m_hash))
     {
     }
 
@@ -99,6 +105,7 @@ public:
         m_sizing = std::move(other.m_sizing);
         m_key_width = std::move(other.m_key_width);
         m_val_width = std::move(other.m_val_width);
+        m_hash = std::move(other.m_hash);
 
         return *this;
     }
@@ -465,9 +472,9 @@ private:
     inline decomposed_key_t decompose_key(uint64_t key) {
         DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
 
-        uint64_t hres = hash_t::hashfn(key, real_width());
+        uint64_t hres = m_hash.hash(key);
 
-        DCHECK_EQ(hash_t::reverse_hashfn(hres, real_width()), key);
+        DCHECK_EQ(m_hash.hash_inv(hres), key);
 
         return m_sizing.decompose_hashed_value(hres);
     }
@@ -475,7 +482,7 @@ private:
     /// Compose a key from its initial address and quotient.
     inline uint64_t compose_key(uint64_t initial_address, uint64_t quotient) {
         uint64_t harg = m_sizing.compose_hashed_value(initial_address, quotient);
-        uint64_t key = hash_t::reverse_hashfn(harg, real_width());
+        uint64_t key = m_hash.hash_inv(harg);
 
         DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
         return key;
