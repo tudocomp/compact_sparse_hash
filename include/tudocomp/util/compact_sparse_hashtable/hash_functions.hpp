@@ -1,7 +1,7 @@
 #pragma once
 
 // Source: https://github.com/kampersanda/poplar-trie/blob/master/include/poplar/bijective_hash.hpp
-namespace poplar::bijective_hash {
+namespace poplar{namespace bijective_hash {
 
 class size_p2_t {
 public:
@@ -146,7 +146,7 @@ private:
   }
 };
 
-} //ns - poplar::bijective_hash
+}} //ns - poplar::bijective_hash
 
 
 namespace tdc {namespace compact_sparse_hashtable {
