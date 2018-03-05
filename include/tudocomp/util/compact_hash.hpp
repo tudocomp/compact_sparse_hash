@@ -26,6 +26,8 @@ namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
 class compact_hashtable_t: base_table_t<compact_hashtable_t<val_t, hash_t>> {
+    template<typename T>
+    friend class base_table_t;
 public:
     /// By-value representation of a value
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
@@ -275,34 +277,19 @@ public:
     // -----------------------
 
     struct statistics_t {
-        size_t buckets = 0;
-        size_t allocated_buckets = 0;
-        size_t buckets_real_allocated_capacity_in_bytes = 0;
-
         size_t real_allocated_capacity_in_bytes = 0;
         uint64_t theoretical_minimum_size_in_bits = 0;
     };
     inline statistics_t stat_gather() {
         statistics_t r;
 
-        r.buckets = m_buckets.size();
-
-        for (auto const& b : m_buckets) {
-            r.allocated_buckets += (!b.is_empty());
-            r.buckets_real_allocated_capacity_in_bytes += b.stat_allocation_size_in_bytes(quotient_width(), value_width());
-        }
-
         // Calculate real allocated bytes
         // NB: Sizes of members with constant size are not included (eg, sizeof(m_buckets))
-        // Size of buckets vector
-        r.real_allocated_capacity_in_bytes += m_buckets.capacity() * sizeof(bucket_t<val_t>);
-        r.real_allocated_capacity_in_bytes += r.buckets_real_allocated_capacity_in_bytes;
-        // Size of cv bitvectors
+        r.real_allocated_capacity_in_bytes += m_values.stat_allocation_size_in_bytes();
+        r.real_allocated_capacity_in_bytes += m_quots.stat_allocation_size_in_bytes();
         r.real_allocated_capacity_in_bytes += m_cv.stat_allocation_size_in_bytes();
 
         // Calculate minimum bits needed
-        // Occupation bitvector inside allocated buckets
-        r.theoretical_minimum_size_in_bits += r.allocated_buckets * 64;
         // Quotient bitvectors across all buckets
         r.theoretical_minimum_size_in_bits += size() * quotient_width();
         // Values across all buckets

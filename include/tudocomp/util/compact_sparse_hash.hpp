@@ -26,6 +26,9 @@ namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
 class compact_sparse_hashtable_t: base_table_t<compact_sparse_hashtable_t<val_t, hash_t>> {
+    template<typename T>
+    friend class base_table_t;
+
     using key_t = uint64_t;
     using buckets_t = std::vector<bucket_t<val_t>>;
 
@@ -77,7 +80,7 @@ public:
         m_buckets.reserve(buckets_size);
         m_buckets.resize(buckets_size);
 
-        m_hash = hash_t(real_width());
+        m_hash = hash_t(this->real_width());
     }
 
     inline ~compact_sparse_hashtable_t() {
@@ -229,7 +232,7 @@ public:
     /// Amount of bits of the key, that are stored explicitly
     /// in the buckets.
     inline size_t quotient_width() {
-        return real_width() - m_sizing.capacity_log2();
+        return this->real_width() - m_sizing.capacity_log2();
     }
 
     // TODO: STL-conform API?
@@ -450,23 +453,6 @@ private:
         uint64_t key_mask = (1ull << (m_key_width.get_width() - 1ull) << 1ull) - 1ull;
         bool key_is_too_large = key & ~key_mask;
         return !key_is_too_large;
-    }
-
-    /// The actual amount of bits currently usable for
-    /// storing a key in the hashtable.
-    ///
-    /// Due to implementation details, this can be
-    /// larger than `key_width()`.
-    ///
-    /// Specifically, there are currently two cases:
-    /// - If all bits of the the key fit into the initial-address space,
-    ///   then the quotient bitvector inside the buckets would
-    ///   have to store integers of width 0. This is undefined behavior
-    ///   with the current code, so we add a padding bit.
-    /// - Otherwise the current maximum key width `m_key_width`
-    ///   determines the real width.
-    inline size_t real_width() {
-        return std::max<size_t>(m_sizing.capacity_log2() + 1, m_key_width.get_width());
     }
 
     /// Decompose a key into its initial address and quotient.
