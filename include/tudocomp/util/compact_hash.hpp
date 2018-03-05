@@ -15,6 +15,7 @@
 #include "compact_sparse_hashtable/size_manager_t.hpp"
 #include "compact_sparse_hashtable/sparse_pos_t.hpp"
 #include "compact_sparse_hashtable/decomposed_key_t.hpp"
+#include "compact_sparse_hashtable/base_table_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashtable {
 
@@ -25,8 +26,16 @@ namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
 class compact_hashtable_t: base_table_t<compact_hashtable_t<val_t, hash_t>> {
+public:
+    /// By-value representation of a value
+    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+    /// Reference to a value
+    using reference_type = ValRef<val_t>;
+    /// Pointer to a value
+    using pointer_type = ValPtr<val_t>;
+
+private:
     using key_t = uint64_t;
-    using buckets_t = std::vector<bucket_t<val_t>>;
 
     using key_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
     using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
@@ -40,8 +49,10 @@ class compact_hashtable_t: base_table_t<compact_hashtable_t<val_t, hash_t>> {
     /// Compact table data (c and v bitvectors)
     IntVector<uint_t<2>> m_cv;
 
-    /// Sparse table data (buckets)
-    buckets_t m_buckets;
+    /// Compact stored data (values and quots)
+    IntVector<val_t> m_values;
+    IntVector<dynamic_t> m_quots;
+    value_type m_empty_value;
 
     /// Size of table, and width of the stored keys and values
     size_manager_t m_sizing;
@@ -52,29 +63,27 @@ class compact_hashtable_t: base_table_t<compact_hashtable_t<val_t, hash_t>> {
     hash_t m_hash {1};
 
 public:
-    /// By-value representation of a value
-    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
-    /// Reference to a value
-    using reference_type = ValRef<val_t>;
-    /// Pointer to a value
-    using pointer_type = ValPtr<val_t>;
-
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline compact_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
-                                      size_t key_width = DEFAULT_KEY_WIDTH,
-                                      size_t value_width = DEFAULT_VALUE_WIDTH):
+                               size_t key_width = DEFAULT_KEY_WIDTH,
+                               size_t value_width = DEFAULT_VALUE_WIDTH,
+                               value_type empty_value = value_type()):
         m_sizing(size),
         m_key_width(key_width),
-        m_val_width(value_width)
+        m_val_width(value_width),
+        m_empty_value(empty_value)
     {
-        size_t cv_size = table_size();
-        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
+        size_t tsize = table_size();
 
-        m_cv.reserve(cv_size);
-        m_cv.resize(cv_size);
-        m_buckets.reserve(buckets_size);
-        m_buckets.resize(buckets_size);
+        m_cv.reserve(tsize);
+        m_cv.resize(tsize);
+
+        m_quots.reserve(tsize);
+        m_quots.resize(tsize);
+
+        m_values.reserve(tsize);
+        m_values.resize(tsize, m_empty_value);
 
         m_hash = hash_t(real_width());
     }
@@ -87,7 +96,9 @@ public:
 
     inline compact_hashtable_t(compact_hashtable_t&& other):
         m_cv(std::move(other.m_cv)),
-        m_buckets(std::move(other.m_buckets)),
+        m_values(std::move(other.m_values)),
+        m_quots(std::move(other.m_quots)),
+        m_empty_value(std::move(other.m_empty_value)),
         m_sizing(std::move(other.m_sizing)),
         m_key_width(std::move(other.m_key_width)),
         m_val_width(std::move(other.m_val_width)),
@@ -101,7 +112,9 @@ public:
         run_destructors_of_bucket_elements();
 
         m_cv = std::move(other.m_cv);
-        m_buckets = std::move(other.m_buckets);
+        m_values = std::move(other.m_values);
+        m_quots = std::move(other.m_quots);
+        m_empty_value = std::move(other.m_empty_value);
         m_sizing = std::move(other.m_sizing);
         m_key_width = std::move(other.m_key_width);
         m_val_width = std::move(other.m_val_width);

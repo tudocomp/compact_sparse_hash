@@ -23,8 +23,6 @@ inline bool is_pot(size_t n) {
 
 using QuotPtr = typename cbp::cbp_repr_t<dynamic_t>::pointer_t;
 
-using Key = cbp::cbp_sized_value_t<dynamic_t>;
-
 template<typename val_t>
 using ValPtr = typename cbp::cbp_repr_t<val_t>::pointer_t;
 template<typename val_t>
