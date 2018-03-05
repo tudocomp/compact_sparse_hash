@@ -1,10 +1,3 @@
-#include <gtest/gtest.h>
-
-#include <cstdint>
-#include <algorithm>
-#include <tudocomp/util/compact_sparse_hash.hpp>
-#include <tudocomp/util/bits.hpp>
-
 using namespace tdc;
 using namespace tdc::compact_sparse_hashtable;
 
