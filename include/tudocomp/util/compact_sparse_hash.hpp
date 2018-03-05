@@ -15,6 +15,7 @@
 #include "compact_sparse_hashtable/size_manager_t.hpp"
 #include "compact_sparse_hashtable/sparse_pos_t.hpp"
 #include "compact_sparse_hashtable/decomposed_key_t.hpp"
+#include "compact_sparse_hashtable/base_table_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashtable {
 
@@ -24,7 +25,7 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - elements in buckets
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-class compact_sparse_hashtable_t {
+class compact_sparse_hashtable_t: base_table_t<compact_sparse_hashtable_t<val_t, hash_t>> {
     using key_t = uint64_t;
     using buckets_t = std::vector<bucket_t<val_t>>;
 
