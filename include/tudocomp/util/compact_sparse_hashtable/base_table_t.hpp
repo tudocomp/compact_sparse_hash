@@ -23,17 +23,25 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - buckets
 // - elements in buckets
 
-template<typename self_t>
+template<template<typename, typename> typename self_t, typename val_t, typename hash_t>
 class base_table_t {
-    friend self_t;
+    friend self_t<val_t, hash_t>;
 
-    inline self_t& self() {
-        return static_cast<self_t&>(*this);
+    inline self_t<val_t, hash_t>& self() {
+        return static_cast<self_t<val_t, hash_t>&>(*this);
     }
 
-    inline self_t const& self() const {
-        return static_cast<self_t const&>(*this);
+    inline self_t<val_t, hash_t> const& self() const {
+        return static_cast<self_t<val_t, hash_t> const&>(*this);
     }
+
+private:
+    /// By-value representation of a value
+    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+    /// Reference to a value
+    using reference_type = ValRef<val_t>;
+    /// Pointer to a value
+    using pointer_type = ValPtr<val_t>;
 
     /// The actual amount of bits currently usable for
     /// storing a key in the hashtable.
@@ -51,6 +59,64 @@ class base_table_t {
     inline size_t real_width() {
         return std::max<size_t>(self().m_sizing.capacity_log2() + 1, self().m_key_width.get_width());
     }
+
+    /// Handler for inserting an element that exists as a rvalue reference.
+    /// This will overwrite an existing element.
+    class InsertHandler {
+        value_type&& m_value;
+    public:
+        InsertHandler(value_type&& value): m_value(std::move(value)) {}
+
+        inline auto on_new() {
+            struct InsertHandlerOnNew {
+                value_type&& m_value;
+                inline value_type&& get() {
+                    return std::move(m_value);
+                }
+                inline void new_location(pointer_type value) {
+                    // don't care
+                }
+            };
+
+            return InsertHandlerOnNew {
+                std::move(m_value),
+            };
+        }
+
+        inline void on_existing(pointer_type value) {
+            *value = std::move(m_value);
+        }
+    };
+
+    /// Handler for getting the address of an element in the map.
+    /// If none exists yet, it will be default constructed.
+    class AddressDefaultHandler {
+        pointer_type* m_address = nullptr;
+    public:
+        AddressDefaultHandler(pointer_type* address): m_address(address) {}
+
+        inline auto on_new() {
+            struct AddressDefaultHandlerOnNew {
+                value_type m_value;
+                pointer_type* m_address;
+                inline value_type&& get() {
+                    return std::move(m_value);
+                }
+                inline void new_location(pointer_type value) {
+                    *m_address = value;
+                }
+            };
+
+            return AddressDefaultHandlerOnNew {
+                value_type(),
+                m_address,
+            };
+        }
+
+        inline void on_existing(pointer_type value) {
+            *m_address = value;
+        }
+    };
 };
 
 }}

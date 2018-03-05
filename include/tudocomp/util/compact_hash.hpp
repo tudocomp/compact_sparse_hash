@@ -25,16 +25,17 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - elements in buckets
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-class compact_hashtable_t: base_table_t<compact_hashtable_t<val_t, hash_t>> {
-    template<typename T>
-    friend class base_table_t;
+class compact_hashtable_t: base_table_t<compact_hashtable_t, val_t, hash_t> {
+    using base_t = base_table_t<compact_hashtable_t, val_t, hash_t>;
+    friend base_t;
+    using base_t::real_width;
+    using typename base_t::InsertHandler;
+    using typename base_t::AddressDefaultHandler;
+
 public:
-    /// By-value representation of a value
-    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
-    /// Reference to a value
-    using reference_type = ValRef<val_t>;
-    /// Pointer to a value
-    using pointer_type = ValPtr<val_t>;
+    using typename base_t::value_type;
+    using typename base_t::pointer_type;
+    using typename base_t::reference_type;
 
 private:
     using key_t = uint64_t;
@@ -90,12 +91,6 @@ public:
         m_hash = hash_t(real_width());
     }
 
-    inline ~compact_hashtable_t() {
-        // NB: destroying the buckets vector will just destroy the bucket in it,
-        // which will not destroy their elements.
-        run_destructors_of_bucket_elements();
-    }
-
     inline compact_hashtable_t(compact_hashtable_t&& other):
         m_cv(std::move(other.m_cv)),
         m_values(std::move(other.m_values)),
@@ -109,10 +104,6 @@ public:
     }
 
     inline compact_hashtable_t& operator=(compact_hashtable_t&& other) {
-        // NB: overwriting the buckets vector will just destroy the bucket in it,
-        /// which will not destroy their elements.
-        run_destructors_of_bucket_elements();
-
         m_cv = std::move(other.m_cv);
         m_values = std::move(other.m_values);
         m_quots = std::move(other.m_quots);

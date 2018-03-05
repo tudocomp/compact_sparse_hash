@@ -25,9 +25,12 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - elements in buckets
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-class compact_sparse_hashtable_t: base_table_t<compact_sparse_hashtable_t<val_t, hash_t>> {
-    template<typename T>
-    friend class base_table_t;
+class compact_sparse_hashtable_t: base_table_t<compact_sparse_hashtable_t, val_t, hash_t> {
+    using base_t = base_table_t<compact_sparse_hashtable_t, val_t, hash_t>;
+    friend base_t;
+    using base_t::real_width;
+    using typename base_t::InsertHandler;
+    using typename base_t::AddressDefaultHandler;
 
     using key_t = uint64_t;
     using buckets_t = std::vector<bucket_t<val_t>>;
@@ -56,12 +59,9 @@ class compact_sparse_hashtable_t: base_table_t<compact_sparse_hashtable_t<val_t,
     hash_t m_hash {1};
 
 public:
-    /// By-value representation of a value
-    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
-    /// Reference to a value
-    using reference_type = ValRef<val_t>;
-    /// Pointer to a value
-    using pointer_type = ValPtr<val_t>;
+    using typename base_t::value_type;
+    using typename base_t::pointer_type;
+    using typename base_t::reference_type;
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
@@ -80,7 +80,7 @@ public:
         m_buckets.reserve(buckets_size);
         m_buckets.resize(buckets_size);
 
-        m_hash = hash_t(this->real_width());
+        m_hash = hash_t(real_width());
     }
 
     inline ~compact_sparse_hashtable_t() {
@@ -232,7 +232,7 @@ public:
     /// Amount of bits of the key, that are stored explicitly
     /// in the buckets.
     inline size_t quotient_width() {
-        return this->real_width() - m_sizing.capacity_log2();
+        return real_width() - m_sizing.capacity_log2();
     }
 
     // TODO: STL-conform API?
@@ -546,64 +546,6 @@ private:
             }
         }
     }
-
-    /// Handler for inserting an element that exists as a rvalue reference.
-    /// This will overwrite an existing element.
-    class InsertHandler {
-        value_type&& m_value;
-    public:
-        InsertHandler(value_type&& value): m_value(std::move(value)) {}
-
-        inline auto on_new() {
-            struct InsertHandlerOnNew {
-                value_type&& m_value;
-                inline value_type&& get() {
-                    return std::move(m_value);
-                }
-                inline void new_location(pointer_type value) {
-                    // don't care
-                }
-            };
-
-            return InsertHandlerOnNew {
-                std::move(m_value),
-            };
-        }
-
-        inline void on_existing(pointer_type value) {
-            *value = std::move(m_value);
-        }
-    };
-
-    /// Handler for getting the address of an element in the map.
-    /// If none exists yet, it will be default constructed.
-    class AddressDefaultHandler {
-        pointer_type* m_address = nullptr;
-    public:
-        AddressDefaultHandler(pointer_type* address): m_address(address) {}
-
-        inline auto on_new() {
-            struct AddressDefaultHandlerOnNew {
-                value_type m_value;
-                pointer_type* m_address;
-                inline value_type&& get() {
-                    return std::move(m_value);
-                }
-                inline void new_location(pointer_type value) {
-                    *m_address = value;
-                }
-            };
-
-            return AddressDefaultHandlerOnNew {
-                value_type(),
-                m_address,
-            };
-        }
-
-        inline void on_existing(pointer_type value) {
-            *m_address = value;
-        }
-    };
 
     /// Shifts all values and `c` bits of the half-open range [from, to)
     /// inside the table one to the right, and inserts the new value
