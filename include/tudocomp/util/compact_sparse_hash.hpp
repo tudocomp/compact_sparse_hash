@@ -23,176 +23,55 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - buckets
 // - elements in buckets
 
-template<typename val_t, typename hash_t = poplar_xorshift_t>
-class compact_sparse_hashtable_t: public base_table_t<val_t, hash_t> {
-    using base_t = base_table_t<val_t, hash_t>;
-    friend base_t;
-    using base_t::real_width;
-    using typename base_t::InsertHandler;
-    using typename base_t::AddressDefaultHandler;
-    using base_t::get_v;
-    using base_t::get_c;
-    using base_t::set_v;
-    using base_t::set_c;
-    using base_t::m_hash;
-    using base_t::m_sizing;
-    using base_t::decompose_key;
-    using base_t::compose_key;
-
-    /// Default value of the `key_width` parameter of the constructor.
-    static constexpr size_t DEFAULT_KEY_WIDTH = 1;
-    static constexpr size_t DEFAULT_VALUE_WIDTH = 1;
-    static constexpr size_t DEFAULT_TABLE_SIZE = 0;
-
+template<typename val_t>
+class compact_sparse_storage_t {
     using buckets_t = std::vector<bucket_t<val_t>>;
 
     /// Sparse table data (buckets)
     buckets_t m_buckets;
 
 public:
-    using typename base_t::value_type;
-    using typename base_t::reference_type;
-    using typename base_t::pointer_type;
-    using base_t::size;
-    using base_t::table_size;
-    using base_t::key_width;
-    using base_t::value_width;
-    using base_t::quotient_width;
-
-    /// Constructs a hashtable with a initial table size `size`,
-    /// and a initial key bit-width `key_width`.
-    inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
-                                      size_t key_width = DEFAULT_KEY_WIDTH,
-                                      size_t value_width = DEFAULT_VALUE_WIDTH):
-        base_t(size, key_width, value_width)
-    {
-        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
+    inline compact_sparse_storage_t() {}
+    inline compact_sparse_storage_t(size_t table_size) {
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
         m_buckets.reserve(buckets_size);
         m_buckets.resize(buckets_size);
     }
 
-    inline ~compact_sparse_hashtable_t() {
-        // NB: destroying the buckets vector will just destroy the bucket in it,
-        // which will not destroy their elements.
-        run_destructors_of_bucket_elements();
-    }
-
-    inline compact_sparse_hashtable_t(compact_sparse_hashtable_t&& other):
-        base_t(std::move(other)),
-        m_buckets(std::move(other.m_buckets))
-    {
-    }
-
-    inline compact_sparse_hashtable_t& operator=(compact_sparse_hashtable_t&& other) {
-        // NB: overwriting the buckets vector will just destroy the bucket in it,
-        /// which will not destroy their elements.
-        run_destructors_of_bucket_elements();
-
-        base_t::operator=(std::move(other));
-        m_buckets = std::move(other.m_buckets);
-
-        return *this;
-    }
-
-    // TODO: Change to STL-conform interface?
-
-    /// Inserts a key-value pair into the hashtable.
-    inline void insert(uint64_t key, value_type&& value) {
-        insert_kv_width(key, std::move(value), key_width(), value_width());
-    }
-
-    /// Inserts a key-value pair into the hashtable,
-    /// and grow the key width as needed.
-    inline void insert_key_width(uint64_t key, value_type&& value, uint8_t key_width) {
-        insert_kv_width(key, std::move(value), key_width, value_width());
-    }
-
-    /// Inserts a key-value pair into the hashtable,
-    /// and grow the key and value width as needed.
-    inline void insert_kv_width(uint64_t key, value_type&& value, uint8_t key_width, uint8_t value_width) {
-        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
-
-        access_with_handler(key, raw_key_width, raw_val_width, InsertHandler {
-            std::move(value)
-        });
-    }
-
-    /// Returns a reference to the element with key `key`.
-    ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
-    inline reference_type access(uint64_t key) {
-        return access_kv_width(key, key_width(), value_width());
-    }
-
-    /// Returns a reference to the element with key `key`,
-    /// and grow the key width as needed.
-    ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
-    inline reference_type access_key_width(uint64_t key, uint8_t key_width) {
-        return access_kv_width(key, key_width, value_width());
-    }
-
-    /// Returns a reference to the element with key `key`,
-    /// and grow the key and value width as needed.
-    ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
-    inline reference_type access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
-        pointer_type addr = pointer_type();
-
-        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
-
-        access_with_handler(key, raw_key_width, raw_val_width, AddressDefaultHandler {
-            &addr
-        });
-
-        DCHECK(addr != pointer_type());
-
-        return *addr;
-    }
-
-    /// Returns a reference to the element with key `key`.
-    ///
-    /// This has the same semantic is `access(key)`.
-    inline reference_type operator[](uint64_t key) {
-        return access(key);
-    }
-
-    /// Grow the key width as needed.
-    ///
-    /// Note that it is more efficient to change the width directly during
-    /// insertion of a new value.
-    inline void grow_key_width(size_t key_width) {
-        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        grow_if_needed(size(), raw_key_width, value_width());
-    }
-
-    /// Grow the key and value width as needed.
-    ///
-    /// Note that it is more efficient to change the width directly during
-    /// insertion of a new value.
-    inline void grow_kv_width(size_t key_width, size_t value_width) {
-        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
-        grow_if_needed(size(), raw_key_width, raw_val_width);
-    }
-
-    // TODO: STL-conform API?
-    /// Search for a key inside the hashtable.
-    ///
-    /// This returns a pointer to the value if its found, or null
-    /// otherwise.
-    inline pointer_type search(uint64_t key) {
-        auto dkey = decompose_key(key);
-        if (get_v(dkey.initial_address)) {
-            return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
+    inline void run_destructors_of_elements(size_t qw, size_t vw) {
+        for(size_t i = 0; i < m_buckets.size(); i++) {
+            m_buckets[i].destroy_vals(qw, vw);
         }
-        return pointer_type();
+    }
+
+    /// Maps hashtable position to position of the corresponding bucket,
+    /// and the position inside of it.
+    struct bucket_layout_t {
+        static constexpr size_t BVS_WIDTH_SHIFT = 6;
+        static constexpr size_t BVS_WIDTH_MASK = 0b111111;
+
+        static inline size_t table_pos_to_idx_of_bucket(size_t pos) {
+            return pos >> BVS_WIDTH_SHIFT;
+        }
+
+        static inline size_t table_pos_to_idx_inside_bucket(size_t pos) {
+            return pos & BVS_WIDTH_MASK;
+        }
+
+        static inline size_t table_size_to_bucket_size(size_t size) {
+            return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
+        }
+    };
+
+    /// Run the destructors of the elements of the `i`-th bucket,
+    /// and drop it from the hashtable, replacing it with an empty one.
+    inline void drop_bucket(size_t i) {
+        DCHECK_LT(i, m_buckets.size());
+        size_t qw = quotient_width();
+        size_t vw = value_width();
+        m_buckets[i].destroy_vals(qw, vw);
+        m_buckets[i] = bucket_t<val_t>();
     }
 
     // -----------------------
@@ -237,127 +116,33 @@ public:
 
         return r;
     }
+};
 
-    /// Returns a human-readable string representation
-    /// of the entire state of the hashtable
-    inline std::string debug_state() {
-        std::stringstream ss;
+template<typename val_t, typename hash_t = poplar_xorshift_t>
+class compact_sparse_hashtable_t: public base_table_t<compact_sparse_storage_t, val_t, hash_t> {
+    using base_t = base_table_t<compact_sparse_storage_t, val_t, hash_t>;
 
-        bool gap_active = false;
-        size_t gap_start;
-        size_t gap_end;
+    /// Default value of the `key_width` parameter of the constructor.
+    static constexpr size_t DEFAULT_KEY_WIDTH = 1;
+    static constexpr size_t DEFAULT_VALUE_WIDTH = 1;
+    static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
-        auto print_gap = [&](){
-            if (gap_active) {
-                gap_active = false;
-                ss << "    [" << gap_start << " to " << gap_end << " empty]\n";
-            }
-        };
+public:
 
-        auto add_gap = [&](size_t i){
-            if (!gap_active) {
-                gap_active = true;
-                gap_start = i;
-            }
-            gap_end = i;
-        };
-
-        std::vector<std::string> lines(table_size());
-
-        uint64_t initial_address;
-        size_t j;
-        auto iter = iter_all_t(*this);
-        while(iter.next(&initial_address, &j)) {
-            std::stringstream ss2;
-
-            auto kv = get_val_quot_at(j);
-            auto stored_quotient = kv.get_quotient();
-            auto val_ptr = kv.val_ptr();
-            key_t key = compose_key(initial_address, stored_quotient);
-
-            ss2 << j
-                << "\t: v = " << get_v(j)
-                << ", c = " << get_c(j)
-                << ", quot = " << stored_quotient
-                << ", iadr = " << initial_address
-                << "\t, key = " << key
-                << "\t, value = " << *val_ptr
-                << "\t (" << val_ptr << ")";
-
-            lines.at(j) = ss2.str();
-        }
-
-        ss << "key_width(): " << key_width() << "\n";
-        ss << "size: " << size() << "\n";
-        ss << "[\n";
-        for (size_t i = 0; i < table_size(); i++) {
-            bool cv_exist = lines.at(i) != "";
-
-            DCHECK_EQ(cv_exist, table_pos_contains_value(i));
-
-            if (cv_exist) {
-                print_gap();
-                ss << "    "
-                    << lines.at(i)
-                    << "\n";
-            } else {
-                add_gap(i);
-            }
-        }
-        print_gap();
-        ss << "]";
-
-        return ss.str();
+    /// Constructs a hashtable with a initial table size `size`,
+    /// and a initial key bit-width `key_width`.
+    inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
+                                      size_t key_width = DEFAULT_KEY_WIDTH,
+                                      size_t value_width = DEFAULT_VALUE_WIDTH):
+        base_t(size, key_width, value_width)
+    {
     }
+
+    inline compact_sparse_hashtable_t(compact_sparse_hashtable_t&& other) = default;
+    inline compact_sparse_hashtable_t& operator=(compact_sparse_hashtable_t&& other) = default;
 
 private:
-    /// Maps hashtable position to position of the corresponding bucket,
-    /// and the position inside of it.
-    struct bucket_layout_t {
-        static constexpr size_t BVS_WIDTH_SHIFT = 6;
-        static constexpr size_t BVS_WIDTH_MASK = 0b111111;
 
-        static inline size_t table_pos_to_idx_of_bucket(size_t pos) {
-            return pos >> BVS_WIDTH_SHIFT;
-        }
-
-        static inline size_t table_pos_to_idx_inside_bucket(size_t pos) {
-            return pos & BVS_WIDTH_MASK;
-        }
-
-        static inline size_t table_size_to_bucket_size(size_t size) {
-            return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
-        }
-    };
-
-    /// Run the destructors of the elements of the `i`-th bucket,
-    /// and drop it from the hashtable, replacing it with an empty one.
-    inline void drop_bucket(size_t i) {
-        DCHECK_LT(i, m_buckets.size());
-        size_t qw = quotient_width();
-        size_t vw = value_width();
-        m_buckets[i].destroy_vals(qw, vw);
-        m_buckets[i] = bucket_t<val_t>();
-    }
-
-    /// Run the destructors of the bucket elements,
-    /// but don't drop them from the table.
-    ///
-    /// WARNING: This should only be called
-    /// before an operation that would call the destructors of the buckets
-    /// themselves, like in the destructor of the hashtable.
-    ///
-    /// The reason this exists is that a bucket_t does not
-    /// initialize or destroy the elements in it automatically,
-    /// to prevent unneeded empty-constructions of its elements.
-    /// TODO: Is this still a useful semantic? A bucket_t can manage its own data.
-    inline void run_destructors_of_bucket_elements() {
-        size_t qw = quotient_width();
-        size_t vw = value_width();
-        for(size_t i = 0; i < m_buckets.size(); i++) {
-            m_buckets[i].destroy_vals(qw, vw);
-        }
-    }
 
     /// Access the element represented by `handler` under
     /// the key `key` with the, possibly new, width of `key_width` bits.
