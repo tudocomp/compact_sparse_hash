@@ -10,7 +10,7 @@
 
 #include "util.hpp"
 #include "bucket_t.hpp"
-#include "bucket_element_t.hpp"
+#include "val_quot_ptrs_t.hpp"
 #include "hash_functions.hpp"
 #include "size_manager_t.hpp"
 #include "sparse_pos_t.hpp"

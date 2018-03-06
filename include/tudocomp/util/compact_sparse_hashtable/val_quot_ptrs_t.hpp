@@ -9,26 +9,21 @@
 
 namespace tdc {namespace compact_sparse_hashtable {
 
-template<typename val_t>
-class bucket_t;
-
 /// Represents a pair of pointers to value and quotient inside a bucket.
 template<typename val_t>
-class bucket_element_t {
+class val_quot_ptrs_t {
     ValPtr<val_t> m_val_ptr;
     mutable QuotPtr m_quot_ptr;
 
-    friend class bucket_t<val_t>;
-
-    inline bucket_element_t(ValPtr<val_t> val_ptr,
+public:
+    inline val_quot_ptrs_t(ValPtr<val_t> val_ptr,
                       QuotPtr quot_ptr):
         m_val_ptr(val_ptr),
         m_quot_ptr(quot_ptr)
     {
     }
 
-public:
-    inline bucket_element_t():
+    inline val_quot_ptrs_t():
         m_val_ptr(), m_quot_ptr() {}
 
     inline uint64_t get_quotient() const {
@@ -49,6 +44,10 @@ public:
         return m_val_ptr;
     }
 
+    inline QuotPtr quot_ptr() const {
+        return m_quot_ptr;
+    }
+
     inline void increment_ptr() {
         m_quot_ptr++;
         m_val_ptr++;
@@ -58,7 +57,7 @@ public:
         m_val_ptr--;
     }
 
-    inline bool ptr_eq(bucket_element_t const& other) const {
+    inline bool ptr_eq(val_quot_ptrs_t const& other) const {
         return m_val_ptr == other.m_val_ptr;
     }
 };

@@ -6,12 +6,10 @@
 #include <algorithm>
 
 #include "util.hpp"
+#include "val_quot_ptrs_t.hpp"
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
 namespace tdc {namespace compact_sparse_hashtable {
-
-template<typename val_t>
-class bucket_element_t;
 
 /// A bucket of quotient-value pairs in a sparse compact hashtable.
 ///
@@ -87,15 +85,15 @@ public:
         }
     }
 
-    /// Returns a `bucket_element_t` to position `pos`,
+    /// Returns a `val_quot_ptrs_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
-    inline bucket_element_t<val_t> at(size_t pos, size_t quot_width, val_width_t const& val_width) const {
+    inline val_quot_ptrs_t<val_t> at(size_t pos, size_t quot_width, val_width_t const& val_width) const {
         if(!is_empty()) {
             auto ps = ptrs(quot_width, val_width);
-            return bucket_element_t<val_t>(ps.vals_ptr + pos, ps.quots_ptr + pos);
+            return val_quot_ptrs_t<val_t>(ps.vals_ptr + pos, ps.quots_ptr + pos);
         } else {
             DCHECK_EQ(pos, 0);
-            return bucket_element_t<val_t>();
+            return val_quot_ptrs_t<val_t>();
         }
     }
 

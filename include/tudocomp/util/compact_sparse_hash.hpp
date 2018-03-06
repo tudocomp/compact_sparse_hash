@@ -10,7 +10,6 @@
 
 #include "compact_sparse_hashtable/util.hpp"
 #include "compact_sparse_hashtable/bucket_t.hpp"
-#include "compact_sparse_hashtable/bucket_element_t.hpp"
 #include "compact_sparse_hashtable/hash_functions.hpp"
 #include "compact_sparse_hashtable/size_manager_t.hpp"
 #include "compact_sparse_hashtable/sparse_pos_t.hpp"
@@ -804,8 +803,8 @@ private:
         // NB: does not wrap around!
         struct iter {
             bucket_t<val_t> const* m_bucket;
-            bucket_element_t<val_t>    m_b_start;
-            bucket_element_t<val_t>    m_b_end;
+            val_quot_ptrs_t<val_t>    m_b_start;
+            val_quot_ptrs_t<val_t>    m_b_end;
             size_t               m_quotient_width;
             size_t               m_value_width;
 
@@ -830,11 +829,11 @@ private:
                 if(pos.idx_of_bucket < table.m_buckets.size()) {
                     set_bucket_elem_range(pos.offset_in_bucket());
                 } else {
-                    // use default constructed nullptr bucket_element_ts
+                    // use default constructed nullptr val_quot_ptrs_ts
                 }
             }
 
-            inline bucket_element_t<val_t> get() {
+            inline val_quot_ptrs_t<val_t> get() {
                 return m_b_end;
             }
 
@@ -906,7 +905,7 @@ private:
         return SparsePos { pos, m_buckets };
     }
 
-    inline bucket_element_t<val_t> get_bucket_elem_at(SparsePos pos) {
+    inline val_quot_ptrs_t<val_t> get_bucket_elem_at(SparsePos pos) {
         DCHECK(pos.exists_in_bucket());
         size_t qw = quotient_width();
         size_t vw = value_width();
@@ -914,7 +913,7 @@ private:
         return pos.bucket().at(pos.offset_in_bucket(), qw, vw);
     }
 
-    inline bucket_element_t<val_t> get_bucket_elem_at(size_t pos) {
+    inline val_quot_ptrs_t<val_t> get_bucket_elem_at(size_t pos) {
         return get_bucket_elem_at(sparse_pos(pos));
     }
 };

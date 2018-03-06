@@ -10,7 +10,6 @@
 
 #include "compact_sparse_hashtable/util.hpp"
 #include "compact_sparse_hashtable/bucket_t.hpp"
-#include "compact_sparse_hashtable/bucket_element_t.hpp"
 #include "compact_sparse_hashtable/hash_functions.hpp"
 #include "compact_sparse_hashtable/size_manager_t.hpp"
 #include "compact_sparse_hashtable/sparse_pos_t.hpp"
