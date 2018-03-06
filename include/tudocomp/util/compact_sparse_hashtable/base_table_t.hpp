@@ -117,6 +117,29 @@ private:
             *m_address = value;
         }
     };
+
+
+    /// Getter for the v bit at table position `pos`.
+    inline bool get_v(size_t pos) {
+        return (self().m_cv[pos] & 0b01) != 0;
+    }
+
+    /// Getter for the c bit at table position `pos`.
+    inline bool get_c(size_t pos) {
+        return (self().m_cv[pos] & 0b10) != 0;
+    }
+
+    /// Setter for the v bit at table position `pos`.
+    inline void set_v(size_t pos, bool v) {
+        auto x = self().m_cv[pos] & 0b10;
+        self().m_cv[pos] = x | (0b01 * v);
+    }
+
+    /// Setter for the c bit at table position `pos`.
+    inline void set_c(size_t pos, bool c) {
+        auto x = self().m_cv[pos] & 0b01;
+        self().m_cv[pos] = x | (0b10 * c);
+    }
 };
 
 }}

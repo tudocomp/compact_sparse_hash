@@ -31,6 +31,10 @@ class compact_sparse_hashtable_t: base_table_t<compact_sparse_hashtable_t, val_t
     using base_t::real_width;
     using typename base_t::InsertHandler;
     using typename base_t::AddressDefaultHandler;
+    using base_t::get_v;
+    using base_t::get_s;
+    using base_t::set_v;
+    using base_t::set_s;
 
     using key_t = uint64_t;
     using buckets_t = std::vector<bucket_t<val_t>>;
@@ -395,28 +399,6 @@ private:
             return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
         }
     };
-
-    /// Getter for the v bit at table position `pos`.
-    inline bool get_v(size_t pos) {
-        return (m_cv[pos] & 0b01) != 0;
-    }
-
-    /// Getter for the c bit at table position `pos`.
-    inline bool get_c(size_t pos) {
-        return (m_cv[pos] & 0b10) != 0;
-    }
-
-    /// Setter for the v bit at table position `pos`.
-    inline void set_v(size_t pos, bool v) {
-        auto x = m_cv[pos] & 0b10;
-        m_cv[pos] = x | (0b01 * v);
-    }
-
-    /// Setter for the c bit at table position `pos`.
-    inline void set_c(size_t pos, bool c) {
-        auto x = m_cv[pos] & 0b01;
-        m_cv[pos] = x | (0b10 * c);
-    }
 
     /// Run the destructors of the elements of the `i`-th bucket,
     /// and drop it from the hashtable, replacing it with an empty one.

@@ -31,6 +31,10 @@ class compact_hashtable_t: base_table_t<compact_hashtable_t, val_t, hash_t> {
     using base_t::real_width;
     using typename base_t::InsertHandler;
     using typename base_t::AddressDefaultHandler;
+    using base_t::get_v;
+    using base_t::get_s;
+    using base_t::set_v;
+    using base_t::set_s;
 
 public:
     using typename base_t::value_type;
