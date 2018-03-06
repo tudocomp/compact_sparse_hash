@@ -37,6 +37,8 @@ class compact_hashtable_t: public base_table_t<val_t, hash_t> {
     using base_t::set_c;
     using base_t::m_hash;
     using base_t::m_sizing;
+    using base_t::decompose_key;
+    using base_t::compose_key;
 
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
@@ -46,7 +48,7 @@ class compact_hashtable_t: public base_table_t<val_t, hash_t> {
     /// Compact stored data (values and quots)
     IntVector<val_t> m_values;
     IntVector<dynamic_t> m_quots;
-    value_type m_empty_value;
+    typename base_t::value_type m_empty_value;
 
 public:
     using typename base_t::value_type;
@@ -63,50 +65,21 @@ public:
     inline compact_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
                                size_t key_width = DEFAULT_KEY_WIDTH,
                                size_t value_width = DEFAULT_VALUE_WIDTH,
-                               value_type empty_value = value_type()):
-        m_sizing(size),
-        m_key_width(key_width),
-        m_val_width(value_width),
+                               value_type const& empty_value = value_type()):
+        base_t(size, key_width, value_width),
         m_empty_value(empty_value)
     {
         size_t tsize = table_size();
-
-        m_cv.reserve(tsize);
-        m_cv.resize(tsize);
 
         m_quots.reserve(tsize);
         m_quots.resize(tsize);
 
         m_values.reserve(tsize);
         m_values.resize(tsize, m_empty_value);
-
-        m_hash = hash_t(real_width());
     }
 
-    inline compact_hashtable_t(compact_hashtable_t&& other):
-        m_cv(std::move(other.m_cv)),
-        m_values(std::move(other.m_values)),
-        m_quots(std::move(other.m_quots)),
-        m_empty_value(std::move(other.m_empty_value)),
-        m_sizing(std::move(other.m_sizing)),
-        m_key_width(std::move(other.m_key_width)),
-        m_val_width(std::move(other.m_val_width)),
-        m_hash(std::move(other.m_hash))
-    {
-    }
-
-    inline compact_hashtable_t& operator=(compact_hashtable_t&& other) {
-        m_cv = std::move(other.m_cv);
-        m_values = std::move(other.m_values);
-        m_quots = std::move(other.m_quots);
-        m_empty_value = std::move(other.m_empty_value);
-        m_sizing = std::move(other.m_sizing);
-        m_key_width = std::move(other.m_key_width);
-        m_val_width = std::move(other.m_val_width);
-        m_hash = std::move(other.m_hash);
-
-        return *this;
-    }
+    inline compact_hashtable_t(compact_hashtable_t&& other) = default;
+    inline compact_hashtable_t& operator=(compact_hashtable_t&& other) = default;
 
     // TODO: Change to STL-conform interface?
 
@@ -124,8 +97,8 @@ public:
     /// Inserts a key-value pair into the hashtable,
     /// and grow the key and value width as needed.
     inline void insert_kv_width(uint64_t key, value_type&& value, uint8_t key_width, uint8_t value_width) {
-        auto raw_key_width = std::max(key_width, m_key_width.get_width());
-        auto raw_val_width = std::max(value_width, m_val_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
+        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
         access_with_handler(key, raw_key_width, raw_val_width, InsertHandler {
             std::move(value)
@@ -157,8 +130,8 @@ public:
     inline reference_type access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
         pointer_type addr = pointer_type();
 
-        auto raw_key_width = std::max(key_width, m_key_width.get_width());
-        auto raw_val_width = std::max(value_width, m_val_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
+        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
         access_with_handler(key, raw_key_width, raw_val_width, AddressDefaultHandler {
             &addr
@@ -181,7 +154,7 @@ public:
     /// Note that it is more efficient to change the width directly during
     /// insertion of a new value.
     inline void grow_key_width(size_t key_width) {
-        auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
         grow_if_needed(size(), raw_key_width, value_width());
     }
 
@@ -190,8 +163,8 @@ public:
     /// Note that it is more efficient to change the width directly during
     /// insertion of a new value.
     inline void grow_kv_width(size_t key_width, size_t value_width) {
-        auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
-        auto raw_val_width = std::max<size_t>(value_width, m_val_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
+        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
         grow_if_needed(size(), raw_key_width, raw_val_width);
     }
 
@@ -213,6 +186,10 @@ public:
     // -----------------------
 
     struct statistics_t {
+        size_t buckets = 1;
+        size_t allocated_buckets = 1;
+        size_t buckets_real_allocated_capacity_in_bytes = 0;
+
         size_t real_allocated_capacity_in_bytes = 0;
         uint64_t theoretical_minimum_size_in_bits = 0;
     };
@@ -223,7 +200,7 @@ public:
         // NB: Sizes of members with constant size are not included (eg, sizeof(m_buckets))
         r.real_allocated_capacity_in_bytes += m_values.stat_allocation_size_in_bytes();
         r.real_allocated_capacity_in_bytes += m_quots.stat_allocation_size_in_bytes();
-        r.real_allocated_capacity_in_bytes += m_cv.stat_allocation_size_in_bytes();
+        r.real_allocated_capacity_in_bytes += this->m_cv.stat_allocation_size_in_bytes();
 
         // Calculate minimum bits needed
         // Quotient bitvectors across all buckets
@@ -240,71 +217,6 @@ public:
     /// of the entire state of the hashtable
     inline std::string debug_state() {
         std::stringstream ss;
-
-        bool gap_active = false;
-        size_t gap_start;
-        size_t gap_end;
-
-        auto print_gap = [&](){
-            if (gap_active) {
-                gap_active = false;
-                ss << "    [" << gap_start << " to " << gap_end << " empty]\n";
-            }
-        };
-
-        auto add_gap = [&](size_t i){
-            if (!gap_active) {
-                gap_active = true;
-                gap_start = i;
-            }
-            gap_end = i;
-        };
-
-        std::vector<std::string> lines(table_size());
-
-        uint64_t initial_address;
-        size_t j;
-        auto iter = iter_all_t(*this);
-        while(iter.next(&initial_address, &j)) {
-            std::stringstream ss2;
-
-            auto kv = get_bucket_elem_at(j);
-            auto stored_quotient = kv.get_quotient();
-            auto val_ptr = kv.val_ptr();
-            key_t key = compose_key(initial_address, stored_quotient);
-
-            ss2 << j
-                << "\t: v = " << get_v(j)
-                << ", c = " << get_c(j)
-                << ", quot = " << stored_quotient
-                << ", iadr = " << initial_address
-                << "\t, key = " << key
-                << "\t, value = " << *val_ptr
-                << "\t (" << val_ptr << ")";
-
-            lines.at(j) = ss2.str();
-        }
-
-        ss << "key_width(): " << key_width() << "\n";
-        ss << "size: " << size() << "\n";
-        ss << "[\n";
-        for (size_t i = 0; i < table_size(); i++) {
-            bool cv_exist = lines.at(i) != "";
-
-            DCHECK_EQ(cv_exist, table_pos_contains_value(i));
-
-            if (cv_exist) {
-                print_gap();
-                ss << "    "
-                    << lines.at(i)
-                    << "\n";
-            } else {
-                add_gap(i);
-            }
-        }
-        print_gap();
-        ss << "]";
-
         return ss.str();
     }
 

@@ -37,6 +37,8 @@ class compact_sparse_hashtable_t: public base_table_t<val_t, hash_t> {
     using base_t::set_c;
     using base_t::m_hash;
     using base_t::m_sizing;
+    using base_t::decompose_key;
+    using base_t::compose_key;
 
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
@@ -356,34 +358,6 @@ private:
         for(size_t i = 0; i < m_buckets.size(); i++) {
             m_buckets[i].destroy_vals(qw, vw);
         }
-    }
-
-    /// Debug check that a key does not occupy more bits than the
-    /// hashtable currently allows.
-    inline bool dcheck_key_width(uint64_t key) {
-        uint64_t key_mask = (1ull << (key_width() - 1ull) << 1ull) - 1ull;
-        bool key_is_too_large = key & ~key_mask;
-        return !key_is_too_large;
-    }
-
-    /// Decompose a key into its initial address and quotient.
-    inline decomposed_key_t decompose_key(uint64_t key) {
-        DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
-
-        uint64_t hres = m_hash.hash(key);
-
-        DCHECK_EQ(m_hash.hash_inv(hres), key);
-
-        return m_sizing.decompose_hashed_value(hres);
-    }
-
-    /// Compose a key from its initial address and quotient.
-    inline uint64_t compose_key(uint64_t initial_address, uint64_t quotient) {
-        uint64_t harg = m_sizing.compose_hashed_value(initial_address, quotient);
-        uint64_t key = m_hash.hash_inv(harg);
-
-        DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
-        return key;
     }
 
     /// Access the element represented by `handler` under

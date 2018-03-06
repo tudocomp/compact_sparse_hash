@@ -214,6 +214,34 @@ protected:
         auto x = m_cv[pos] & 0b01;
         m_cv[pos] = x | (0b10 * c);
     }
+
+    /// Debug check that a key does not occupy more bits than the
+    /// hashtable currently allows.
+    inline bool dcheck_key_width(uint64_t key) {
+        uint64_t key_mask = (1ull << (key_width() - 1ull) << 1ull) - 1ull;
+        bool key_is_too_large = key & ~key_mask;
+        return !key_is_too_large;
+    }
+
+    /// Decompose a key into its initial address and quotient.
+    inline decomposed_key_t decompose_key(uint64_t key) {
+        DCHECK(dcheck_key_width(key)) << "Attempt to decompose key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
+
+        uint64_t hres = m_hash.hash(key);
+
+        DCHECK_EQ(m_hash.hash_inv(hres), key);
+
+        return m_sizing.decompose_hashed_value(hres);
+    }
+
+    /// Compose a key from its initial address and quotient.
+    inline uint64_t compose_key(uint64_t initial_address, uint64_t quotient) {
+        uint64_t harg = m_sizing.compose_hashed_value(initial_address, quotient);
+        uint64_t key = m_hash.hash_inv(harg);
+
+        DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
+        return key;
+    }
 };
 
 }}
