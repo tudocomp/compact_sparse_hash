@@ -25,51 +25,39 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - elements in buckets
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-class compact_hashtable_t: base_table_t<compact_hashtable_t, val_t, hash_t> {
-    using base_t = base_table_t<compact_hashtable_t, val_t, hash_t>;
+class compact_hashtable_t: public base_table_t<val_t, hash_t> {
+    using base_t = base_table_t<val_t, hash_t>;
     friend base_t;
     using base_t::real_width;
     using typename base_t::InsertHandler;
     using typename base_t::AddressDefaultHandler;
     using base_t::get_v;
-    using base_t::get_s;
+    using base_t::get_c;
     using base_t::set_v;
-    using base_t::set_s;
+    using base_t::set_c;
+    using base_t::m_hash;
+    using base_t::m_sizing;
 
-public:
-    using typename base_t::value_type;
-    using typename base_t::pointer_type;
-    using typename base_t::reference_type;
-
-private:
-    using key_t = uint64_t;
-
-    using key_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
-
-    // TODO: Change this, and fix tests
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
     static constexpr size_t DEFAULT_VALUE_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
-
-    /// Compact table data (c and v bitvectors)
-    IntVector<uint_t<2>> m_cv;
 
     /// Compact stored data (values and quots)
     IntVector<val_t> m_values;
     IntVector<dynamic_t> m_quots;
     value_type m_empty_value;
 
-    /// Size of table, and width of the stored keys and values
-    size_manager_t m_sizing;
-    key_width_t m_key_width;
-    val_width_t m_val_width;
-
-    /// Hash function
-    hash_t m_hash {1};
-
 public:
+    using typename base_t::value_type;
+    using typename base_t::reference_type;
+    using typename base_t::pointer_type;
+    using base_t::size;
+    using base_t::table_size;
+    using base_t::key_width;
+    using base_t::value_width;
+    using base_t::quotient_width;
+
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline compact_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
@@ -207,40 +195,6 @@ public:
         grow_if_needed(size(), raw_key_width, raw_val_width);
     }
 
-    /// Returns the amount of elements inside the datastructure.
-    inline size_t size() const {
-        return m_sizing.size();
-    }
-
-    /// Returns the current size of the hashtable.
-    /// This value is greater-or-equal the amount of the elements
-    /// currently contained in it, which is represented by `size()`.
-    inline size_t table_size() {
-        return m_sizing.capacity();
-    }
-
-    /// Current width of the keys stored in this datastructure.
-    inline size_t key_width() {
-        return m_key_width.get_width();
-    }
-
-    /// Current width of the values stored in this datastructure.
-    inline size_t value_width() {
-        return m_val_width.get_width();
-    }
-
-    /// Amount of bits of the key, that are stored implicitly
-    /// by its position in the table.
-    inline size_t initial_address_width() {
-        return m_sizing.capacity_log2();
-    }
-
-    /// Amount of bits of the key, that are stored explicitly
-    /// in the buckets.
-    inline size_t quotient_width() {
-        return real_width() - m_sizing.capacity_log2();
-    }
-
     // TODO: STL-conform API?
     /// Search for a key inside the hashtable.
     ///
@@ -252,19 +206,6 @@ public:
             return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
         return pointer_type();
-    }
-
-    /// Sets the maximum load factor
-    /// (how full the table can get before re-allocating).
-    ///
-    /// Expects a value `0.0 < z < 1.0`.
-    inline void max_load_factor(float z) {
-        m_sizing.max_load_factor(z);
-    }
-
-    /// Returns the maximum load factor.
-    inline float max_load_factor() const noexcept {
-        return m_sizing.max_load_factor();
     }
 
     // -----------------------

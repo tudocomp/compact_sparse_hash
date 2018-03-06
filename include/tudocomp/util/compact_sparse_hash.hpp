@@ -25,66 +25,50 @@ namespace tdc {namespace compact_sparse_hashtable {
 // - elements in buckets
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-class compact_sparse_hashtable_t: base_table_t<compact_sparse_hashtable_t, val_t, hash_t> {
-    using base_t = base_table_t<compact_sparse_hashtable_t, val_t, hash_t>;
+class compact_sparse_hashtable_t: public base_table_t<val_t, hash_t> {
+    using base_t = base_table_t<val_t, hash_t>;
     friend base_t;
     using base_t::real_width;
     using typename base_t::InsertHandler;
     using typename base_t::AddressDefaultHandler;
     using base_t::get_v;
-    using base_t::get_s;
+    using base_t::get_c;
     using base_t::set_v;
-    using base_t::set_s;
+    using base_t::set_c;
+    using base_t::m_hash;
+    using base_t::m_sizing;
 
-    using key_t = uint64_t;
-    using buckets_t = std::vector<bucket_t<val_t>>;
-
-    using key_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
-
-    // TODO: Change this, and fix tests
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
     static constexpr size_t DEFAULT_VALUE_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
-    /// Compact table data (c and v bitvectors)
-    IntVector<uint_t<2>> m_cv;
+    using buckets_t = std::vector<bucket_t<val_t>>;
 
     /// Sparse table data (buckets)
     buckets_t m_buckets;
 
-    /// Size of table, and width of the stored keys and values
-    size_manager_t m_sizing;
-    key_width_t m_key_width;
-    val_width_t m_val_width;
-
-    /// Hash function
-    hash_t m_hash {1};
-
 public:
     using typename base_t::value_type;
-    using typename base_t::pointer_type;
     using typename base_t::reference_type;
+    using typename base_t::pointer_type;
+    using base_t::size;
+    using base_t::table_size;
+    using base_t::key_width;
+    using base_t::value_width;
+    using base_t::quotient_width;
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
                                       size_t key_width = DEFAULT_KEY_WIDTH,
                                       size_t value_width = DEFAULT_VALUE_WIDTH):
-        m_sizing(size),
-        m_key_width(key_width),
-        m_val_width(value_width)
+        base_t(size, key_width, value_width)
     {
-        size_t cv_size = table_size();
         size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size());
 
-        m_cv.reserve(cv_size);
-        m_cv.resize(cv_size);
         m_buckets.reserve(buckets_size);
         m_buckets.resize(buckets_size);
-
-        m_hash = hash_t(real_width());
     }
 
     inline ~compact_sparse_hashtable_t() {
@@ -94,12 +78,8 @@ public:
     }
 
     inline compact_sparse_hashtable_t(compact_sparse_hashtable_t&& other):
-        m_cv(std::move(other.m_cv)),
-        m_buckets(std::move(other.m_buckets)),
-        m_sizing(std::move(other.m_sizing)),
-        m_key_width(std::move(other.m_key_width)),
-        m_val_width(std::move(other.m_val_width)),
-        m_hash(std::move(other.m_hash))
+        base_t(std::move(other)),
+        m_buckets(std::move(other.m_buckets))
     {
     }
 
@@ -108,12 +88,8 @@ public:
         /// which will not destroy their elements.
         run_destructors_of_bucket_elements();
 
-        m_cv = std::move(other.m_cv);
+        base_t::operator=(std::move(other));
         m_buckets = std::move(other.m_buckets);
-        m_sizing = std::move(other.m_sizing);
-        m_key_width = std::move(other.m_key_width);
-        m_val_width = std::move(other.m_val_width);
-        m_hash = std::move(other.m_hash);
 
         return *this;
     }
@@ -134,8 +110,8 @@ public:
     /// Inserts a key-value pair into the hashtable,
     /// and grow the key and value width as needed.
     inline void insert_kv_width(uint64_t key, value_type&& value, uint8_t key_width, uint8_t value_width) {
-        auto raw_key_width = std::max(key_width, m_key_width.get_width());
-        auto raw_val_width = std::max(value_width, m_val_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
+        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
         access_with_handler(key, raw_key_width, raw_val_width, InsertHandler {
             std::move(value)
@@ -167,8 +143,8 @@ public:
     inline reference_type access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
         pointer_type addr = pointer_type();
 
-        auto raw_key_width = std::max(key_width, m_key_width.get_width());
-        auto raw_val_width = std::max(value_width, m_val_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
+        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
         access_with_handler(key, raw_key_width, raw_val_width, AddressDefaultHandler {
             &addr
@@ -191,7 +167,7 @@ public:
     /// Note that it is more efficient to change the width directly during
     /// insertion of a new value.
     inline void grow_key_width(size_t key_width) {
-        auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
         grow_if_needed(size(), raw_key_width, value_width());
     }
 
@@ -200,43 +176,9 @@ public:
     /// Note that it is more efficient to change the width directly during
     /// insertion of a new value.
     inline void grow_kv_width(size_t key_width, size_t value_width) {
-        auto raw_key_width = std::max<size_t>(key_width, m_key_width.get_width());
-        auto raw_val_width = std::max<size_t>(value_width, m_val_width.get_width());
+        auto raw_key_width = std::max<size_t>(key_width, this->key_width());
+        auto raw_val_width = std::max<size_t>(value_width, this->value_width());
         grow_if_needed(size(), raw_key_width, raw_val_width);
-    }
-
-    /// Returns the amount of elements inside the datastructure.
-    inline size_t size() const {
-        return m_sizing.size();
-    }
-
-    /// Returns the current size of the hashtable.
-    /// This value is greater-or-equal the amount of the elements
-    /// currently contained in it, which is represented by `size()`.
-    inline size_t table_size() {
-        return m_sizing.capacity();
-    }
-
-    /// Current width of the keys stored in this datastructure.
-    inline size_t key_width() {
-        return m_key_width.get_width();
-    }
-
-    /// Current width of the values stored in this datastructure.
-    inline size_t value_width() {
-        return m_val_width.get_width();
-    }
-
-    /// Amount of bits of the key, that are stored implicitly
-    /// by its position in the table.
-    inline size_t initial_address_width() {
-        return m_sizing.capacity_log2();
-    }
-
-    /// Amount of bits of the key, that are stored explicitly
-    /// in the buckets.
-    inline size_t quotient_width() {
-        return real_width() - m_sizing.capacity_log2();
     }
 
     // TODO: STL-conform API?
@@ -250,19 +192,6 @@ public:
             return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
         }
         return pointer_type();
-    }
-
-    /// Sets the maximum load factor
-    /// (how full the table can get before re-allocating).
-    ///
-    /// Expects a value `0.0 < z < 1.0`.
-    inline void max_load_factor(float z) {
-        m_sizing.max_load_factor(z);
-    }
-
-    /// Returns the maximum load factor.
-    inline float max_load_factor() const noexcept {
-        return m_sizing.max_load_factor();
     }
 
     // -----------------------
@@ -293,7 +222,7 @@ public:
         r.real_allocated_capacity_in_bytes += m_buckets.capacity() * sizeof(bucket_t<val_t>);
         r.real_allocated_capacity_in_bytes += r.buckets_real_allocated_capacity_in_bytes;
         // Size of cv bitvectors
-        r.real_allocated_capacity_in_bytes += m_cv.stat_allocation_size_in_bytes();
+        r.real_allocated_capacity_in_bytes += this->m_cv.stat_allocation_size_in_bytes();
 
         // Calculate minimum bits needed
         // Occupation bitvector inside allocated buckets
@@ -432,7 +361,7 @@ private:
     /// Debug check that a key does not occupy more bits than the
     /// hashtable currently allows.
     inline bool dcheck_key_width(uint64_t key) {
-        uint64_t key_mask = (1ull << (m_key_width.get_width() - 1ull) << 1ull) - 1ull;
+        uint64_t key_mask = (1ull << (key_width() - 1ull) << 1ull) - 1ull;
         bool key_is_too_large = key & ~key_mask;
         return !key_is_too_large;
     }
