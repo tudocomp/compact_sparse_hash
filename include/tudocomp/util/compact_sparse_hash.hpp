@@ -66,12 +66,41 @@ public:
 
     /// Run the destructors of the elements of the `i`-th bucket,
     /// and drop it from the hashtable, replacing it with an empty one.
-    inline void drop_bucket(size_t i) {
+    inline void drop_bucket(size_t i, size_t qw, size_t vw) {
         DCHECK_LT(i, m_buckets.size());
-        size_t qw = quotient_width();
-        size_t vw = value_width();
         m_buckets[i].destroy_vals(qw, vw);
         m_buckets[i] = bucket_t<val_t>();
+    }
+
+    template<typename F>
+    inline void drain_all(F f, size_t qw, size_t vw) {
+        bool start_of_bucket = false;
+        size_t bucket = 0;
+
+        uint64_t initial_address;
+        size_t i;
+        auto iter = iter_all_t(*this);
+        while(iter.next(&initial_address, &i)) {
+            auto p = sparse_pos(i);
+
+            // drop buckets of old table as they get emptied out
+            if (p.offset_in_bucket() == 0) {
+                if (start_of_bucket) {
+                    DCHECK_NE(bucket, p.idx_of_bucket);
+                    drop_bucket(bucket, qw, vw);
+                }
+
+                start_of_bucket = true;
+                bucket = p.idx_of_bucket;
+            }
+
+            auto kv = get_val_quot_at(p);
+            auto stored_quotient = kv.get_quotient();
+
+            key_t key = compose_key(initial_address, stored_quotient);
+
+            f(std::move(key), std::move(*kv.val_ptr()));
+        }
     }
 
     // -----------------------
@@ -505,33 +534,9 @@ private:
                 << "\n";
             */
 
-            bool start_of_bucket = false;
-            size_t bucket = 0;
-
-            uint64_t initial_address;
-            size_t i;
-            auto iter = iter_all_t(*this);
-            while(iter.next(&initial_address, &i)) {
-                auto p = sparse_pos(i);
-
-                // drop buckets of old table as they get emptied out
-                if (p.offset_in_bucket() == 0) {
-                    if (start_of_bucket) {
-                        DCHECK_NE(bucket, p.idx_of_bucket);
-                        drop_bucket(bucket);
-                    }
-
-                    start_of_bucket = true;
-                    bucket = p.idx_of_bucket;
-                }
-
-                auto kv = get_val_quot_at(p);
-                auto stored_quotient = kv.get_quotient();
-
-                key_t key = compose_key(initial_address, stored_quotient);
-
-                new_table.insert(key, std::move(*kv.val_ptr()));
-            }
+            drain_all([&](auto&& key, auto&& val) {
+                new_table.insert(std::move(key), std::move(val));
+            }, quotient_width(), value_width()):
 
             *this = std::move(new_table);
         }

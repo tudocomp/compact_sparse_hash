@@ -220,7 +220,7 @@ public:
 // Evaluation and Debugging
 // -----------------------
 
-    inline typename val_quot_storage_t::statistics_t stat_gather() {
+    inline typename val_quot_storage_t<val_t>::statistics_t stat_gather() {
         return m_storage.stat_gather();
     }
 
@@ -228,6 +228,8 @@ public:
     /// of the entire state of the hashtable
     inline std::string debug_state() {
         std::stringstream ss;
+
+        /*
 
         bool gap_active = false;
         size_t gap_start;
@@ -292,6 +294,8 @@ public:
         }
         print_gap();
         ss << "]";
+
+        */
 
         return ss.str();
     }
