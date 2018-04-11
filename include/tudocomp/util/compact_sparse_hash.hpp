@@ -65,8 +65,8 @@ public:
         bucket_t<val_t> const* m_bucket;
         val_quot_ptrs_t<val_t>    m_b_start;
         val_quot_ptrs_t<val_t>    m_b_end;
-        size_t               m_quotient_width;
-        size_t               m_value_width;
+        size_t const              m_quotient_width;
+        size_t const              m_value_width;
 
         inline void set_bucket_elem_range(size_t end_offset) {
             size_t start_offset = 0;
@@ -77,10 +77,10 @@ public:
         }
 
         inline buckets_iter_t(buckets_t const& buckets,
-                            TablePos const& pos, size_t qw, size_t vw) {
-            m_quotient_width = qw;
-            m_value_width = vw;
-
+                            TablePos const& pos, size_t qw, size_t vw):
+            m_quotient_width(qw),
+            m_value_width(vw)
+        {
             // NB: Using pointer arithmetic here, because
             // we can (intentionally) end up with the address 1-past
             // the end of the vector, which represents an end-iterator.
@@ -125,8 +125,8 @@ public:
 
     class with_qv_width_t {
         buckets_t& m_buckets;
-        size_t m_quotient_width;
-        size_t m_value_width;
+        size_t const m_quotient_width;
+        size_t const m_value_width;
     public:
         inline with_qv_width_t(buckets_t& buckets, size_t qw, size_t vw):
             m_buckets(buckets),
@@ -134,9 +134,11 @@ public:
             m_value_width(vw) {}
 
         inline with_qv_width_t(with_qv_width_t&&) = default;
-        inline with_qv_width_t& operator=(with_qv_width_t&&) = default;
+        inline with_qv_width_t& operator=(with_qv_width_t&&) = delete;
 
-        inline void run_destructors_of_elements(size_t qw, size_t vw) {
+        inline void run_destructors_of_elements() {
+            size_t qw = m_quotient_width;
+            size_t vw = m_value_width;
             for(size_t i = 0; i < m_buckets.size(); i++) {
                 m_buckets[i].destroy_vals(qw, vw);
             }
@@ -144,14 +146,16 @@ public:
 
         /// Run the destructors of the elements of the `i`-th bucket,
         /// and drop it from the hashtable, replacing it with an empty one.
-        inline void drop_bucket(size_t i, size_t qw, size_t vw) {
+        inline void drop_bucket(size_t i) {
+            size_t qw = m_quotient_width;
+            size_t vw = m_value_width;
             DCHECK_LT(i, m_buckets.size());
             m_buckets[i].destroy_vals(qw, vw);
             m_buckets[i] = bucket_t<val_t>();
         }
 
         template<typename iter_all_t, typename F>
-        inline void drain_all(F f, iter_all_t&& iter, size_t qw, size_t vw) {
+        inline void drain_all(F f, iter_all_t&& iter) {
             bool start_of_bucket = false;
             size_t bucket = 0;
 
@@ -164,7 +168,7 @@ public:
                 if (p.offset_in_bucket() == 0) {
                     if (start_of_bucket) {
                         DCHECK_NE(bucket, p.idx_of_bucket);
-                        drop_bucket(bucket, qw, vw);
+                        drop_bucket(bucket);
                     }
 
                     start_of_bucket = true;
@@ -191,15 +195,18 @@ public:
             return table_pos(i).exists_in_bucket();
         }
 
-        inline val_quot_ptrs_t<val_t> get_val_quot_at(TablePos pos, size_t qw, size_t vw) {
+        inline val_quot_ptrs_t<val_t> get_val_quot_at(TablePos pos) {
+            size_t qw = m_quotient_width;
+            size_t vw = m_value_width;
             DCHECK(pos.exists_in_bucket());
             return pos.bucket().at(pos.offset_in_bucket(), qw, vw);
         }
 
         /// Insert a key-value pair into a empty location in the table.
         template<typename handler_t>
-        inline void table_set_at_empty(size_t pos, key_t quot, handler_t&& handler,
-                                    size_t qw, size_t vw) {
+        inline void table_set_at_empty(size_t pos, key_t quot, handler_t&& handler) {
+            size_t qw = m_quotient_width;
+            size_t vw = m_value_width;
             auto data = table_pos(pos);
             DCHECK(!data.exists_in_bucket());
 
@@ -224,9 +231,9 @@ public:
             value_handler.new_location(new_loc.val_ptr());
         }
 
-        inline InsertIter make_insert_iter(TablePos const& pos,
-                                        size_t qw,
-                                        size_t vw) {
+        inline InsertIter make_insert_iter(TablePos const& pos) {
+            size_t qw = m_quotient_width;
+            size_t vw = m_value_width;
             return InsertIter(m_buckets, pos, qw, vw);
         }
 
@@ -235,8 +242,11 @@ public:
         // -----------------------
 
 
-        inline statistics_t stat_gather(size_t qw, size_t vw, size_t size, size_t cv_allocation) {
+        inline statistics_t stat_gather(size_t size, size_t cv_allocation) {
             statistics_t r;
+
+            size_t qw = m_quotient_width;
+            size_t vw = m_value_width;
 
             r.buckets = m_buckets.size();
 

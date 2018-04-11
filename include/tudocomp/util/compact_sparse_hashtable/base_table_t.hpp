@@ -236,9 +236,7 @@ public:
 // -----------------------
 
     inline typename val_quot_storage_t<val_t>::statistics_t stat_gather() {
-        return storage().stat_gather(quotient_width(),
-                                     value_width(),
-                                     size(),
+        return storage().stat_gather(size(),
                                      m_cv.stat_allocation_size_in_bytes());
     }
 
@@ -481,9 +479,7 @@ private:
     /// to prevent unneeded empty-constructions of its elements.
     /// TODO: Is this still a useful semantic? A bucket_t can manage its own data.
     inline void run_destructors_of_elements() {
-        size_t qw = quotient_width();
-        size_t vw = value_width();
-        storage().run_destructors_of_elements(qw, vw);
+        storage().run_destructors_of_elements();
     }
 
     /// Access the element represented by `handler` under
@@ -515,9 +511,7 @@ private:
 
             storage().table_set_at_empty(dkey.initial_address,
                                          dkey.stored_quotient,
-                                         std::move(handler),
-                                         this->quotient_width(),
-                                         this->value_width());
+                                         std::move(handler));
 
             // we created a new group, so update the bitflags
             set_v(dkey.initial_address, true);
@@ -628,7 +622,7 @@ private:
         // insert the element from the end of the range at the free
         // position to the right of it.
         auto insert = InsertHandler(std::move(val));
-        storage().table_set_at_empty(to, quot, std::move(insert), quotient_width(), value_width());
+        storage().table_set_at_empty(to, quot, std::move(insert));
 
         // after the previous insert and a potential reallocation,
         // notify the handler about the address of the new value.
@@ -702,10 +696,12 @@ private:
         return pointer_type();
     }
 
+    // TODO: Remove
     inline val_quot_ptrs_t<val_t> get_val_quot_at(TablePos pos) {
-        return storage().get_val_quot_at(pos, quotient_width(), value_width());
+        return storage().get_val_quot_at(pos);
     }
 
+    // TODO: Remove?
     inline val_quot_ptrs_t<val_t> get_val_quot_at(size_t pos) {
         return get_val_quot_at(storage().table_pos(pos));
     }
@@ -721,9 +717,7 @@ private:
             // if there is no following group, just append the new entry
             storage().table_set_at_empty(group.group_end,
                                          dkey.stored_quotient,
-                                         std::move(handler),
-                                         quotient_width(),
-                                         value_width());
+                                         std::move(handler));
         } else {
             // else, shift all following elements one to the right
             table_shift_groups_and_insert(group.group_end,
@@ -865,7 +859,7 @@ private:
                 auto stored_quotient = kv.get_quotient();
                 auto key = compose_key(initial_address, stored_quotient);
                 new_table.insert(key, std::move(*kv.val_ptr()));
-            }, iter_all_t(*this), quotient_width(), value_width());
+            }, iter_all_t(*this));
 
             *this = std::move(new_table);
         }
@@ -887,15 +881,11 @@ private:
         //    <- dest^
 
         auto from_loc = storage().table_pos(from);
-        auto from_iter = storage().make_insert_iter(from_loc, quotient_width(), value_width());
+        auto from_iter = storage().make_insert_iter(from_loc);
 
         auto last = storage().table_pos(to - 1);
-        auto src = storage().make_insert_iter(last,
-                                              quotient_width(),
-                                              value_width());
-        auto dst = storage().make_insert_iter(storage().table_pos(to),
-                                              quotient_width(),
-                                              value_width());
+        auto src = storage().make_insert_iter(last);
+        auto dst = storage().make_insert_iter(storage().table_pos(to));
 
         // move the element at the last position to a temporary position
         auto  tmp_p    = get_val_quot_at(last);
