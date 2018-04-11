@@ -93,12 +93,7 @@ public:
                 bucket = p.idx_of_bucket;
             }
 
-            auto kv = get_val_quot_at(p);
-            auto stored_quotient = kv.get_quotient();
-
-            key_t key = compose_key(initial_address, stored_quotient);
-
-            f(std::move(key), std::move(*kv.val_ptr()));
+            f(initial_address, p);
         }
     }
 
@@ -207,6 +202,12 @@ public:
     };
 
     using InsertIter = buckets_iter_t;
+
+    inline InsertIter make_insert_iter(TablePos const& pos,
+                                       size_t qw,
+                                       size_t vw) {
+        return InsertIter(*this, pos, qw, vw);
+    }
 
     // -----------------------
     // Evaluation and Debugging

@@ -322,6 +322,8 @@ private:
     using key_t = uint64_t;
     using key_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
     using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
+    // TODO: Remove this using
+    // using InsertIter = typename val_quot_storage_t<val_t>::InsertIter;
 
     /// Compact table data (c and v bitvectors)
     IntVector<uint_t<2>> m_cv;
@@ -622,7 +624,7 @@ private:
         // insert the element from the end of the range at the free
         // position to the right of it.
         auto insert = InsertHandler(std::move(val));
-        table_set_at_empty(to, quot, std::move(insert));
+        m_storage.table_set_at_empty(to, quot, std::move(insert), quotient_width(), value_width());
 
         // after the previous insert and a potential reallocation,
         // notify the handler about the address of the new value.
@@ -697,7 +699,7 @@ private:
     }
 
     inline val_quot_ptrs_t<val_t> get_val_quot_at(TablePos pos) {
-        m_storage.get_val_quot_at(pos, quotient_width(), value_width());
+        return m_storage.get_val_quot_at(pos, quotient_width(), value_width());
     }
 
     inline val_quot_ptrs_t<val_t> get_val_quot_at(size_t pos) {
@@ -773,7 +775,7 @@ private:
                 if (state == EMPTY_LOCATIONS) {
                     // skip empty locations
                     for(;;i = m_self.m_sizing.mod_add(i)) {
-                        if (m_self.table_pos_contains_value(i)) {
+                        if (m_self.m_storage.table_pos_contains_value(i)) {
                             // we initialize init-addr at 1 pos before the start of
                             // a group of blocks, so that the blocks iteration logic works
                             initial_address = m_self.m_sizing.mod_sub(i);
@@ -786,7 +788,7 @@ private:
                     }
                 } else {
                     // process full locations
-                    if (m_self.table_pos_is_empty(i))  {
+                    if (m_self.m_storage.table_pos_is_empty(i))  {
                         state = EMPTY_LOCATIONS;
                         continue;
                     }
@@ -854,9 +856,12 @@ private:
                 << "\n";
             */
 
-            m_storage.drain_all(iter_all_t(*this), [&](auto&& key, auto&& val) {
-                new_table.insert(std::move(key), std::move(val));
-            }, quotient_width(), value_width());
+            m_storage.drain_all([&](auto initial_address, auto table_pos) {
+                auto kv = get_val_quot_at(table_pos);
+                auto stored_quotient = kv.get_quotient();
+                auto key = compose_key(initial_address, stored_quotient);
+                new_table.insert(key, std::move(*kv.val_ptr()));
+            }, iter_all_t(*this), quotient_width(), value_width());
 
             *this = std::move(new_table);
         }
@@ -878,11 +883,15 @@ private:
         //    <- dest^
 
         auto from_loc = m_storage.table_pos(from);
-        auto from_iter = InsertIter(*this, from_loc);
+        auto from_iter = m_storage.make_insert_iter(from_loc, quotient_width(), value_width());
 
         auto last = m_storage.table_pos(to - 1);
-        auto src = InsertIter(*this, last);
-        auto dst = InsertIter(*this, m_storage.table_pos(to));
+        auto src = m_storage.make_insert_iter(last,
+                                              quotient_width(),
+                                              value_width());
+        auto dst = m_storage.make_insert_iter(m_storage.table_pos(to),
+                                              quotient_width(),
+                                              value_width());
 
         // move the element at the last position to a temporary position
         auto  tmp_p    = get_val_quot_at(last);
