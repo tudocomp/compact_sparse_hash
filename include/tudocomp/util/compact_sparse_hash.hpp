@@ -25,18 +25,26 @@ namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t>
 class compact_sparse_storage_t {
+public:
+    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+
+private:
     using buckets_t = std::vector<bucket_t<val_t>>;
 
     /// Sparse table data (buckets)
     buckets_t m_buckets;
 
+    value_type m_empty_value;
+
 public:
+
     inline compact_sparse_storage_t() {}
-    inline compact_sparse_storage_t(size_t table_size) {
+    inline compact_sparse_storage_t(size_t table_size, value_type const& empty_value) {
         size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
         m_buckets.reserve(buckets_size);
         m_buckets.resize(buckets_size);
+        m_empty_value = empty_value;
     }
 
     /// Maps hashtable position to position of the corresponding bucket,
@@ -125,11 +133,13 @@ public:
 
     class with_qv_width_t {
         buckets_t& m_buckets;
+        value_type& m_empty_value;
         size_t const m_quotient_width;
         size_t const m_value_width;
     public:
-        inline with_qv_width_t(buckets_t& buckets, size_t qw, size_t vw):
+        inline with_qv_width_t(buckets_t& buckets, value_type& empty_value, size_t qw, size_t vw):
             m_buckets(buckets),
+            m_empty_value(empty_value),
             m_quotient_width(qw),
             m_value_width(vw) {}
 
@@ -237,10 +247,13 @@ public:
             return InsertIter(m_buckets, pos, qw, vw);
         }
 
+        inline value_type const& empty_value() {
+            return m_empty_value;
+        }
+
         // -----------------------
         // Evaluation and Debugging
         // -----------------------
-
 
         inline statistics_t stat_gather(size_t size, size_t cv_allocation) {
             statistics_t r;
@@ -279,7 +292,7 @@ public:
     friend class with_qv_with_t;
     inline with_qv_width_t with_qv_width(size_t qw, size_t vw) {
         return with_qv_width_t {
-            m_buckets, qw, vw
+            m_buckets, m_empty_value, qw, vw
         };
     }
 
@@ -289,6 +302,7 @@ template<typename val_t, typename hash_t = poplar_xorshift_t>
 class compact_sparse_hashtable_t: public base_table_t<compact_sparse_storage_t, val_t, hash_t> {
     using base_t = base_table_t<compact_sparse_storage_t, val_t, hash_t>;
 public:
+    using value_type = typename base_t::value_type;
 
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
@@ -299,8 +313,9 @@ public:
     /// and a initial key bit-width `key_width`.
     inline compact_sparse_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
                                       size_t key_width = DEFAULT_KEY_WIDTH,
-                                      size_t value_width = DEFAULT_VALUE_WIDTH):
-        base_t(size, key_width, value_width)
+                                      size_t value_width = DEFAULT_VALUE_WIDTH,
+                                      value_type const& empty_value = value_type()):
+        base_t(size, key_width, value_width, empty_value)
     {
     }
 

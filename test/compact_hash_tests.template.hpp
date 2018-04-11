@@ -14,13 +14,6 @@ inline void debug_check_single(table_t& table, uint64_t key, typename table_t::v
     }
 }
 
-std::ostream& operator<<(std::ostream& os, Init const& v) {
-    return os << "Init(" << v.c << ")";
-}
-
-bool operator==(Init const& lhs, Init const& rhs) {
-    return lhs.c == rhs.c && lhs.empty == rhs.empty;
-}
 
 template<typename hashfn_t>
 void test_hashfn() {
@@ -56,19 +49,19 @@ TEST(hashfn, poplar_xorshift) {
 TEST(hash, insert) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(256, 16);
-    ch.insert(44, Init());
-    ch.insert(45, Init());
-    ch.insert(45, Init());
-    ch.insert(44 + 256, Init());
-    ch.insert(45 + 256, Init());
-    ch.insert(46, Init());
+    auto ch = compact_hash<Init>(256, 16, 1, Init::cm(0));
+    ch.insert(44, Init::m(0));
+    ch.insert(45, Init::m(1));
+    ch.insert(45, Init::m(2));
+    ch.insert(44 + 256, Init::m(3));
+    ch.insert(45 + 256, Init::m(4));
+    ch.insert(46, Init::m(5));
 
-    ch.insert(44, Init());
-    ch.insert(45, Init());
-    ch.insert(44 + 256, Init());
-    ch.insert(45 + 256, Init());
-    ch.insert(46, Init());
+    ch.insert(44, Init::m(6));
+    ch.insert(45, Init::m(7));
+    ch.insert(44 + 256, Init::m(8));
+    ch.insert(45 + 256, Init::m(9));
+    ch.insert(46, Init::m(10));
 
     //ch.insert(0);
     //ch.insert(4);
@@ -84,10 +77,10 @@ TEST(hash, insert) {
 TEST(hash, insert_wrap) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(4, 16);
-    ch.insert(3, Init());
-    ch.insert(7, Init());
-    ch.insert(15, Init());
+    auto ch = compact_hash<Init>(4, 16, 1, Init::cm(0));
+    ch.insert(3, Init::m(0));
+    ch.insert(7, Init::m(1));
+    ch.insert(15, Init::m(2));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
@@ -96,42 +89,41 @@ TEST(hash, insert_wrap) {
 }
 
 TEST(hash, insert_move_wrap) {
+    auto ch = compact_hash<Init>(8, 16, 1, Init::cm(0));
     Init::reset();
 
-    auto ch = compact_hash<Init>(8, 16);
+    ch.insert(3, Init::m(0));
+    ch.insert(3 + 8, Init::m(1));
 
-    ch.insert(3, Init());
-    ch.insert(3 + 8, Init());
+    ch.insert(5, Init::m(2));
+    ch.insert(5 + 8, Init::m(3));
+    ch.insert(5 + 16, Init::m(4));
+    ch.insert(5 + 24, Init::m(5));
 
-    ch.insert(5, Init());
-    ch.insert(5 + 8, Init());
-    ch.insert(5 + 16, Init());
-    ch.insert(5 + 24, Init());
-
-    ch.insert(4, Init());
+    ch.insert(4, Init::m(6));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
     //std::cout << "=======================\n";
 
-    debug_check_single(ch, 3,      Init(0));
-    debug_check_single(ch, 3 + 8,  Init(1));
-    debug_check_single(ch, 5,      Init(2));
-    debug_check_single(ch, 5 + 8,  Init(3));
-    debug_check_single(ch, 5 + 16, Init(4));
-    debug_check_single(ch, 5 + 24, Init(5));
-    debug_check_single(ch, 4,      Init(6));
+    debug_check_single(ch, 3,      Init::cm(0));
+    debug_check_single(ch, 3 + 8,  Init::cm(1));
+    debug_check_single(ch, 5,      Init::cm(2));
+    debug_check_single(ch, 5 + 8,  Init::cm(3));
+    debug_check_single(ch, 5 + 16, Init::cm(4));
+    debug_check_single(ch, 5 + 24, Init::cm(5));
+    debug_check_single(ch, 4,      Init::cm(6));
 }
 
 TEST(hash, cornercase) {
+    auto ch = compact_hash<Init>(8, 16, 1, Init::cm(0));
     Init::reset();
 
-    auto ch = compact_hash<Init>(8, 16);
-    ch.insert(0, Init());
-    ch.insert(0 + 8, Init());
+    ch.insert(0, Init::m(0));
+    ch.insert(0 + 8, Init::m(1));
 
-    debug_check_single(ch, 0,      Init(0));
-    debug_check_single(ch, 0 + 8,  Init(1));
+    debug_check_single(ch, 0,      Init::cm(0));
+    debug_check_single(ch, 0 + 8,  Init::cm(1));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
@@ -140,11 +132,10 @@ TEST(hash, cornercase) {
 }
 
 TEST(hash, grow) {
-    Init::reset();
-
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 10, 1, Init::cm(0)); // check that it grows to minimum 2
+    Init::reset();
 
     auto add = [&](auto key, auto&& v0, auto&& v1) {
         ch.insert(key, std::move(v0));
@@ -157,7 +148,7 @@ TEST(hash, grow) {
 
 
     for(size_t i = 0; i < 1000; i++) {
-        add(i, Init(), Init(i));
+        add(i, Init::m(i), Init::cm(i));
     }
 
     //std::cout << "=======================\n";
@@ -167,11 +158,10 @@ TEST(hash, grow) {
 }
 
 TEST(hash, grow_bits) {
-    Init::reset();
-
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 10, 1, Init::cm(0)); // check that it grows to minimum 2
+    Init::reset();
 
     uint8_t bits = 1;
 
@@ -188,7 +178,7 @@ TEST(hash, grow_bits) {
 
 
     for(size_t i = 0; i < 1000; i++) {
-        add(i, Init(), Init(i));
+        add(i, Init::m(i), Init::cm(i));
     }
 
     //std::cout << "=======================\n";
@@ -198,11 +188,10 @@ TEST(hash, grow_bits) {
 }
 
 TEST(hash, grow_bits_larger) {
-    Init::reset();
-
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 0, 1, Init::cm(0)); // check that it grows to minimum 2
+    Init::reset();
 
     uint8_t bits = 1;
 
@@ -219,16 +208,15 @@ TEST(hash, grow_bits_larger) {
 
 
     for(size_t i = 0; i < 10000; i++) {
-        add(i*13ull, Init(), Init(i));
+        add(i*13ull, Init::m(i), Init::cm(i));
     }
 }
 
 TEST(hash, grow_bits_larger_address) {
-    Init::reset();
-
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 0, 1, Init::cm(0)); // check that it grows to minimum 2
+    Init::reset();
 
     uint8_t bits = 1;
 
@@ -245,7 +233,7 @@ TEST(hash, grow_bits_larger_address) {
 
 
     for(size_t i = 0; i < 10000; i++) {
-        add(i*13ull, Init(i));
+        add(i*13ull, Init::m(i));
     }
 
     //std::cout << "=======================\n";
@@ -255,7 +243,8 @@ TEST(hash, grow_bits_larger_address) {
 
 struct find_or_insert_tracer_t {
     compact_hash<uint64_t> ch;
-    find_or_insert_tracer_t(size_t bit_width): ch {0, bit_width} {}
+    find_or_insert_tracer_t(size_t bit_width):
+        ch {0, bit_width} {}
     size_t i = 0;
     bool abort = false;
     std::string last;

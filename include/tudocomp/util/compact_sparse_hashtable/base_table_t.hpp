@@ -38,7 +38,8 @@ public:
 
     inline base_table_t(size_t size,
                         size_t key_width,
-                        size_t value_width
+                        size_t value_width,
+                        value_type const& empty_value
                        ):
         m_sizing(size),
         m_key_width(key_width),
@@ -51,7 +52,7 @@ public:
 
         m_hash = hash_t(real_width());
 
-        m_storage = val_quot_storage_t<val_t>(cv_size);
+        m_storage = val_quot_storage_t<val_t>(cv_size, empty_value);
     }
 
     inline base_table_t(base_table_t&& other):
@@ -131,6 +132,11 @@ public:
     inline float max_load_factor() const noexcept {
         return m_sizing.max_load_factor();
     }
+
+    inline value_type const& empty_value() {
+        return storage().empty_value();
+    }
+
     // TODO: Change to STL-conform interface?
 
     /// Inserts a key-value pair into the hashtable.
@@ -842,7 +848,7 @@ private:
             while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
                 new_capacity = m_sizing.grown_capacity(new_capacity);
             }
-            auto new_table = base_table_t<val_quot_storage_t, val_t, hash_t>(new_capacity, new_key_width, new_value_width);
+            auto new_table = base_table_t<val_quot_storage_t, val_t, hash_t>(new_capacity, new_key_width, new_value_width, this->empty_value());
             new_table.max_load_factor(this->max_load_factor());
 
             /*
