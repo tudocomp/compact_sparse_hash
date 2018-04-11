@@ -236,7 +236,7 @@ public:
 // -----------------------
 
     inline typename val_quot_storage_t<val_t>::statistics_t stat_gather() {
-        return m_storage.stat_gather(quotient_width(),
+        return storage().stat_gather(quotient_width(),
                                      value_width(),
                                      size(),
                                      m_cv.stat_allocation_size_in_bytes());
@@ -338,6 +338,10 @@ private:
 
     /// Hash function
     hash_t m_hash {1};
+
+    inline auto storage() {
+        return m_storage.with_qv_width(quotient_width(), value_width());
+    }
 
     /// The actual amount of bits currently usable for
     /// storing a key in the hashtable.
@@ -479,7 +483,7 @@ private:
     inline void run_destructors_of_elements() {
         size_t qw = quotient_width();
         size_t vw = value_width();
-        m_storage.run_destructors_of_elements(qw, vw);
+        storage().run_destructors_of_elements(qw, vw);
     }
 
     /// Access the element represented by `handler` under
@@ -506,10 +510,10 @@ private:
         // TODO
         // DCHECK_LT(bucket_layout_t::table_pos_to_idx_of_bucket(dkey.initial_address), m_buckets.size());
 
-        if (m_storage.table_pos_is_empty(dkey.initial_address)) {
+        if (storage().table_pos_is_empty(dkey.initial_address)) {
             // check if we can insert directly
 
-            m_storage.table_set_at_empty(dkey.initial_address,
+            storage().table_set_at_empty(dkey.initial_address,
                                          dkey.stored_quotient,
                                          std::move(handler),
                                          this->quotient_width(),
@@ -624,11 +628,11 @@ private:
         // insert the element from the end of the range at the free
         // position to the right of it.
         auto insert = InsertHandler(std::move(val));
-        m_storage.table_set_at_empty(to, quot, std::move(insert), quotient_width(), value_width());
+        storage().table_set_at_empty(to, quot, std::move(insert), quotient_width(), value_width());
 
         // after the previous insert and a potential reallocation,
         // notify the handler about the address of the new value.
-        auto new_loc = m_storage.table_pos(from);
+        auto new_loc = storage().table_pos(from);
         value_handler.new_location(get_val_quot_at(new_loc).val_ptr());
     }
 
@@ -659,7 +663,7 @@ private:
         // - checking whole blocks in the bucket bitvector for == or != 0
         size_t v_counter = 0;
         DCHECK_EQ(get_v(cursor), true);
-        for(; m_storage.table_pos_contains_value(cursor); cursor = m_sizing.mod_add(cursor)) {
+        for(; storage().table_pos_contains_value(cursor); cursor = m_sizing.mod_add(cursor)) {
             v_counter += get_v(cursor);
         }
         DCHECK_GE(v_counter, 1);
@@ -699,11 +703,11 @@ private:
     }
 
     inline val_quot_ptrs_t<val_t> get_val_quot_at(TablePos pos) {
-        return m_storage.get_val_quot_at(pos, quotient_width(), value_width());
+        return storage().get_val_quot_at(pos, quotient_width(), value_width());
     }
 
     inline val_quot_ptrs_t<val_t> get_val_quot_at(size_t pos) {
-        return get_val_quot_at(m_storage.table_pos(pos));
+        return get_val_quot_at(storage().table_pos(pos));
     }
 
     /// Inserts a new key-value pair after an existing
@@ -713,9 +717,9 @@ private:
                                                decomposed_key_t const& dkey,
                                                handler_t&& handler)
     {
-        if (m_storage.table_pos_is_empty(group.group_end)) {
+        if (storage().table_pos_is_empty(group.group_end)) {
             // if there is no following group, just append the new entry
-            m_storage.table_set_at_empty(group.group_end,
+            storage().table_set_at_empty(group.group_end,
                                          dkey.stored_quotient,
                                          std::move(handler),
                                          quotient_width(),
@@ -749,7 +753,7 @@ private:
             i = 0;
 
             for(;;i++) {
-                if (m_self.m_storage.table_pos_is_empty(i)) {
+                if (m_self.storage().table_pos_is_empty(i)) {
                     break;
                 }
             }
@@ -775,7 +779,7 @@ private:
                 if (state == EMPTY_LOCATIONS) {
                     // skip empty locations
                     for(;;i = m_self.m_sizing.mod_add(i)) {
-                        if (m_self.m_storage.table_pos_contains_value(i)) {
+                        if (m_self.storage().table_pos_contains_value(i)) {
                             // we initialize init-addr at 1 pos before the start of
                             // a group of blocks, so that the blocks iteration logic works
                             initial_address = m_self.m_sizing.mod_sub(i);
@@ -788,7 +792,7 @@ private:
                     }
                 } else {
                     // process full locations
-                    if (m_self.m_storage.table_pos_is_empty(i))  {
+                    if (m_self.storage().table_pos_is_empty(i))  {
                         state = EMPTY_LOCATIONS;
                         continue;
                     }
@@ -856,7 +860,7 @@ private:
                 << "\n";
             */
 
-            m_storage.drain_all([&](auto initial_address, auto table_pos) {
+            storage().drain_all([&](auto initial_address, auto table_pos) {
                 auto kv = get_val_quot_at(table_pos);
                 auto stored_quotient = kv.get_quotient();
                 auto key = compose_key(initial_address, stored_quotient);
@@ -882,14 +886,14 @@ private:
         //    <- src^|
         //    <- dest^
 
-        auto from_loc = m_storage.table_pos(from);
-        auto from_iter = m_storage.make_insert_iter(from_loc, quotient_width(), value_width());
+        auto from_loc = storage().table_pos(from);
+        auto from_iter = storage().make_insert_iter(from_loc, quotient_width(), value_width());
 
-        auto last = m_storage.table_pos(to - 1);
-        auto src = m_storage.make_insert_iter(last,
+        auto last = storage().table_pos(to - 1);
+        auto src = storage().make_insert_iter(last,
                                               quotient_width(),
                                               value_width());
-        auto dst = m_storage.make_insert_iter(m_storage.table_pos(to),
+        auto dst = storage().make_insert_iter(storage().table_pos(to),
                                               quotient_width(),
                                               value_width());
 
