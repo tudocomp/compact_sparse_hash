@@ -190,7 +190,8 @@ public:
         auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
         access_with_handler(key, raw_key_width, raw_val_width, AddressDefaultHandler {
-            &addr
+            &addr,
+            empty_value()
         });
 
         DCHECK(addr != pointer_type());
@@ -396,15 +397,22 @@ private:
     /// If none exists yet, it will be default constructed.
     class AddressDefaultHandler {
         pointer_type* m_address = nullptr;
+        value_type const& m_empty_value;
     public:
-        AddressDefaultHandler(pointer_type* address): m_address(address) {}
+        AddressDefaultHandler(pointer_type* address, value_type const& empty_value):
+            m_address(address),
+            m_empty_value(empty_value) {}
 
         inline auto on_new() {
             struct AddressDefaultHandlerOnNew {
-                value_type m_value;
+                value_type const& m_empty_value;
                 pointer_type* m_address;
                 inline value_type&& get() {
-                    return std::move(m_value);
+
+                    ///// BUG
+
+
+                    return std::move(value_type(m_empty_value));
                 }
                 inline void new_location(pointer_type value) {
                     *m_address = value;
@@ -412,7 +420,7 @@ private:
             };
 
             return AddressDefaultHandlerOnNew {
-                value_type(),
+                m_empty_value,
                 m_address,
             };
         }

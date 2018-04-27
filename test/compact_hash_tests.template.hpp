@@ -49,19 +49,19 @@ TEST(hashfn, poplar_xorshift) {
 TEST(hash, insert) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(256, 16, 1, Init::cm(0));
-    ch.insert(44, Init::m(0));
-    ch.insert(45, Init::m(1));
-    ch.insert(45, Init::m(2));
-    ch.insert(44 + 256, Init::m(3));
-    ch.insert(45 + 256, Init::m(4));
-    ch.insert(46, Init::m(5));
+    auto ch = compact_hash<Init>(256, 16, 1, Init::special());
+    ch.insert(44, Init::normal(0));
+    ch.insert(45, Init::normal(1));
+    ch.insert(45, Init::normal(2));
+    ch.insert(44 + 256, Init::normal(3));
+    ch.insert(45 + 256, Init::normal(4));
+    ch.insert(46, Init::normal(5));
 
-    ch.insert(44, Init::m(6));
-    ch.insert(45, Init::m(7));
-    ch.insert(44 + 256, Init::m(8));
-    ch.insert(45 + 256, Init::m(9));
-    ch.insert(46, Init::m(10));
+    ch.insert(44, Init::normal(6));
+    ch.insert(45, Init::normal(7));
+    ch.insert(44 + 256, Init::normal(8));
+    ch.insert(45 + 256, Init::normal(9));
+    ch.insert(46, Init::normal(10));
 
     //ch.insert(0);
     //ch.insert(4);
@@ -77,10 +77,10 @@ TEST(hash, insert) {
 TEST(hash, insert_wrap) {
     Init::reset();
 
-    auto ch = compact_hash<Init>(4, 16, 1, Init::cm(0));
-    ch.insert(3, Init::m(0));
-    ch.insert(7, Init::m(1));
-    ch.insert(15, Init::m(2));
+    auto ch = compact_hash<Init>(4, 16, 1, Init::special());
+    ch.insert(3, Init::normal(0));
+    ch.insert(7, Init::normal(1));
+    ch.insert(15, Init::normal(2));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
@@ -89,41 +89,41 @@ TEST(hash, insert_wrap) {
 }
 
 TEST(hash, insert_move_wrap) {
-    auto ch = compact_hash<Init>(8, 16, 1, Init::cm(0));
+    auto ch = compact_hash<Init>(8, 16, 1, Init::special());
     Init::reset();
 
-    ch.insert(3, Init::m(0));
-    ch.insert(3 + 8, Init::m(1));
+    ch.insert(3, Init::normal(0));
+    ch.insert(3 + 8, Init::normal(1));
 
-    ch.insert(5, Init::m(2));
-    ch.insert(5 + 8, Init::m(3));
-    ch.insert(5 + 16, Init::m(4));
-    ch.insert(5 + 24, Init::m(5));
+    ch.insert(5, Init::normal(2));
+    ch.insert(5 + 8, Init::normal(3));
+    ch.insert(5 + 16, Init::normal(4));
+    ch.insert(5 + 24, Init::normal(5));
 
-    ch.insert(4, Init::m(6));
+    ch.insert(4, Init::normal(6));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
     //std::cout << "=======================\n";
 
-    debug_check_single(ch, 3,      Init::cm(0));
-    debug_check_single(ch, 3 + 8,  Init::cm(1));
-    debug_check_single(ch, 5,      Init::cm(2));
-    debug_check_single(ch, 5 + 8,  Init::cm(3));
-    debug_check_single(ch, 5 + 16, Init::cm(4));
-    debug_check_single(ch, 5 + 24, Init::cm(5));
-    debug_check_single(ch, 4,      Init::cm(6));
+    debug_check_single(ch, 3,      Init::normal(0));
+    debug_check_single(ch, 3 + 8,  Init::normal(1));
+    debug_check_single(ch, 5,      Init::normal(2));
+    debug_check_single(ch, 5 + 8,  Init::normal(3));
+    debug_check_single(ch, 5 + 16, Init::normal(4));
+    debug_check_single(ch, 5 + 24, Init::normal(5));
+    debug_check_single(ch, 4,      Init::normal(6));
 }
 
 TEST(hash, cornercase) {
-    auto ch = compact_hash<Init>(8, 16, 1, Init::cm(0));
+    auto ch = compact_hash<Init>(8, 16, 1, Init::special());
     Init::reset();
 
-    ch.insert(0, Init::m(0));
-    ch.insert(0 + 8, Init::m(1));
+    ch.insert(0, Init::normal(0));
+    ch.insert(0 + 8, Init::normal(1));
 
-    debug_check_single(ch, 0,      Init::cm(0));
-    debug_check_single(ch, 0 + 8,  Init::cm(1));
+    debug_check_single(ch, 0,      Init::normal(0));
+    debug_check_single(ch, 0 + 8,  Init::normal(1));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
@@ -134,7 +134,7 @@ TEST(hash, cornercase) {
 TEST(hash, grow) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10, 1, Init::cm(0)); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 10, 1, Init::special()); // check that it grows to minimum 2
     Init::reset();
 
     auto add = [&](auto key, auto&& v0, auto&& v1) {
@@ -148,7 +148,7 @@ TEST(hash, grow) {
 
 
     for(size_t i = 0; i < 1000; i++) {
-        add(i, Init::m(i), Init::cm(i));
+        add(i, Init::normal(i), Init::normal(i));
     }
 
     //std::cout << "=======================\n";
@@ -160,7 +160,7 @@ TEST(hash, grow) {
 TEST(hash, grow_bits) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10, 1, Init::cm(0)); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 10, 1, Init::special()); // check that it grows to minimum 2
     Init::reset();
 
     uint8_t bits = 1;
@@ -178,7 +178,7 @@ TEST(hash, grow_bits) {
 
 
     for(size_t i = 0; i < 1000; i++) {
-        add(i, Init::m(i), Init::cm(i));
+        add(i, Init::normal(i), Init::normal(i));
     }
 
     //std::cout << "=======================\n";
@@ -190,7 +190,7 @@ TEST(hash, grow_bits) {
 TEST(hash, grow_bits_larger) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0, 1, Init::cm(0)); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 0, 1, Init::special()); // check that it grows to minimum 2
     Init::reset();
 
     uint8_t bits = 1;
@@ -208,14 +208,14 @@ TEST(hash, grow_bits_larger) {
 
 
     for(size_t i = 0; i < 10000; i++) {
-        add(i*13ull, Init::m(i), Init::cm(i));
+        add(i*13ull, Init::normal(i), Init::normal(i));
     }
 }
 
 TEST(hash, grow_bits_larger_address) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0, 1, Init::cm(0)); // check that it grows to minimum 2
+    auto ch = compact_hash<Init>(0, 0, 1, Init::special()); // check that it grows to minimum 2
     Init::reset();
 
     uint8_t bits = 1;
@@ -233,7 +233,7 @@ TEST(hash, grow_bits_larger_address) {
 
 
     for(size_t i = 0; i < 10000; i++) {
-        add(i*13ull, Init::m(i));
+        add(i*13ull, Init::normal(i + 1));
     }
 
     //std::cout << "=======================\n";
