@@ -95,6 +95,57 @@ public:
         }
     }
 
+    /// Insert a new element into the bucket, growing it as needed
+    inline val_quot_ptrs_t<val_t> insert_at(
+        size_t new_elem_bucket_pos,
+        uint64_t new_elem_bv_bit,
+        widths_t widths)
+    {
+        // Just a sanity check that can not live inside or outside `bucket_t` itself.
+        static_assert(sizeof(bucket_t<val_t, N>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
+
+        // TODO: check out different sizing strategies
+        // eg, the known sparse_hash repo uses overallocation for small buckets
+
+        // create a new bucket with enough size for the new element
+        auto new_bucket = bucket_t<val_t, N>(bv() | new_elem_bv_bit, widths);
+
+        auto new_iter = new_bucket.at(0, widths);
+        auto old_iter = at(0, widths);
+
+        auto const new_iter_midpoint = new_bucket.at(new_elem_bucket_pos, widths);
+        auto const new_iter_end = new_bucket.at(new_bucket.size(), widths);
+
+        val_quot_ptrs_t<val_t> ret;
+
+        // move all elements before the new element's location from old bucket into new bucket
+        while(!new_iter.ptr_eq(new_iter_midpoint)) {
+            new_iter.set_quotient(old_iter.get_quotient());
+            cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
+            new_iter.increment_ptr();
+            old_iter.increment_ptr();
+        }
+
+        // move new element into its location in the new bucket
+        {
+            ret = new_iter;
+            new_iter.increment_ptr();
+        }
+
+        // move all elements after the new element's location from old bucket into new bucket
+        while(!new_iter.ptr_eq(new_iter_end)) {
+            new_iter.set_quotient(old_iter.get_quotient());
+            cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
+            new_iter.increment_ptr();
+            old_iter.increment_ptr();
+        }
+
+        // destroy old empty elements, and overwrite with new bucket
+        destroy_vals(widths);
+        *this = std::move(new_bucket);
+
+        return ret;
+    }
 private:
     inline static size_t qvd_data_size(size_t size, widths_t widths) {
         return qvd_t::calc_sizes(size, widths).overall_qword_size;
@@ -107,58 +158,5 @@ private:
         return qvd_t::ptrs(m_data.get() + 1, size(), widths);
     }
 };
-
-/// Insert a new element into the bucket, growing it as needed
-template<typename val_t, size_t N>
-inline void insert_in_bucket(bucket_t<val_t, N>& bucket,
-                                      size_t new_elem_bucket_pos,
-                                      uint64_t new_elem_bv_bit,
-                                      size_t qw,
-                                      size_t vw,
-                                      typename cbp::cbp_repr_t<val_t>::value_type&& val,
-                                      uint64_t quot)
-{
-    // Just a sanity check that can not live inside or outside `bucket_t` itself.
-    static_assert(sizeof(bucket_t<val_t, N>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
-
-    // TODO: check out different sizing strategies
-    // eg, the known sparse_hash repo uses overallocation for small buckets
-
-    // create a new bucket with enough size for the new element
-    auto new_bucket = bucket_t<val_t, N>(bucket.bv() | new_elem_bv_bit, qw, vw);
-
-    auto new_iter = new_bucket.at(0, qw, vw);
-    auto old_iter = bucket.at(0, qw, vw);
-
-    auto const new_iter_midpoint = new_bucket.at(new_elem_bucket_pos, qw, vw);
-    auto const new_iter_end = new_bucket.at(new_bucket.size(), qw, vw);
-
-    // move all elements before the new element's location from old bucket into new bucket
-    while(!new_iter.ptr_eq(new_iter_midpoint)) {
-        new_iter.set_quotient(old_iter.get_quotient());
-        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
-        new_iter.increment_ptr();
-        old_iter.increment_ptr();
-    }
-
-    // move new element into its location in the new bucket
-    {
-        new_iter.set_quotient(quot);
-        cbp::cbp_repr_t<val_t>::construct_val_from_rval(new_iter.val_ptr(), std::move(val));
-        new_iter.increment_ptr();
-    }
-
-    // move all elements after the new element's location from old bucket into new bucket
-    while(!new_iter.ptr_eq(new_iter_end)) {
-        new_iter.set_quotient(old_iter.get_quotient());
-        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
-        new_iter.increment_ptr();
-        old_iter.increment_ptr();
-    }
-
-    // destroy old empty elements, and overwrite with new bucket
-    bucket.destroy_vals(qw, vw);
-    bucket = std::move(new_bucket);
-}
 
 }}

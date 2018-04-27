@@ -11,10 +11,6 @@
 using namespace tdc::compact_sparse_hashtable;
 using namespace tdc;
 
-TEST(Foo, bar) {
-
-}
-
 template<typename val_t>
 void BucketTest() {
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
@@ -24,7 +20,7 @@ void BucketTest() {
     using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
     val_width_t vw { 7 };
     widths_t ws { 5, vw };
-    b = bucket_t<val_t, 8>(2, ws);
+    b = bucket_t<val_t, 8>(0b10, ws);
 
     ASSERT_EQ(b.bv(), 2);
     ASSERT_EQ(b.size(), 1);
@@ -33,6 +29,8 @@ void BucketTest() {
     b.at(0, ws);
 
     b.stat_allocation_size_in_bytes(ws);
+
+    b.insert_at(0, 0b11, ws);
 
     b.destroy_vals(ws);
 }
