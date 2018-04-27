@@ -31,12 +31,26 @@ namespace tdc {namespace compact_sparse_hashtable {
                 m_buckets[i].destroy_vals(widths);
             }
         }
-        using table_pos_t = sparse_pos_t<buckets_t, bucket_layout_t>;
+        using table_pos_t = sparse_pos_t<my_bucket_t, bucket_layout_t>;
         inline table_pos_t table_pos(size_t pos) {
-            return table_pos_t { pos, m_buckets };
+            return table_pos_t { pos, m_buckets.get() };
         }
-        inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
+        inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos, size_t table_size, widths_t widths) {
+            DCHECK(!pos.exists_in_bucket());
 
+            auto& bucket = pos.bucket();
+            auto offset_in_bucket = pos.offset_in_bucket();
+            uint64_t new_bucket_bv = bucket.bv() | pos.bit_mask_in_bucket;
+
+            return bucket.insert_at(offset_in_bucket, new_bucket_bv, widths);
+        }
+        inline val_quot_ptrs_t<val_t> at_pos(table_pos_t pos, size_t table_size, widths_t widths) {
+            DCHECK(pos.exists_in_bucket());
+
+            auto& bucket = pos.bucket();
+            auto offset_in_bucket = pos.offset_in_bucket();
+
+            return bucket.at(offset_in_bucket, widths);
         }
     };
 
@@ -68,8 +82,11 @@ namespace tdc {namespace compact_sparse_hashtable {
         inline table_pos_t table_pos(size_t pos) {
             return table_pos_t { m_alloc.get(), pos };
         }
-        inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
-
+        inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos, size_t table_size, widths_t widths) {
+            return qvd_t::at(m_alloc.get(), table_size, pos.m_pos, widths);
+        }
+        inline val_quot_ptrs_t<val_t> at_pos(table_pos_t pos, size_t table_size, widths_t widths) {
+            return qvd_t::at(m_alloc.get(), table_size, pos.m_pos, widths);
         }
     };
 }}
