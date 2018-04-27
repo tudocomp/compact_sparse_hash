@@ -61,20 +61,21 @@ void TableTest() {
     widths_t ws { 5, vw };
     size_t table_size = 16;
     t = tab_t(table_size, ws);
+    auto ctx = t.context(table_size, ws);
 
     for(size_t i = 0; i < table_size; i++) {
-        auto pos = t.table_pos(i, table_size, ws);
-        ASSERT_EQ(t.pos_is_empty(pos), true);
+        auto pos = ctx.table_pos(i);
+        ASSERT_EQ(ctx.pos_is_empty(pos), true);
 
-        auto elem = t.allocate_pos(pos);
+        auto elem = ctx.allocate_pos(pos);
         elem.set_no_drop(i + 1, i + 2);
     }
 
     for(size_t i = 0; i < table_size; i++) {
-        auto pos = t.table_pos(i, table_size, ws);
-        ASSERT_EQ(t.pos_is_empty(pos), false);
+        auto pos = ctx.table_pos(i);
+        ASSERT_EQ(ctx.pos_is_empty(pos), false);
 
-        auto elem = t.at(pos);
+        auto elem = ctx.at(pos);
         ASSERT_EQ(*elem.val_ptr(), i + 1);
         ASSERT_EQ(elem.get_quotient(), i + 2);
     }

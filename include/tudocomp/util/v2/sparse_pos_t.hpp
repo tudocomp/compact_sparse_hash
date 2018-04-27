@@ -22,19 +22,14 @@ private:
     bucket_t* m_buckets;
 
 public:
-    size_t const table_size;
-    widths_t const widths;
-
     /// Index of bucket inside the hashtable
     size_t const idx_of_bucket;
 
     /// Bit mask of the element inside the bucket
     uint64_t const bit_mask_in_bucket;
 
-    inline sparse_pos_t(size_t pos, bucket_t* buckets, size_t table_size, widths_t const& widths):
+    inline sparse_pos_t(size_t pos, bucket_t* buckets):
         m_buckets(buckets),
-        table_size(table_size),
-        widths(widths),
         idx_of_bucket(bucket_layout_t::table_pos_to_idx_of_bucket(pos)),
         bit_mask_in_bucket(1ull << bucket_layout_t::table_pos_to_idx_inside_bucket(pos))
     {}
