@@ -3,51 +3,73 @@
 #include <memory>
 #include "util.hpp"
 #include "bucket_t.hpp"
+#include "sparse_pos_t.hpp"
 
 // Table for uninitalized elements
 
 namespace tdc {namespace compact_sparse_hashtable {
     template<typename val_t>
-    struct plain_sentinel_t {
-        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
-        val_t m_empty_value;
+    struct buckets_bv_t {
+        using my_bucket_t = bucket_t<val_t, 8>;
+        using bucket_layout_t = typename my_bucket_t::bucket_layout_t;
+        using buckets_t = std::unique_ptr<my_bucket_t[]>;
+        using qvd_t = quot_val_data_seq_t<val_t>;
+        using widths_t = typename qvd_t::QVWidths;
 
-        using quot_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
-        using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
+        buckets_t m_buckets;
 
-        std::unique_ptr<uint64_t[]> m_data;
+        inline buckets_bv_t() {}
+        inline buckets_bv_t(size_t table_size, widths_t widths) {
+            size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
-        inline plain_sentinel_t(): m_data() {}
-
-        /// Construct a bucket, reserving space according to the bitvector
-        /// `bv` and `quot_width`.
-        inline plain_sentinel_t(size_t size, size_t quot_width, val_width_t const& val_width) {
-            auto layout = calc_sizes(size, quot_width, val_width);
-
-            m_data = std::make_unique<uint64_t[]>(layout.overall_qword_size);
-
-            // NB: We call this for its alignment asserts
-            ptrs(quot_width, val_width);
+            m_buckets = std::make_unique<my_bucket_t[]>(buckets_size);
         }
+        inline void destroy_vals(size_t table_size, widths_t widths) {
+            size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
-        inline plain_sentinel_t(plain_sentinel_t&& other) = default;
-        inline plain_sentinel_t& operator=(plain_sentinel_t&& other) = default;
-
-        // Run destructors of each element in the bucket.
-        inline void destroy_vals(size_t size, size_t quot_width, val_width_t const& val_width) {
-            auto start = ptrs(quot_width, val_width).vals_ptr;
-            auto end = start + size;
-
-            for(; start != end; start++) {
-                cbp::cbp_repr_t<val_t>::call_destructor(start);
+            for(size_t i = 0; i < buckets_size; i++) {
+                m_buckets[i].destroy_vals(widths);
             }
+        }
+        using table_pos_t = sparse_pos_t<buckets_t, bucket_layout_t>;
+        inline table_pos_t table_pos(size_t pos) {
+            return table_pos_t { pos, m_buckets };
+        }
+        inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
+
         }
     };
 
     template<typename val_t>
-    struct buckets_bv {
-        using buckets_t = std::unique_ptr<bucket_t<val_t, 8>[]>;
+    struct plain_sentinel_t {
+        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+        using qvd_t = quot_val_data_seq_t<val_t>;
+        using widths_t = typename qvd_t::QVWidths;
 
-        buckets_t m_buckets;
+        std::unique_ptr<uint64_t[]> m_alloc;
+        value_type m_empty_value;
+
+        inline plain_sentinel_t() {}
+        inline plain_sentinel_t(size_t table_size,
+                                widths_t widths,
+                                value_type const& empty_value = value_type()):
+            m_empty_value(empty_value)
+        {
+            size_t alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
+            m_alloc = std::make_unique<uint64_t[]>(alloc_size);
+        }
+        inline void destroy_vals(size_t table_size, widths_t widths) {
+            qvd_t::destroy_vals(m_alloc.get(), table_size, widths);
+        }
+        struct table_pos_t {
+            uint64_t* m_alloc;
+            size_t m_pos;
+        };
+        inline table_pos_t table_pos(size_t pos) {
+            return table_pos_t { m_alloc.get(), pos };
+        }
+        inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
+
+        }
     };
 }}

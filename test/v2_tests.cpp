@@ -14,10 +14,10 @@ using namespace tdc;
 template<typename val_t>
 void BucketTest() {
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
+    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
 
     auto b = bucket_t<val_t, 8>();
 
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
     val_width_t vw { 7 };
     widths_t ws { 5, vw };
     b = bucket_t<val_t, 8>(0b10, ws);
@@ -39,15 +39,41 @@ void BucketTest() {
     b.destroy_vals(ws);
 }
 
-TEST(Bucket, uint8_t_test) {
-    BucketTest<uint8_t>();
+#define MakeBucketTest(tname, tty) \
+TEST(Bucket, tname##_test) {  \
+    BucketTest<tty>();    \
 }
 
-TEST(Bucket, uint64_t_test) {
-    BucketTest<uint64_t>();
+MakeBucketTest(uint8_t, uint8_t);
+MakeBucketTest(uint64_t, uint64_t);
+MakeBucketTest(dynamic_t, dynamic_t);
+MakeBucketTest(uint_t40, uint_t<40>);
+
+template<template<typename> typename table_t, typename val_t>
+void TableTest() {
+    using tab_t = table_t<val_t>;
+    using widths_t = typename bucket_t<val_t, 8>::widths_t;
+    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
+
+    auto t = tab_t();
+
+    val_width_t vw { 7 };
+    widths_t ws { 5, vw };
+    t = tab_t(16, ws);
+
+
 }
 
-TEST(Bucket, dynamic_t_test) {
-    BucketTest<dynamic_t>();
+#define MakeTableTest(tab, tname, tty)     \
+TEST(Table, tab##_##tname##_test) {        \
+    TableTest<tab, tty>(); \
 }
 
+MakeTableTest(plain_sentinel_t, uint8_t, uint8_t);
+MakeTableTest(buckets_bv_t,     uint8_t, uint8_t);
+MakeTableTest(plain_sentinel_t, uint64_t, uint64_t);
+MakeTableTest(buckets_bv_t,     uint64_t, uint64_t);
+MakeTableTest(plain_sentinel_t, dynamic_t, dynamic_t);
+MakeTableTest(buckets_bv_t,     dynamic_t, dynamic_t);
+MakeTableTest(plain_sentinel_t, uint_t40, uint_t<40>);
+MakeTableTest(buckets_bv_t,     uint_t40, uint_t<40>);

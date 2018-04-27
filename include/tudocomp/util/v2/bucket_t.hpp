@@ -35,6 +35,24 @@ class bucket_t {
 
     using qvd_t = quot_val_data_seq_t<val_t>;
 public:
+    /// Maps hashtable position to position of the corresponding bucket,
+    /// and the position inside of it.
+    struct bucket_layout_t {
+        static constexpr size_t BVS_WIDTH_SHIFT = 6;
+        static constexpr size_t BVS_WIDTH_MASK = 0b111111;
+
+        static inline size_t table_pos_to_idx_of_bucket(size_t pos) {
+            return pos >> BVS_WIDTH_SHIFT;
+        }
+
+        static inline size_t table_pos_to_idx_inside_bucket(size_t pos) {
+            return pos & BVS_WIDTH_MASK;
+        }
+
+        static inline size_t table_size_to_bucket_size(size_t size) {
+            return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
+        }
+    };
     using widths_t = typename qvd_t::QVWidths;
 
     inline bucket_t(): m_data() {}
