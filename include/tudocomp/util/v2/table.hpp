@@ -57,9 +57,6 @@ namespace tdc {namespace compact_sparse_hashtable {
         }
     };
 
-    // IMPORTANT IDEA!
-    // CAN USE quot STORAGE FOR SENTINEL VALUE
-
     template<typename val_t>
     struct plain_sentinel_t {
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
