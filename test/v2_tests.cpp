@@ -63,12 +63,12 @@ void TableTest() {
     t = tab_t(table_size, ws);
 
     for(size_t i = 0; i < table_size; i++) {
-        auto elem = t.allocate_pos(t.table_pos(i), table_size, ws);
+        auto elem = t.allocate_pos(t.table_pos(i, table_size, ws));
         elem.set_no_drop(i + 1, i + 2);
     }
 
     for(size_t i = 0; i < table_size; i++) {
-        auto elem = t.at_pos(t.table_pos(i), table_size, ws);
+        auto elem = t.at(t.table_pos(i, table_size, ws));
         ASSERT_EQ(*elem.val_ptr(), i + 1);
         ASSERT_EQ(elem.get_quotient(), i + 2);
     }

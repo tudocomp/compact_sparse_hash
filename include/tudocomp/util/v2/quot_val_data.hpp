@@ -19,7 +19,7 @@ struct quot_val_data_seq_t {
 
     struct QVWidths {
         size_t quot_width;
-        val_width_t const& val_width;
+        val_width_t val_width;
     };
 
     /// Calculates the offsets of the two different arrays inside the allocation.

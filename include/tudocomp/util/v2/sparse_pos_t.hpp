@@ -13,19 +13,28 @@ namespace tdc {namespace compact_sparse_hashtable {
 ///
 /// It is valid to have a sparse_pos_t one-past-the-end of the underlying
 /// bucket vector, to act as an end-iterator.
-template<typename bucket_t, typename bucket_layout_t>
+template<typename bucket_t, typename bucket_layout_t, typename val_t>
 class sparse_pos_t {
 private:
+    using qvd_t = quot_val_data_seq_t<val_t>;
+    using widths_t = typename qvd_t::QVWidths;
+
     bucket_t* m_buckets;
+
 public:
+    size_t const table_size;
+    widths_t const widths;
+
     /// Index of bucket inside the hashtable
     size_t const idx_of_bucket;
 
     /// Bit mask of the element inside the bucket
     uint64_t const bit_mask_in_bucket;
 
-    inline sparse_pos_t(size_t pos, bucket_t* buckets):
+    inline sparse_pos_t(size_t pos, bucket_t* buckets, size_t table_size, widths_t const& widths):
         m_buckets(buckets),
+        table_size(table_size),
+        widths(widths),
         idx_of_bucket(bucket_layout_t::table_pos_to_idx_of_bucket(pos)),
         bit_mask_in_bucket(1ull << bucket_layout_t::table_pos_to_idx_inside_bucket(pos))
     {}
