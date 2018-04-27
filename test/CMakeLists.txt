@@ -2,4 +2,5 @@ include(test/testsuite.cmake)
 
 run_test(compact_sparse_hash_tests DEPS compact_sparse_hash)
 run_test(compact_hash_tests DEPS compact_sparse_hash)
+run_test(v2_tests DEPS compact_sparse_hash)
 run_test(sandbox_test DEPS compact_sparse_hash)
