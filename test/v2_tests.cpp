@@ -26,11 +26,15 @@ void BucketTest() {
     ASSERT_EQ(b.size(), 1);
     ASSERT_EQ(b.is_empty(), false);
 
-    b.at(0, ws);
+    auto p1 = b.at(0, ws);
+    p1.set_no_drop(3, 4);
 
     b.stat_allocation_size_in_bytes(ws);
 
-    b.insert_at(0, 0b11, ws);
+    auto p2 = b.insert_at(0, 0b11, ws);
+    p2.set_no_drop(5, 6);
+
+    p2.set(7, 8);
 
     b.destroy_vals(ws);
 }

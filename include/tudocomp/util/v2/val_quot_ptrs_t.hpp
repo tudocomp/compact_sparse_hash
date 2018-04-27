@@ -60,6 +60,18 @@ public:
     inline bool ptr_eq(val_quot_ptrs_t const& other) const {
         return m_val_ptr == other.m_val_ptr;
     }
+
+    inline void set(typename cbp::cbp_repr_t<val_t>::value_type&& val,
+                    uint64_t quot) {
+        set_quotient(quot);
+        *val_ptr() = val;
+    }
+
+    inline void set_no_drop(typename cbp::cbp_repr_t<val_t>::value_type&& val,
+                            uint64_t quot) {
+        set_quotient(quot);
+        cbp::cbp_repr_t<val_t>::construct_val_from_rval(val_ptr(), std::move(val));
+    }
 };
 
 }}
