@@ -14,6 +14,11 @@ struct lookup_result_t {
 struct cv_bvs_t {
     IntVector<uint_t<2>> m_cv;
 
+    inline cv_bvs_t(size_t table_size) {
+        m_cv.reserve(table_size);
+        m_cv.resize(table_size);
+    }
+
     /// A Group is a half-open range [group_start, group_end)
     /// that corresponds to a group of elements in the hashtable that
     /// belong to the same initial_address.
@@ -73,6 +78,7 @@ struct cv_bvs_t {
         // This group is either the group belonging to key,
         // or the one after it in the case that no group for `key` exists yet.
         inline Group search_existing_group(uint64_t initial_address) {
+            auto sctx = storage.context(table_size, widths);
             auto ret = Group();
             size_t cursor = initial_address;
 
@@ -82,7 +88,7 @@ struct cv_bvs_t {
             size_t v_counter = 0;
             DCHECK_EQ(get_v(cursor), true);
             for(;
-                !storage.pos_is_empty(storage.table_pos(cursor));
+                !sctx.pos_is_empty(sctx.table_pos(cursor));
                 cursor = size_mgr.mod_add(cursor))
             {
                 v_counter += get_v(cursor);
@@ -114,8 +120,9 @@ struct cv_bvs_t {
         /// otherwise.
         inline val_quot_ptrs_t<val_t> search_in_group(Group const& group,
                                                       uint64_t stored_quotient) {
+            auto sctx = storage.context(table_size, widths);
             for(size_t i = group.group_start; i != group.group_end; i = size_mgr.mod_add(i)) {
-                auto sparse_entry = storage.at(storage.table_pos(i));
+                auto sparse_entry = sctx.at(sctx.table_pos(i));
 
                 if (sparse_entry.get_quotient() == stored_quotient) {
                     return sparse_entry;
@@ -129,10 +136,11 @@ struct cv_bvs_t {
         inline val_quot_ptrs_t<val_t> insert_value_after_group(
             Group const& group, uint64_t stored_quotient)
         {
-            auto end_pos = storage.table_pos(group.group_end);
-            if (storage.pos_is_empty(end_pos)) {
+            auto sctx = storage.context(table_size, widths);
+            auto end_pos = sctx.table_pos(group.group_end);
+            if (sctx.pos_is_empty(end_pos)) {
                 // if there is no following group, just append the new entry
-                return storage.allocate_pos(end_pos);
+                return sctx.allocate_pos(end_pos);
             } else {
                 // else, shift all following elements one to the right
                 return shift_groups_and_insert(group.group_end,
@@ -146,7 +154,6 @@ struct cv_bvs_t {
         /// at the now-empty location `from`.
         ///
         /// The position `to` needs to be empty.
-        template<typename handler_t>
         inline val_quot_ptrs_t<val_t> shift_groups_and_insert(
             size_t from, size_t to, uint64_t stored_quotient)
         {
@@ -161,7 +168,7 @@ struct cv_bvs_t {
             }
             set_c(from, false);
 
-            return shift_elements_and_insert(from, to, stored_quotient);
+            return shift_elements_and_insert(from, to);
         }
 
         /// Shifts all values of the half-open range [from, to)
@@ -169,10 +176,10 @@ struct cv_bvs_t {
         /// at the now-empty location `from`.
         ///
         /// The position `to` needs to be empty.
-        template<typename handler_t>
         inline val_quot_ptrs_t<val_t> shift_elements_and_insert(
             size_t from, size_t to)
         {
+            auto sctx = storage.context(table_size, widths);
             // move from...to one to the right, then insert at from
 
             DCHECK(from != to);
@@ -203,7 +210,7 @@ struct cv_bvs_t {
 
             // insert the element from the end of the range at the free
             // position to the right of it.
-            auto new_loc = storage.allocate_pos(storage.table_pos(to));
+            auto new_loc = sctx.allocate_pos(sctx.table_pos(to));
 
             new_loc.move_from(from_pos);
 
@@ -215,6 +222,7 @@ struct cv_bvs_t {
         /// and returns a ptr pair to it.
         inline val_quot_ptrs_t<val_t> sparse_shift(size_t from, size_t to) {
             DCHECK_LT(from, to);
+            auto sctx = storage.context(table_size, widths);
 
             // initialize iterators like this:
             // [         ]
@@ -223,15 +231,15 @@ struct cv_bvs_t {
             //    <- src^|
             //    <- dest^
 
-            auto from_loc = storage.table_pos(from);
-            auto from_iter = storage.make_insert_iter(from_loc);
+            auto from_loc = sctx.table_pos(from);
+            auto from_iter = sctx.make_iter(from_loc);
 
-            auto last = storage.table_pos(to - 1);
-            auto src = storage.make_insert_iter(last);
-            auto dst = storage.make_insert_iter(storage.table_pos(to));
+            auto last = sctx.table_pos(to - 1);
+            auto src = sctx.make_iter(last);
+            auto dst = sctx.make_iter(sctx.table_pos(to));
 
             // move the element at the last position to a temporary position
-            auto tmp_p = storage.at(last);
+            auto tmp_p = sctx.at(last);
             value_type tmp_val = std::move(*tmp_p.val_ptr());
             uint64_t tmp_quot = tmp_p.get_quotient();
 
@@ -252,7 +260,7 @@ struct cv_bvs_t {
             }
 
             // move last element to the front
-            auto from_p = storage.at(from_loc);
+            auto from_p = sctx.at(from_loc);
             from_p.set(std::move(tmp_val), tmp_quot);
             return from_p;
         }
@@ -260,12 +268,13 @@ struct cv_bvs_t {
         lookup_result_t<val_t> lookup(uint64_t initial_address,
                                       uint64_t stored_quotient)
         {
-            auto ia_pos = storage.table_pos(initial_address);
+            auto sctx = storage.context(table_size, widths);
+            auto ia_pos = sctx.table_pos(initial_address);
 
-            if (storage.pos_is_empty(ia_pos)) {
+            if (sctx.pos_is_empty(ia_pos)) {
                 // check if we can insert directly
 
-                auto location = storage.allocate_pos(ia_pos);
+                auto location = sctx.allocate_pos(ia_pos);
 
                 // we created a new group, so update the bitflags
                 set_cv(initial_address, 0b11);

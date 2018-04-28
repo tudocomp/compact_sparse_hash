@@ -137,7 +137,7 @@ public:
         val_quot_ptrs_t<val_t> ret;
 
         // move all elements before the new element's location from old bucket into new bucket
-        while(!new_iter.ptr_eq(new_iter_midpoint)) {
+        while(new_iter != new_iter_midpoint) {
             new_iter.set_quotient(old_iter.get_quotient());
             cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
             new_iter.increment_ptr();
@@ -151,7 +151,7 @@ public:
         }
 
         // move all elements after the new element's location from old bucket into new bucket
-        while(!new_iter.ptr_eq(new_iter_end)) {
+        while(new_iter != new_iter_end) {
             new_iter.set_quotient(old_iter.get_quotient());
             cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
             new_iter.increment_ptr();

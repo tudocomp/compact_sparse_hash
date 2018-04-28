@@ -125,3 +125,47 @@ MakeTableTest(plain_sentinel_t, dynamic_t, dynamic_t);
 MakeTableTest(buckets_bv_t,     dynamic_t, dynamic_t);
 MakeTableTest(plain_sentinel_t, uint_t40, uint_t<40>);
 MakeTableTest(buckets_bv_t,     uint_t40, uint_t<40>);
+
+template<typename placement_t, template<typename> typename table_t, typename val_t>
+void CVTableTest() {
+    using tab_t = table_t<val_t>;
+    using widths_t = typename bucket_t<val_t, 8>::widths_t;
+    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
+
+    struct TestSizeMgr {
+        size_t table_size;
+        inline size_t mod_add(size_t i, size_t delta = 1) const {
+            return (i + delta) % table_size;
+        }
+        inline size_t mod_sub(size_t i, size_t delta = 1) const {
+            return (i + table_size - delta) % table_size;
+        }
+    };
+
+    val_width_t vw { 7 };
+    widths_t ws { 5, vw };
+    auto size_mgr = TestSizeMgr { 128 };
+    auto t = tab_t(size_mgr.table_size, ws);
+    auto p = placement_t(size_mgr.table_size);
+
+    //auto tctx = t.context(size_mgr.table_size, ws);
+    auto pctx = p.context(t, size_mgr.table_size, ws, size_mgr);
+
+    pctx.lookup(60, 5);
+}
+
+#define MakeCVTableTest(place, tab, tname, tty) \
+TEST(Table, place##_##tab##_##tname##_test) {             \
+    CVTableTest<place, tab, tty>();             \
+}
+
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint8_t, uint8_t);
+/*
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint8_t, uint8_t);
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint64_t, uint64_t);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint64_t, uint64_t);
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, dynamic_t, dynamic_t);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     dynamic_t, dynamic_t);
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint_t40, uint_t<40>);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint_t40, uint_t<40>);
+*/

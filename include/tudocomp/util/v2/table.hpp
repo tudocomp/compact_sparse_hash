@@ -66,7 +66,7 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
 
             inline void decrement() {
-                if (!m_b_start.ptr_eq(m_b_end)) {
+                if (m_b_start != m_b_end) {
                     m_b_end.decrement_ptr();
                 } else {
                     do {
@@ -181,7 +181,7 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
 
             inline bool operator!=(iter_t& other) {
-                return !(m_end.ptr_eq(other.m_end));
+                return m_end != other.m_end;
             }
         };
 

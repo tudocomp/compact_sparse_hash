@@ -59,8 +59,16 @@ public:
         m_val_ptr--;
     }
 
-    inline bool ptr_eq(val_quot_ptrs_t const& other) const {
-        return m_val_ptr == other.m_val_ptr;
+    inline friend bool operator==(val_quot_ptrs_t const& lhs,
+                                  val_quot_ptrs_t const& rhs)
+    {
+        return lhs.m_val_ptr == rhs.m_val_ptr;
+    }
+
+    inline friend bool operator!=(val_quot_ptrs_t const& lhs,
+                                  val_quot_ptrs_t const& rhs)
+    {
+        return lhs.m_val_ptr != rhs.m_val_ptr;
     }
 
     inline void set(value_type&& val,
