@@ -15,6 +15,7 @@ namespace tdc {namespace compact_sparse_hashtable {
         using buckets_t = std::unique_ptr<my_bucket_t[]>;
         using qvd_t = quot_val_data_seq_t<val_t>;
         using widths_t = typename qvd_t::QVWidths;
+        using val_t_export = val_t;
 
         buckets_t m_buckets;
 
@@ -132,6 +133,7 @@ namespace tdc {namespace compact_sparse_hashtable {
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using qvd_t = quot_val_data_seq_t<val_t>;
         using widths_t = typename qvd_t::QVWidths;
+        using val_t_export = val_t;
 
         std::unique_ptr<uint64_t[]> m_alloc;
         value_type m_empty_value;
