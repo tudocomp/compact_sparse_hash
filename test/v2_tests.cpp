@@ -40,8 +40,8 @@ void BucketTest() {
 }
 
 #define MakeBucketTest(tname, tty) \
-TEST(Bucket, tname##_test) {  \
-    BucketTest<tty>();    \
+TEST(Bucket, tname##_test) {       \
+    BucketTest<tty>();             \
 }
 
 MakeBucketTest(uint8_t, uint8_t);
@@ -55,36 +55,66 @@ void TableTest() {
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
     using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
 
-    auto t = tab_t();
+    {
+        auto t = tab_t();
 
-    val_width_t vw { 7 };
-    widths_t ws { 5, vw };
-    size_t table_size = 16;
-    t = tab_t(table_size, ws);
-    auto ctx = t.context(table_size, ws);
+        val_width_t vw { 7 };
+        widths_t ws { 5, vw };
+        size_t table_size = 16;
+        t = tab_t(table_size, ws);
+        auto ctx = t.context(table_size, ws);
 
-    for(size_t i = 0; i < table_size; i++) {
-        auto pos = ctx.table_pos(i);
-        ASSERT_EQ(ctx.pos_is_empty(pos), true);
+        for(size_t i = 0; i < table_size; i++) {
+            auto pos = ctx.table_pos(i);
+            ASSERT_EQ(ctx.pos_is_empty(pos), true);
 
-        auto elem = ctx.allocate_pos(pos);
-        elem.set_no_drop(i + 1, i + 2);
+            auto elem = ctx.allocate_pos(pos);
+            elem.set_no_drop(i + 1, i + 2);
+        }
+
+        for(size_t i = 0; i < table_size; i++) {
+            auto pos = ctx.table_pos(i);
+            ASSERT_EQ(ctx.pos_is_empty(pos), false);
+
+            auto elem = ctx.at(pos);
+            ASSERT_EQ(*elem.val_ptr(), i + 1);
+            ASSERT_EQ(elem.get_quotient(), i + 2);
+        }
     }
 
-    for(size_t i = 0; i < table_size; i++) {
-        auto pos = ctx.table_pos(i);
-        ASSERT_EQ(ctx.pos_is_empty(pos), false);
+    {
+        val_width_t vw { 7 };
+        widths_t ws { 5, vw };
+        size_t table_size = 128;
+        auto t = tab_t(table_size, ws);
+        auto ctx = t.context(table_size, ws);
 
-        auto elem = ctx.at(pos);
-        ASSERT_EQ(*elem.val_ptr(), i + 1);
-        ASSERT_EQ(elem.get_quotient(), i + 2);
+        for(size_t i = 60; i < 80; i++) {
+            auto pos = ctx.table_pos(i);
+            ASSERT_EQ(ctx.pos_is_empty(pos), true);
+
+            auto elem = ctx.allocate_pos(pos);
+            elem.set_no_drop(i - 60 + 1, i - 60 + 2);
+
+            ASSERT_EQ(ctx.pos_is_empty(pos), false);
+        }
+
+        auto iter = ctx.make_iter(ctx.table_pos(80));
+        (void) iter;
+        for(size_t i = 0; i < 20; i++) {
+            iter.decrement();
+            auto elem = iter.get();
+
+            ASSERT_EQ(*elem.val_ptr(), 20 - i);
+            ASSERT_EQ(elem.get_quotient(), 20 - i + 1);
+        }
     }
 
 }
 
 #define MakeTableTest(tab, tname, tty)     \
 TEST(Table, tab##_##tname##_test) {        \
-    TableTest<tab, tty>(); \
+    TableTest<tab, tty>();                 \
 }
 
 MakeTableTest(plain_sentinel_t, uint8_t, uint8_t);

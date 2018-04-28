@@ -26,6 +26,60 @@ namespace tdc {namespace compact_sparse_hashtable {
         }
         using table_pos_t = sparse_pos_t<my_bucket_t, bucket_layout_t, val_t>;
 
+        // pseudo-iterator for iterating over bucket elements
+        // NB: does not wrap around!
+        struct iter_t {
+            my_bucket_t const*        m_bucket;
+            val_quot_ptrs_t<val_t>    m_b_start;
+            val_quot_ptrs_t<val_t>    m_b_end;
+            widths_t                  m_widths;
+
+            inline void set_bucket_elem_range(size_t end_offset) {
+                size_t start_offset = 0;
+                DCHECK_LE(start_offset, end_offset);
+
+                m_b_start = m_bucket->at(start_offset, m_widths);
+                m_b_end   = m_bucket->at(end_offset, m_widths);
+            }
+
+            inline iter_t(my_bucket_t const* buckets,
+                          size_t buckets_size,
+                          table_pos_t const& pos,
+                          widths_t const& widths):
+                m_widths(widths)
+            {
+                // NB: Using pointer arithmetic here, because
+                // we can (intentionally) end up with the address 1-past
+                // the end of the vector, which represents an end-iterator.
+                m_bucket = buckets + pos.idx_of_bucket;
+
+                if(pos.idx_of_bucket < buckets_size) {
+                    set_bucket_elem_range(pos.offset_in_bucket());
+                } else {
+                    // use default constructed nullptr val_quot_ptrs_ts
+                }
+            }
+
+            inline val_quot_ptrs_t<val_t> get() {
+                return m_b_end;
+            }
+
+            inline void decrement() {
+                if (!m_b_start.ptr_eq(m_b_end)) {
+                    m_b_end.decrement_ptr();
+                } else {
+                    do {
+                        --m_bucket;
+                    } while(m_bucket->bv() == 0);
+                    set_bucket_elem_range(m_bucket->size() - 1);
+                }
+            }
+
+            inline bool operator!=(iter_t& other) {
+                return !(m_b_end.ptr_eq(other.m_b_end));
+            }
+        };
+
         struct context_t {
             buckets_t& m_buckets;
             size_t const table_size;
@@ -60,6 +114,10 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
             inline bool pos_is_empty(table_pos_t pos) {
                 return !pos.exists_in_bucket();
+            }
+            inline iter_t make_iter(table_pos_t const& pos) {
+                size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+                return iter_t(m_buckets.get(), buckets_size, pos, widths);
             }
         };
         inline auto context(size_t table_size, widths_t const& widths) {
@@ -98,6 +156,33 @@ namespace tdc {namespace compact_sparse_hashtable {
             uint64_t* m_alloc;
             size_t const offset;
         };
+        // pseudo-iterator for iterating over bucket elements
+        // NB: does not wrap around!
+        struct iter_t {
+            val_quot_ptrs_t<val_t>    m_end;
+            value_type const&         m_empty_value;
+
+            inline iter_t(val_quot_ptrs_t<val_t> endpos,
+                          value_type const& empty_value):
+                m_end(endpos),
+                m_empty_value(empty_value)
+            {
+            }
+
+            inline val_quot_ptrs_t<val_t> get() {
+                return m_end;
+            }
+
+            inline void decrement() {
+                do {
+                    m_end.decrement_ptr();
+                } while(*m_end.val_ptr() == m_empty_value);
+            }
+
+            inline bool operator!=(iter_t& other) {
+                return !(m_end.ptr_eq(other.m_end));
+            }
+        };
 
         struct context_t {
             std::unique_ptr<uint64_t[]>& m_alloc;
@@ -120,6 +205,12 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
             inline bool pos_is_empty(table_pos_t pos) {
                 return *at(pos).val_ptr() == m_empty_value;
+            }
+            inline iter_t make_iter(table_pos_t const& pos) {
+                return iter_t {
+                    qvd_t::at(m_alloc.get(), table_size, pos.offset, widths),
+                    m_empty_value,
+                };
             }
         };
         inline auto context(size_t table_size, widths_t const& widths) {
