@@ -265,8 +265,8 @@ struct cv_bvs_t {
             return from_p;
         }
 
-        lookup_result_t<val_t> lookup(uint64_t initial_address,
-                                      uint64_t stored_quotient)
+        lookup_result_t<val_t> lookup_insert(uint64_t initial_address,
+                                             uint64_t stored_quotient)
         {
             auto sctx = storage.context(table_size, widths);
             auto ia_pos = sctx.table_pos(initial_address);
@@ -275,6 +275,7 @@ struct cv_bvs_t {
                 // check if we can insert directly
 
                 auto location = sctx.allocate_pos(ia_pos);
+                location.set_quotient(stored_quotient);
 
                 // we created a new group, so update the bitflags
                 set_cv(initial_address, 0b11);
@@ -291,10 +292,12 @@ struct cv_bvs_t {
                     auto p = search_in_group(group, stored_quotient);
                     if (p != val_quot_ptrs_t<val_t>()) {
                         // There is a value for this key already.
+                        DCHECK_EQ(p.get_quotient(), stored_quotient);
                         return { p, false };
                     } else {
                         // Insert a new value
                         p = insert_value_after_group(group, stored_quotient);
+                        p.set_quotient(stored_quotient);
                         return { p, true };
                     }
                 } else {
@@ -308,6 +311,7 @@ struct cv_bvs_t {
 
                     // insert the element after the found group
                     auto p = insert_value_after_group(group, stored_quotient);
+                    p.set_quotient(stored_quotient);
 
                     // mark the inserted element as the start of a new group,
                     // thus fixing-up the v <-> c mapping

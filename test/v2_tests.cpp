@@ -151,11 +151,25 @@ void CVTableTest() {
     //auto tctx = t.context(size_mgr.table_size, ws);
     auto pctx = p.context(t, size_mgr.table_size, ws, size_mgr);
 
-    pctx.lookup(60, 5);
+    auto check_insert = [&](auto ia, auto sq, bool should_exists) {
+        auto res = pctx.lookup_insert(ia, sq);
+        ASSERT_EQ(!res.is_empty, should_exists);
+        ASSERT_EQ(res.entry.get_quotient(), sq);
+    };
+
+    check_insert(60, 5, false);
+
+    /*
+     Test:
+     - multiple independ inserts
+     - appends to same group
+     - appends to displaced group
+
+     */
 }
 
 #define MakeCVTableTest(place, tab, tname, tty) \
-TEST(Table, place##_##tab##_##tname##_test) {             \
+TEST(CVTable, place##_##tab##_##tname##_test) {             \
     CVTableTest<place, tab, tty>();             \
 }
 
