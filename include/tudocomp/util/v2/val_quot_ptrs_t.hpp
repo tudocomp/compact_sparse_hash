@@ -16,6 +16,8 @@ class val_quot_ptrs_t {
     mutable QuotPtr m_quot_ptr;
 
 public:
+    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+
     inline val_quot_ptrs_t(ValPtr<val_t> val_ptr,
                       QuotPtr quot_ptr):
         m_val_ptr(val_ptr),
@@ -61,16 +63,29 @@ public:
         return m_val_ptr == other.m_val_ptr;
     }
 
-    inline void set(typename cbp::cbp_repr_t<val_t>::value_type&& val,
+    inline void set(value_type&& val,
                     uint64_t quot) {
         set_quotient(quot);
-        *val_ptr() = val;
+        *val_ptr() = std::move(val);
     }
 
-    inline void set_no_drop(typename cbp::cbp_repr_t<val_t>::value_type&& val,
+    inline void set_no_drop(value_type&& val,
                             uint64_t quot) {
         set_quotient(quot);
         cbp::cbp_repr_t<val_t>::construct_val_from_rval(val_ptr(), std::move(val));
+    }
+
+    inline void move_from(val_quot_ptrs_t other) {
+        *val_ptr() = std::move(*other.val_ptr());
+        set_quotient(other.get_quotient());
+    }
+
+    inline void swap_with(val_quot_ptrs_t other) {
+        value_type tmp_val = std::move(*val_ptr());
+        uint64_t tmp_quot = get_quotient();
+
+        move_from(other);
+        other.set(std::move(tmp_val), tmp_quot);
     }
 };
 

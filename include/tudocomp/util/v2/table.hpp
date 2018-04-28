@@ -155,7 +155,6 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
         }
         struct table_pos_t {
-            uint64_t* m_alloc;
             size_t const offset;
         };
         // pseudo-iterator for iterating over bucket elements
@@ -197,7 +196,7 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
 
             inline table_pos_t table_pos(size_t pos) {
-                return table_pos_t { m_alloc.get(), pos };
+                return table_pos_t { pos };
             }
             inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
                 return qvd_t::at(m_alloc.get(), table_size, pos.offset, widths);
