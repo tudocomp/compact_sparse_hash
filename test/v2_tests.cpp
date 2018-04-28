@@ -174,7 +174,6 @@ TEST(CVTable, place##_##tab##_##tname##_test) {             \
 }
 
 MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint8_t, uint8_t);
-/*
 MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint8_t, uint8_t);
 MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint64_t, uint64_t);
 MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint64_t, uint64_t);
@@ -182,4 +181,3 @@ MakeCVTableTest(cv_bvs_t, plain_sentinel_t, dynamic_t, dynamic_t);
 MakeCVTableTest(cv_bvs_t, buckets_bv_t,     dynamic_t, dynamic_t);
 MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint_t40, uint_t<40>);
 MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint_t40, uint_t<40>);
-*/

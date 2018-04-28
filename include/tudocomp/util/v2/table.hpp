@@ -77,7 +77,7 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
 
             inline bool operator!=(iter_t& other) {
-                return !(m_b_end.ptr_eq(other.m_b_end));
+                return m_b_end != other.m_b_end;
             }
         };
 
