@@ -39,15 +39,16 @@ void BucketTest() {
     b.destroy_vals(ws);
 }
 
-#define MakeBucketTest(tname, tty) \
-TEST(Bucket, tname##_test) {       \
-    BucketTest<tty>();             \
+#define MakeBucketTest(tname) \
+TEST(Bucket, tname##_test) {  \
+    BucketTest<tname>();      \
 }
 
-MakeBucketTest(uint8_t, uint8_t);
-MakeBucketTest(uint64_t, uint64_t);
-MakeBucketTest(dynamic_t, dynamic_t);
-MakeBucketTest(uint_t40, uint_t<40>);
+using uint_t40 = uint_t<40>;
+MakeBucketTest(uint8_t);
+MakeBucketTest(uint64_t);
+MakeBucketTest(dynamic_t);
+MakeBucketTest(uint_t40);
 
 template<template<typename> typename table_t, typename val_t>
 void TableTest() {
@@ -112,19 +113,19 @@ void TableTest() {
 
 }
 
-#define MakeTableTest(tab, tname, tty)     \
-TEST(Table, tab##_##tname##_test) {        \
-    TableTest<tab, tty>();                 \
+#define MakeTableTest(tab, tname)   \
+TEST(Table, tab##_##tname##_test) { \
+    TableTest<tab, tname>();        \
 }
 
-MakeTableTest(plain_sentinel_t, uint8_t, uint8_t);
-MakeTableTest(buckets_bv_t,     uint8_t, uint8_t);
-MakeTableTest(plain_sentinel_t, uint64_t, uint64_t);
-MakeTableTest(buckets_bv_t,     uint64_t, uint64_t);
-MakeTableTest(plain_sentinel_t, dynamic_t, dynamic_t);
-MakeTableTest(buckets_bv_t,     dynamic_t, dynamic_t);
-MakeTableTest(plain_sentinel_t, uint_t40, uint_t<40>);
-MakeTableTest(buckets_bv_t,     uint_t40, uint_t<40>);
+MakeTableTest(plain_sentinel_t, uint8_t);
+MakeTableTest(buckets_bv_t,     uint8_t);
+MakeTableTest(plain_sentinel_t, uint64_t);
+MakeTableTest(buckets_bv_t,     uint64_t);
+MakeTableTest(plain_sentinel_t, dynamic_t);
+MakeTableTest(buckets_bv_t,     dynamic_t);
+MakeTableTest(plain_sentinel_t, uint_t40);
+MakeTableTest(buckets_bv_t,     uint_t40);
 
 template<typename placement_t, template<typename> typename table_t, typename val_t>
 void CVTableTest() {
@@ -236,19 +237,19 @@ void CVTableTest() {
      */
 }
 
-#define MakeCVTableTest(place, tab, tname, tty) \
-TEST(CVTable, place##_##tab##_##tname##_test) {             \
-    CVTableTest<place, tab, tty>();             \
+#define MakeCVTableTest(place, tab, tname)      \
+TEST(CVTable, place##_##tab##_##tname##_test) { \
+    CVTableTest<place, tab, tname>();           \
 }
 
-MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint8_t, uint8_t);
-MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint64_t, uint64_t);
-MakeCVTableTest(cv_bvs_t, plain_sentinel_t, dynamic_t, dynamic_t);
-MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint_t40, uint_t<40>);
-MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint8_t, uint8_t);
-MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint64_t, uint64_t);
-MakeCVTableTest(cv_bvs_t, buckets_bv_t,     dynamic_t, dynamic_t);
-MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint_t40, uint_t<40>);
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint8_t);
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint64_t);
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, dynamic_t);
+MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint_t40);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint8_t);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint64_t);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     dynamic_t);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint_t40);
 
 template<typename placement_t, template<typename> typename table_t, typename val_t>
 void DPTableTest() {
@@ -360,16 +361,16 @@ void DPTableTest() {
      */
 }
 
-#define MakeDPTableTest(place, tab, tname, tty) \
-TEST(CVTable, place##_##tab##_##tname##_test) {             \
-    DPTableTest<place, tab, tty>();             \
+#define MakeDPTableTest(place, tab, tname)      \
+TEST(DPTable, place##_##tab##_##tname##_test) { \
+    DPTableTest<place, tab, tname>();           \
 }
 
-MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint8_t, uint8_t);
-MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint64_t, uint64_t);
-MakeDPTableTest(naive_displacement_t, plain_sentinel_t, dynamic_t, dynamic_t);
-MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint_t40, uint_t<40>);
-MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint8_t, uint8_t);
-MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint64_t, uint64_t);
-MakeDPTableTest(naive_displacement_t, buckets_bv_t,     dynamic_t, dynamic_t);
-MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint_t40, uint_t<40>);
+MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint8_t);
+MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint64_t);
+MakeDPTableTest(naive_displacement_t, plain_sentinel_t, dynamic_t);
+MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint_t40);
+MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint8_t);
+MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint64_t);
+MakeDPTableTest(naive_displacement_t, buckets_bv_t,     dynamic_t);
+MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint_t40);
