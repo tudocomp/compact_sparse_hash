@@ -155,7 +155,11 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
         }
         struct table_pos_t {
-            size_t const offset;
+            size_t offset;
+            inline table_pos_t(): offset(-1) {}
+            inline table_pos_t(size_t o): offset(o) {}
+            inline table_pos_t& operator=(table_pos_t const& other) = default;
+            inline table_pos_t(table_pos_t const& other) = default;
         };
         // pseudo-iterator for iterating over bucket elements
         // NB: does not wrap around!

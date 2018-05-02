@@ -130,7 +130,7 @@ template<typename placement_t, template<typename> typename table_t, typename val
 void CVTableTest() {
     using tab_t = table_t<val_t>;
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
+    //using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
     struct TestSizeMgr {
@@ -143,8 +143,7 @@ void CVTableTest() {
         }
     };
 
-    val_width_t vw { 7 };
-    widths_t ws { 5, vw };
+    widths_t ws { 5, 7 };
     auto size_mgr = TestSizeMgr { 128 };
     auto t = tab_t(size_mgr.table_size, ws);
     auto p = placement_t(size_mgr.table_size);
@@ -175,9 +174,57 @@ void CVTableTest() {
     };
 
     check_insert(60, 1, 5, false);
-
     table_state({
         {60, 1, 5},
+    });
+
+    check_insert(66, 2, 5, false);
+    table_state({
+        {60, 1, 5},
+        {66, 2, 5},
+    });
+
+    check_insert(64, 3, 5, false);
+    table_state({
+        {60, 1, 5},
+        {64, 3, 5},
+        {66, 2, 5},
+    });
+
+    check_insert(62, 4, 5, false);
+    table_state({
+        {60, 1, 5},
+        {62, 4, 5},
+        {64, 3, 5},
+        {66, 2, 5},
+    });
+
+    check_insert(62, 5, 6, false);
+    table_state({
+        {60, 1, 5},
+        {62, 4, 5},
+        {63, 5, 6},
+        {64, 3, 5},
+        {66, 2, 5},
+    });
+
+    check_insert(62, 10, 6, true);
+    table_state({
+        {60, 1, 5},
+        {62, 4, 5},
+        {63, 10, 6},
+        {64, 3, 5},
+        {66, 2, 5},
+    });
+
+    check_insert(62, 9, 7, false);
+    table_state({
+        {60, 1, 5},
+        {62, 4, 5},
+        {63, 10, 6},
+        {64, 9, 7},
+        {65, 3, 5},
+        {66, 2, 5},
     });
 
     /*
@@ -195,10 +242,10 @@ TEST(CVTable, place##_##tab##_##tname##_test) {             \
 }
 
 MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint8_t, uint8_t);
-MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint8_t, uint8_t);
 MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint64_t, uint64_t);
-MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint64_t, uint64_t);
 MakeCVTableTest(cv_bvs_t, plain_sentinel_t, dynamic_t, dynamic_t);
-MakeCVTableTest(cv_bvs_t, buckets_bv_t,     dynamic_t, dynamic_t);
 MakeCVTableTest(cv_bvs_t, plain_sentinel_t, uint_t40, uint_t<40>);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint8_t, uint8_t);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint64_t, uint64_t);
+MakeCVTableTest(cv_bvs_t, buckets_bv_t,     dynamic_t, dynamic_t);
 MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint_t40, uint_t<40>);

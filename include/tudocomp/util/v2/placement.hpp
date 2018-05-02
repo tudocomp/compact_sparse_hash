@@ -39,6 +39,7 @@ struct cv_bvs_t {
         using widths_t = typename storage_t::widths_t;
         using val_t = typename storage_t::val_t_export;
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+        using table_pos_t = typename storage_t::table_pos_t;
 
         IntVector<uint_t<2>>& m_cv;
         size_t const table_size;
@@ -72,7 +73,6 @@ struct cv_bvs_t {
         inline void set_cv(size_t pos, uint8_t v) {
             m_cv[pos] = v;
         }
-
 
         // Assumption: There exists a group at the initial address of `key`.
         // This group is either the group belonging to key,
@@ -184,7 +184,7 @@ struct cv_bvs_t {
 
             DCHECK(from != to);
 
-            val_quot_ptrs_t<val_t> from_pos;
+            table_pos_t from_pos;
 
             if (to < from) {
                 // if the range wraps around, we decompose into two ranges:
@@ -200,7 +200,7 @@ struct cv_bvs_t {
                 from_pos = sparse_shift(from,  table_size);
                 auto start_pos = sparse_shift(0, to);
 
-                from_pos.swap_with(start_pos);
+                sctx.at(from_pos).swap_with(sctx.at(start_pos));
             } else {
                 // [     |      |      ]
                 //   from^      ^to
@@ -212,15 +212,15 @@ struct cv_bvs_t {
             // position to the right of it.
             auto new_loc = sctx.allocate_pos(sctx.table_pos(to));
 
-            new_loc.move_from(from_pos);
-
-            return from_pos;
+            auto from_ptrs = sctx.at(from_pos);
+            new_loc.move_from(from_ptrs);
+            return from_ptrs;
         }
 
         /// Shifts all elements one to the right,
         /// moving the last element to the front position,
         /// and returns a ptr pair to it.
-        inline val_quot_ptrs_t<val_t> sparse_shift(size_t from, size_t to) {
+        inline table_pos_t sparse_shift(size_t from, size_t to) {
             DCHECK_LT(from, to);
             auto sctx = storage.context(table_size, widths);
 
@@ -262,7 +262,7 @@ struct cv_bvs_t {
             // move last element to the front
             auto from_p = sctx.at(from_loc);
             from_p.set(std::move(tmp_val), tmp_quot);
-            return from_p;
+            return from_loc;
         }
 
         lookup_result_t<val_t> lookup_insert(uint64_t initial_address,

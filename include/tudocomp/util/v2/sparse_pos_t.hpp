@@ -23,16 +23,20 @@ private:
 
 public:
     /// Index of bucket inside the hashtable
-    size_t const idx_of_bucket;
+    size_t idx_of_bucket;
 
     /// Bit mask of the element inside the bucket
-    uint64_t const bit_mask_in_bucket;
+    uint64_t bit_mask_in_bucket;
 
     inline sparse_pos_t(size_t pos, bucket_t* buckets):
         m_buckets(buckets),
         idx_of_bucket(bucket_layout_t::table_pos_to_idx_of_bucket(pos)),
         bit_mask_in_bucket(1ull << bucket_layout_t::table_pos_to_idx_inside_bucket(pos))
     {}
+
+    inline sparse_pos_t(): m_buckets(nullptr) {}
+    inline sparse_pos_t(sparse_pos_t const& other) = default;
+    inline sparse_pos_t& operator=(sparse_pos_t const& other) = default;
 
     /// Accesses the bucket at this sparse position.
     inline bucket_t& bucket() const {
