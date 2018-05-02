@@ -336,6 +336,64 @@ struct cv_bvs_t {
 struct naive_displacement_t {
     std::vector<size_t> m_displace;
 
+    inline naive_displacement_t(size_t table_size) {
+        m_displace.reserve(table_size);
+        m_displace.resize(table_size);
+    }
+
+    template<typename storage_t, typename size_mgr_t>
+    struct context_t {
+        using widths_t = typename storage_t::widths_t;
+        using val_t = typename storage_t::val_t_export;
+        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
+        using table_pos_t = typename storage_t::table_pos_t;
+
+        std::vector<size_t>& m_displace;
+        size_t const table_size;
+        widths_t const& widths;
+        size_mgr_t const& size_mgr;
+        storage_t& storage;
+
+        lookup_result_t<val_t> lookup_insert(uint64_t initial_address,
+                                             uint64_t stored_quotient)
+        {
+            auto sctx = storage.context(table_size, widths);
+
+            size_t cursor = initial_address;
+            while(true) {
+                auto pos = sctx.table_pos(cursor);
+
+                if (sctx.pos_is_empty(pos)) {
+                    auto ptrs = sctx.allocate_pos(pos);
+                    m_displace[cursor] = cursor - initial_address;
+                    ptrs.set_quotient(stored_quotient);
+                    return { ptrs, true };
+                }
+
+                if(m_displace[cursor] == cursor - initial_address) {
+                    auto ptrs = sctx.at(pos);
+                    if (ptrs.get_quotient() == stored_quotient) {
+                        return { ptrs, false };
+                    }
+                }
+
+                cursor = size_mgr.mod_add(cursor);
+                DCHECK_NE(cursor, initial_address);
+            }
+
+            DCHECK(false) << "unreachable";
+            return {};
+        }
+    };
+    template<typename storage_t, typename size_mgr_t>
+    inline auto context(storage_t& storage,
+                        size_t table_size,
+                        typename storage_t::widths_t const& widths,
+                        size_mgr_t const& size_mgr) {
+        return context_t<storage_t, size_mgr_t> {
+            m_displace, table_size, widths, size_mgr, storage
+        };
+    }
 };
 
 
