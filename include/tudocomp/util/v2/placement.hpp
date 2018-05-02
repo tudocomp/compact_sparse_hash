@@ -2,6 +2,8 @@
 
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
+#include <limits>
+#include <unordered_map>
 
 namespace tdc {namespace compact_sparse_hashtable {
 
@@ -345,6 +347,36 @@ struct naive_displacement_table_t {
     }
     inline void set(size_t pos, size_t val) {
         m_displace[pos] = val;
+    }
+};
+
+
+struct compact_displacement_table_t {
+    using elem_t = uint_t<4>;
+
+    IntVector<elem_t> m_displace;
+    std::unordered_map<size_t, size_t> m_spill;
+    inline compact_displacement_table_t(size_t table_size) {
+        m_displace.reserve(table_size);
+        m_displace.resize(table_size);
+    }
+    inline size_t get(size_t pos) {
+        size_t max = elem_t(std::numeric_limits<elem_t>::max());
+        size_t tmp = elem_t(m_displace[pos]);
+        if (tmp == max) {
+            return m_spill[pos];
+        } else {
+            return tmp;
+        }
+    }
+    inline void set(size_t pos, size_t val) {
+        size_t max = elem_t(std::numeric_limits<elem_t>::max());
+        if (val >= max) {
+            m_displace[pos] = max;
+            m_spill[pos] = val;
+        } else {
+            m_displace[pos] = val;
+        }
     }
 };
 
