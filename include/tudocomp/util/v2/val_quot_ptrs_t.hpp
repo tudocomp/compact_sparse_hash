@@ -88,12 +88,21 @@ public:
         set_quotient(other.get_quotient());
     }
 
+    inline void init_from(val_quot_ptrs_t other) {
+        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(val_ptr(), other.val_ptr());
+        set_quotient(other.get_quotient());
+    }
+
     inline void swap_with(val_quot_ptrs_t other) {
         value_type tmp_val = std::move(*val_ptr());
         uint64_t tmp_quot = get_quotient();
 
         move_from(other);
         other.set(std::move(tmp_val), tmp_quot);
+    }
+
+    inline void uninitialize() {
+        cbp::cbp_repr_t<val_t>::call_destructor(val_ptr());
     }
 };
 

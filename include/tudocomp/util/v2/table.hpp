@@ -203,7 +203,14 @@ namespace tdc {namespace compact_sparse_hashtable {
                 return table_pos_t { pos };
             }
             inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
-                return qvd_t::at(m_alloc.get(), table_size, pos.offset, widths);
+                auto tmp = qvd_t::at(m_alloc.get(), table_size, pos.offset, widths);
+
+                // NB: allocate_pos returns a unitialized location,
+                // but all locations are per default initialized with a empty_value.
+                // Therefore we destroy the existing value first.
+                tmp.uninitialize();
+
+                return tmp;
             }
             inline val_quot_ptrs_t<val_t> at(table_pos_t pos) {
                 return qvd_t::at(m_alloc.get(), table_size, pos.offset, widths);

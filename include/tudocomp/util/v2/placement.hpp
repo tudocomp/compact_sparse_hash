@@ -215,7 +215,9 @@ struct cv_bvs_t {
             auto new_loc = sctx.allocate_pos(sctx.table_pos(to));
 
             auto from_ptrs = sctx.at(from_pos);
-            new_loc.move_from(from_ptrs);
+            new_loc.init_from(from_ptrs);
+            from_ptrs.uninitialize();
+
             return from_ptrs;
         }
 
