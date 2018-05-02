@@ -333,13 +333,27 @@ struct cv_bvs_t {
     }
 };
 
-struct naive_displacement_t {
-    std::vector<size_t> m_displace;
 
-    inline naive_displacement_t(size_t table_size) {
+struct naive_displacement_table_t {
+    std::vector<size_t> m_displace;
+    inline naive_displacement_table_t(size_t table_size) {
         m_displace.reserve(table_size);
         m_displace.resize(table_size);
     }
+    inline size_t get(size_t pos) {
+        return m_displace[pos];
+    }
+    inline void set(size_t pos, size_t val) {
+        m_displace[pos] = val;
+    }
+};
+
+template<typename displacement_table_t>
+struct displacement_t {
+    displacement_table_t m_displace;
+
+    inline displacement_t(size_t table_size):
+        m_displace(table_size) {}
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
@@ -348,7 +362,7 @@ struct naive_displacement_t {
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using table_pos_t = typename storage_t::table_pos_t;
 
-        std::vector<size_t>& m_displace;
+        displacement_table_t& m_displace;
         size_t const table_size;
         widths_t const& widths;
         size_mgr_t const& size_mgr;
@@ -365,12 +379,12 @@ struct naive_displacement_t {
 
                 if (sctx.pos_is_empty(pos)) {
                     auto ptrs = sctx.allocate_pos(pos);
-                    m_displace[cursor] = cursor - initial_address;
+                    m_displace.set(cursor, cursor - initial_address);
                     ptrs.set_quotient(stored_quotient);
                     return { ptrs, true };
                 }
 
-                if(m_displace[cursor] == cursor - initial_address) {
+                if(m_displace.get(cursor) == cursor - initial_address) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {
                         return { ptrs, false };

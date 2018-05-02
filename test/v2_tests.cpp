@@ -366,6 +366,7 @@ TEST(DPTable, place##_##tab##_##tname##_test) { \
     DPTableTest<place, tab, tname>();           \
 }
 
+using naive_displacement_t = displacement_t<naive_displacement_table_t>;
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint8_t);
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint64_t);
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, dynamic_t);
