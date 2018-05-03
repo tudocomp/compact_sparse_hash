@@ -24,7 +24,7 @@ public:
     inline generic_hashtable_t(generic_hashtable_t&& other) = default;
     inline generic_hashtable_t& operator=(generic_hashtable_t&& other) {
         // NB: overwriting the storage does not automatically destroy the values in them.
-        run_destructors_of_elements();
+        destroy_vals();
 
         m_sizing = std::move(other.m_sizing);
         m_key_width = std::move(other.m_key_width);
@@ -55,7 +55,7 @@ public:
 
     inline ~generic_hashtable_t() {
         // NB: overwriting the storage does not automatically destroy the values in them.
-        run_destructors_of_elements();
+        destroy_vals();
     }
 
     /// Returns the amount of elements inside the datastructure.
@@ -286,9 +286,9 @@ private:
     /// initialize or destroy the elements in it automatically,
     /// to prevent unneeded empty-constructions of its elements.
     /// TODO: Is this still a useful semantic? A bucket_t can manage its own data.
-    inline void run_destructors_of_elements() {
-        DCHECK(false) << "figure out later";
-        //storage().run_destructors_of_elements();
+    inline void destroy_vals() {
+        auto sctx = m_storage.context(table_size(), storage_widths());
+        sctx.destroy_vals();
     }
 
     /// Access the element represented by `handler` under

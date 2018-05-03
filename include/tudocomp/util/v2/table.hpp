@@ -196,7 +196,7 @@ namespace tdc {namespace compact_sparse_hashtable {
             widths_t const& widths;
 
             inline void destroy_vals() {
-                qvd_t::destroy_vals(m_alloc.get());
+                qvd_t::destroy_vals(m_alloc.get(), table_size, widths);
             }
 
             inline table_pos_t table_pos(size_t pos) {
