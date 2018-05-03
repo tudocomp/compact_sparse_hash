@@ -332,6 +332,133 @@ struct cv_bvs_t {
                 }
             }
         }
+
+        /// A non-STL conformer iterator for iterating over all elements
+        /// of the hashtable exactly once,
+        /// wrapping around at the end as needed.
+        struct iter_all_t {
+            context_t<storage_t, size_mgr_t>& m_self;
+            size_t i = 0;
+            size_t original_start = 0;
+            uint64_t initial_address = 0;
+            enum {
+                EMPTY_LOCATIONS,
+                FULL_LOCATIONS
+            } state;
+
+            inline iter_all_t(context_t<storage_t, size_mgr_t>& self): m_self(self) {
+                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
+
+                // first, skip forward to the first empty location
+                // so that iteration can start at the beginning of the first complete group
+
+                i = 0;
+
+                for(;;i++) {
+                    if (sctx.pos_is_empty(sctx.table_pos(i))) {
+                        break;
+                    }
+                }
+
+                // Remember our startpoint so that we can recognize it when
+                // we wrapped around back to it
+                original_start = i;
+
+                // We proceed to the next position so that we can iterate until
+                // we reach `original_start` again.
+                i = m_self.size_mgr.mod_add(i);
+
+                // We start iterating from an empty location
+                state = EMPTY_LOCATIONS;
+            }
+
+            inline bool next(uint64_t* out_initial_address, size_t* out_i) {
+                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
+
+                // TODO: Simplify the logic here.
+                // In principle, it is just a loop that
+                // skips empty locations, and yields on each occupied one.
+
+                while(true) {
+                    if (state == EMPTY_LOCATIONS) {
+                        // skip empty locations
+                        for(;;i = m_self.size_mgr.mod_add(i)) {
+                            if (!sctx.pos_is_empty(sctx.table_pos(i))) {
+                                // we initialize init-addr at 1 pos before the start of
+                                // a group of blocks, so that the blocks iteration logic works
+                                initial_address = m_self.size_mgr.mod_sub(i);
+                                state = FULL_LOCATIONS;
+                                break;
+                            }
+                            if (i == original_start) {
+                                return false;
+                            }
+                        }
+                    } else {
+                        // process full locations
+                        if (sctx.pos_is_empty(sctx.table_pos(i)))  {
+                            state = EMPTY_LOCATIONS;
+                            continue;
+                        }
+                        if (m_self.get_c(i)) {
+                            // skip forward m_v cursor
+                            // to find initial address for this block
+                            //
+                            // this works for the first block because
+                            // initial_address starts at 1 before the group
+                            initial_address = m_self.size_mgr.mod_add(initial_address);
+
+                            while(!m_self.get_v(initial_address)) {
+                                initial_address = m_self.size_mgr.mod_add(initial_address);
+                            }
+                        }
+
+                        *out_initial_address = initial_address;
+                        *out_i = i;
+
+                        i = m_self.size_mgr.mod_add(i);
+                        return true;
+                    }
+                }
+            }
+        };
+
+        template<typename F>
+        inline void drain_all(F f) {
+            iter_all_t iter { *this };
+
+            // bool start_of_bucket = false;
+            // size_t bucket = 0;
+
+            uint64_t initial_address;
+            size_t i;
+
+
+            while(iter.next(&initial_address, &i)) {
+                auto sctx = storage.context(table_size, widths);
+
+                auto p = sctx.table_pos(i);
+
+                /*
+                 *
+                 * TODO
+                 *
+                // drop buckets of old table as they get emptied out
+                if (p.offset_in_bucket() == 0) {
+                    if (start_of_bucket) {
+                        DCHECK_NE(bucket, p.idx_of_bucket);
+                        drop_bucket(bucket);
+                    }
+
+                    start_of_bucket = true;
+                    bucket = p.idx_of_bucket;
+                }
+
+                */
+
+                f(initial_address, sctx.at(p));
+            }
+        }
     };
     template<typename storage_t, typename size_mgr_t>
     inline auto context(storage_t& storage,

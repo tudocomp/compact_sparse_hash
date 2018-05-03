@@ -83,6 +83,14 @@ public:
         cbp::cbp_repr_t<val_t>::construct_val_from_rval(val_ptr(), std::move(val));
     }
 
+    inline void set_val(value_type&& val) {
+        *val_ptr() = std::move(val);
+    }
+
+    inline void set_val_no_drop(value_type&& val) {
+        cbp::cbp_repr_t<val_t>::construct_val_from_rval(val_ptr(), std::move(val));
+    }
+
     inline void move_from(val_quot_ptrs_t other) {
         *val_ptr() = std::move(*other.val_ptr());
         set_quotient(other.get_quotient());

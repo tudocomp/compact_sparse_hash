@@ -124,7 +124,11 @@ public:
 
         auto result = grow_and_insert(key, raw_key_width, raw_val_width);
 
-        // TODO
+        if (result.is_empty) {
+            result.entry.set_val_no_drop(std::move(value));
+        } else {
+            result.entry.set_val(std::move(value));
+        }
     }
 
     /// Returns a reference to the element with key `key`.
@@ -150,15 +154,17 @@ public:
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
     inline reference_type access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
-        pointer_type addr = pointer_type();
-
         auto raw_key_width = std::max<size_t>(key_width, this->key_width());
         auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
         auto result = grow_and_insert(key, raw_key_width, raw_val_width);
 
-        DCHECK(addr != pointer_type());
+        if (result.is_empty) {
+            result.entry.set_val_no_drop(value_type());
+        }
 
+        pointer_type addr = result.entry.val_ptr();
+        DCHECK(addr != pointer_type());
         return *addr;
     }
 
@@ -291,7 +297,6 @@ private:
     /// `handler` is a type that allows reacting correctly to different ways
     /// to access or create a new or existing value in the hashtable.
     /// See `InsertHandler` and `AddressDefaultHandler` below.
-    template<typename handler_t>
     inline auto grow_and_insert(uint64_t key, size_t key_width, size_t value_width) {
         grow_if_needed(this->size() + 1, key_width, value_width);
         auto const dkey = this->decompose_key(key);
@@ -302,7 +307,7 @@ private:
 
         auto result = pctx.lookup_insert(dkey.initial_address, dkey.stored_quotient);
 
-        if (result.is_new) {
+        if (result.is_empty) {
             m_sizing.set_size(m_sizing.size() + 1);
         }
 

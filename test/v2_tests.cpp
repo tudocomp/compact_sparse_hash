@@ -390,6 +390,8 @@ MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint_t40);
 template<template<typename> typename table_t, typename val_t>
 void FullTableTest() {
     table_t<val_t> table;
+
+    table.insert_kv_width(42, 124, 8, 8);
 }
 
 #define MakeFullTableTest(tab, tname)   \
