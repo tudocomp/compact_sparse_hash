@@ -404,8 +404,29 @@ TEST(FullTable, tab##_##tname##_test) { \
 
 template<typename val_t>
 using csh_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
+template<typename val_t>
+using ch_test_t = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, cv_bvs_t>;
+
+template<typename val_t>
+using csh_disp_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, naive_displacement_t>;
+template<typename val_t>
+using ch_disp_test_t = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, naive_displacement_t>;
 
 MakeFullTableTest(csh_test_t, uint8_t)
 MakeFullTableTest(csh_test_t, uint64_t)
 MakeFullTableTest(csh_test_t, dynamic_t)
 MakeFullTableTest(csh_test_t, uint_t40)
+MakeFullTableTest(ch_test_t, uint8_t)
+MakeFullTableTest(ch_test_t, uint64_t)
+MakeFullTableTest(ch_test_t, dynamic_t)
+MakeFullTableTest(ch_test_t, uint_t40)
+/*
+MakeFullTableTest(csh_disp_test_t, uint8_t)
+MakeFullTableTest(csh_disp_test_t, uint64_t)
+MakeFullTableTest(csh_disp_test_t, dynamic_t)
+MakeFullTableTest(csh_disp_test_t, uint_t40)
+MakeFullTableTest(ch_disp_test_t, uint8_t)
+MakeFullTableTest(ch_disp_test_t, uint64_t)
+MakeFullTableTest(ch_disp_test_t, dynamic_t)
+MakeFullTableTest(ch_disp_test_t, uint_t40)
+*/
