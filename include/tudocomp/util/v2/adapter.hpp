@@ -21,7 +21,17 @@ public:
     static constexpr size_t DEFAULT_VALUE_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
-    inline generic_hashtable_t(generic_hashtable_t&& other) = default;
+    inline generic_hashtable_t(generic_hashtable_t&& other):
+        m_sizing(std::move(other.m_sizing)),
+        m_key_width(std::move(other.m_key_width)),
+        m_val_width(std::move(other.m_val_width)),
+        m_storage(std::move(other.m_storage)),
+        m_placement(std::move(other.m_placement)),
+        m_hash(std::move(other.m_hash)),
+        m_is_empty(std::move(other.m_is_empty))
+    {
+        other.m_is_empty = true;
+    }
     inline generic_hashtable_t& operator=(generic_hashtable_t&& other) {
         // NB: overwriting the storage does not automatically destroy the values in them.
         destroy_vals();
@@ -32,6 +42,9 @@ public:
         m_storage = std::move(other.m_storage);
         m_placement = std::move(other.m_placement);
         m_hash = std::move(other.m_hash);
+        m_is_empty = std::move(other.m_is_empty);
+
+        other.m_is_empty = true;
 
         return *this;
     }
@@ -42,8 +55,8 @@ public:
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline generic_hashtable_t(size_t size = DEFAULT_TABLE_SIZE,
-                                      size_t key_width = DEFAULT_KEY_WIDTH,
-                                      size_t value_width = DEFAULT_VALUE_WIDTH):
+                               size_t key_width = DEFAULT_KEY_WIDTH,
+                               size_t value_width = DEFAULT_VALUE_WIDTH):
         m_sizing(size),
         m_key_width(key_width),
         m_val_width(value_width),
@@ -54,8 +67,10 @@ public:
     }
 
     inline ~generic_hashtable_t() {
-        // NB: overwriting the storage does not automatically destroy the values in them.
-        destroy_vals();
+        if (!m_is_empty) {
+            // NB: overwriting the storage does not automatically destroy the values in them.
+            destroy_vals();
+        }
     }
 
     /// Returns the amount of elements inside the datastructure.
@@ -225,6 +240,9 @@ private:
 
     /// Hash function
     hash_t m_hash {1};
+
+    /// Marker for correctly handling moving-out
+    bool m_is_empty = false;
 
     /// The actual amount of bits currently usable for
     /// storing a key in the hashtable.

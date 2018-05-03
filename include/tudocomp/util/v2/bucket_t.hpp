@@ -92,17 +92,23 @@ public:
 
     // Run destructors of each element in the bucket.
     inline void destroy_vals(widths_t widths) {
-        qvd_t::destroy_vals(m_data.get() + 1, size(), widths);
+        if (is_allocated()) {
+            qvd_t::destroy_vals(get_qv(), size(), widths);
+        }
     }
 
     /// Returns a `val_quot_ptrs_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
     inline val_quot_ptrs_t<val_t> at(size_t pos, widths_t widths) const {
-        return qvd_t::at(m_data.get() + 1, size(), pos, widths);
+        return qvd_t::at(get_qv(), size(), pos, widths);
+    }
+
+    inline bool is_allocated() const {
+        return bool(m_data);
     }
 
     inline bool is_empty() const {
-        return m_data.get() == nullptr;
+        return !bool(m_data);
     }
 
     inline size_t stat_allocation_size_in_bytes(widths_t widths) const {
@@ -165,6 +171,10 @@ public:
         return ret;
     }
 private:
+    inline uint64_t* get_qv() const {
+        return static_cast<uint64_t*>(m_data.get()) + 1;
+    }
+
     inline static size_t qvd_data_size(size_t size, widths_t widths) {
         return qvd_t::calc_sizes(size, widths).overall_qword_size;
     }
@@ -173,7 +183,7 @@ private:
     /// the allocation.
     using Ptrs = typename qvd_t::Ptrs;
     inline Ptrs ptrs(widths_t widths) const {
-        return qvd_t::ptrs(m_data.get() + 1, size(), widths);
+        return qvd_t::ptrs(get_qv(), size(), widths);
     }
 };
 

@@ -122,6 +122,7 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
         };
         inline auto context(size_t table_size, widths_t const& widths) {
+            DCHECK(m_buckets);
             return context_t {
                 m_buckets, table_size, widths
             };
