@@ -275,6 +275,13 @@ struct cv_bvs_t {
             auto sctx = storage.context(table_size, widths);
             auto ia_pos = sctx.table_pos(initial_address);
 
+            // cases:
+            // - initial address empty.
+            // - initial address occupied, there is an element for this key
+            //   (v[initial address] = 1).
+            // - initial address occupied, there is no element for this key
+            //   (v[initial address] = 0).
+
             if (sctx.pos_is_empty(ia_pos)) {
                 // check if we can insert directly
 
