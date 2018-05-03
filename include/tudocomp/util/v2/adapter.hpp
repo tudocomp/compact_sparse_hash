@@ -10,7 +10,7 @@ class generic_hashtable_t {
     using val_t = typename storage_t::val_t_export;
 public:
     /// By-value representation of a value
-    using value_type = typename storage_t::value_type;
+    using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
     /// Reference to a value
     using reference_type = ValRef<val_t>;
     /// Pointer to a value

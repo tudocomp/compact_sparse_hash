@@ -6,6 +6,7 @@
 #include <tudocomp/util/v2/placement.hpp>
 #include <tudocomp/util/v2/adapter.hpp>
 #include <tudocomp/util/v2/bucket_t.hpp>
+#include <tudocomp/util/v2/hash_functions.hpp>
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
 using namespace tdc::compact_sparse_hashtable;
@@ -385,3 +386,21 @@ MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint8_t);
 MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint64_t);
 MakeDPTableTest(compact_displacement_t, buckets_bv_t,     dynamic_t);
 MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint_t40);
+
+template<template<typename> typename table_t, typename val_t>
+void FullTableTest() {
+    table_t<val_t> table;
+}
+
+#define MakeFullTableTest(tab, tname)   \
+TEST(FullTable, tab##_##tname##_test) { \
+    FullTableTest<tab, tname>(); \
+}
+
+template<typename val_t>
+using csh_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
+
+MakeFullTableTest(csh_test_t, uint8_t)
+MakeFullTableTest(csh_test_t, uint64_t)
+MakeFullTableTest(csh_test_t, dynamic_t)
+MakeFullTableTest(csh_test_t, uint_t40)
