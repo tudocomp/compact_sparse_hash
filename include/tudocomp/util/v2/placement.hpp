@@ -433,29 +433,19 @@ struct cv_bvs_t {
             uint64_t initial_address;
             size_t i;
 
+            table_pos_t drain_start;
+            bool first = true;
 
             while(iter.next(&initial_address, &i)) {
                 auto sctx = storage.context(table_size, widths);
-
                 auto p = sctx.table_pos(i);
 
-                /*
-                 *
-                 * TODO
-                 *
-                // drop buckets of old table as they get emptied out
-                if (p.offset_in_bucket() == 0) {
-                    if (start_of_bucket) {
-                        DCHECK_NE(bucket, p.idx_of_bucket);
-                        drop_bucket(bucket);
-                    }
-
-                    start_of_bucket = true;
-                    bucket = p.idx_of_bucket;
+                if (first) {
+                    first = false;
+                    drain_start = p;
                 }
 
-                */
-
+                sctx.trim_storage(&drain_start, p);
                 f(initial_address, sctx.at(p));
             }
         }
@@ -547,11 +537,13 @@ struct displacement_t {
 
                 if (sctx.pos_is_empty(pos)) {
                     auto ptrs = sctx.allocate_pos(pos);
+                    DCHECK_GE(cursor, initial_address);
                     m_displace.set(cursor, cursor - initial_address);
                     ptrs.set_quotient(stored_quotient);
                     return { ptrs, true };
                 }
 
+                DCHECK_GE(cursor, initial_address);
                 if(m_displace.get(cursor) == cursor - initial_address) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {

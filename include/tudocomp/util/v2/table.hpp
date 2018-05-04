@@ -86,6 +86,14 @@ namespace tdc {namespace compact_sparse_hashtable {
             size_t const table_size;
             widths_t const& widths;
 
+            /// Run the destructors of the elements of the `i`-th bucket,
+            /// and drop it from the hashtable, replacing it with an empty one.
+            inline void drop_bucket(size_t i) {
+                DCHECK_LT(i, bucket_layout_t::table_size_to_bucket_size(table_size));
+                m_buckets[i].destroy_vals(widths);
+                m_buckets[i] = my_bucket_t();
+            }
+
             inline void destroy_vals() {
                 size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
@@ -119,6 +127,28 @@ namespace tdc {namespace compact_sparse_hashtable {
             inline iter_t make_iter(table_pos_t const& pos) {
                 size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
                 return iter_t(m_buckets.get(), buckets_size, pos, widths);
+            }
+            inline void trim_storage(table_pos_t* last_start, table_pos_t const& end) {
+                // Check if end lies on a bucket boundary, then drop all buckets before it
+
+                if (end.offset_in_bucket() == 0) {
+
+                    // ignore buckets if we start in the middle of one
+                    if ((*last_start).offset_in_bucket() != 0) {
+                        // TODO: Just iterate forward to the first valid one
+                        *last_start = end;
+                    }
+
+                    auto bstart = (*last_start).idx_of_bucket;
+                    auto bend = end.idx_of_bucket;
+                    size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+
+                    for (size_t i = bstart; i != bend; i = (i + 1) % buckets_size) {
+                        drop_bucket(i);
+                    }
+
+                    *last_start = end;
+                }
             }
         };
         inline auto context(size_t table_size, widths_t const& widths) {
@@ -224,6 +254,9 @@ namespace tdc {namespace compact_sparse_hashtable {
                     qvd_t::at(m_alloc.get(), table_size, pos.offset, widths),
                     m_empty_value,
                 };
+            }
+            inline void trim_storage(table_pos_t* last_start, table_pos_t const& end) {
+                // Nothing to be done
             }
         };
         inline auto context(size_t table_size, widths_t const& widths) {

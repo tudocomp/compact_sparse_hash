@@ -389,12 +389,33 @@ MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint_t40);
 
 template<template<typename> typename table_t, typename val_t>
 void FullTableTest() {
-    table_t<val_t> table;
+    {
+        table_t<val_t> table;
 
-    table.insert_kv_width(42, 124, 8, 8);
+        table.insert_kv_width(42, 124, 8, 8);
 
-    auto r = table[42];
-    ASSERT_EQ(r, 124);
+        auto r = table[42];
+        ASSERT_EQ(r, 124u);
+    }
+    {
+        table_t<val_t> table;
+
+        size_t last_bits = 0;
+        for (uint64_t v = 1; v < 1000; v++) {
+            size_t bits = bits_for(v);
+            if (last_bits != bits) {
+                //std::cout << "bits: " << bits << "\n";
+                last_bits = bits;
+            }
+            table.insert_kv_width(v, std::move(v), bits, bits);
+
+            for (uint64_t w = 1; w <= v; w++) {
+                auto r = table[w];
+                ASSERT_EQ(r, w);
+            }
+        }
+
+    }
 }
 
 #define MakeFullTableTest(tab, tname)   \
@@ -412,20 +433,20 @@ using csh_disp_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_
 template<typename val_t>
 using ch_disp_test_t = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, naive_displacement_t>;
 
-MakeFullTableTest(csh_test_t, uint8_t)
+MakeFullTableTest(csh_test_t, uint16_t)
 MakeFullTableTest(csh_test_t, uint64_t)
 MakeFullTableTest(csh_test_t, dynamic_t)
 MakeFullTableTest(csh_test_t, uint_t40)
-MakeFullTableTest(ch_test_t, uint8_t)
+MakeFullTableTest(ch_test_t, uint16_t)
 MakeFullTableTest(ch_test_t, uint64_t)
 MakeFullTableTest(ch_test_t, dynamic_t)
 MakeFullTableTest(ch_test_t, uint_t40)
 /*
-MakeFullTableTest(csh_disp_test_t, uint8_t)
+MakeFullTableTest(csh_disp_test_t, uint16_t)
 MakeFullTableTest(csh_disp_test_t, uint64_t)
 MakeFullTableTest(csh_disp_test_t, dynamic_t)
 MakeFullTableTest(csh_disp_test_t, uint_t40)
-MakeFullTableTest(ch_disp_test_t, uint8_t)
+MakeFullTableTest(ch_disp_test_t, uint16_t)
 MakeFullTableTest(ch_disp_test_t, uint64_t)
 MakeFullTableTest(ch_disp_test_t, dynamic_t)
 MakeFullTableTest(ch_disp_test_t, uint_t40)

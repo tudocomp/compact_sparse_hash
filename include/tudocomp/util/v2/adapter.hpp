@@ -368,7 +368,8 @@ private:
             /*
             std::cout
                 << "grow to cap " << new_table.table_size()
-                << ", m_key_width: " << int(new_table.m_key_width)
+                << ", key_width: " << new_table.key_width()
+                << ", val_width: " << new_table.value_width()
                 << ", real_width: " << new_table.real_width()
                 << ", quot width: " << new_table.quotient_width()
                 << "\n";
