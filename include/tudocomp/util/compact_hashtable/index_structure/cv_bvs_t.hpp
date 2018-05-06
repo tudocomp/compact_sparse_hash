@@ -5,7 +5,7 @@
 
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
-#include "../val_quot_ptrs_t.hpp"
+#include "../storage/val_quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashtable {
 

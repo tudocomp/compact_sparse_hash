@@ -7,7 +7,7 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include "../util.hpp"
-#include "../val_quot_ptrs_t.hpp"
+#include "val_quot_ptrs_t.hpp"
 #include "quot_val_data.hpp"
 
 namespace tdc {namespace compact_sparse_hashtable {
