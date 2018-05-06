@@ -1,8 +1,9 @@
 #pragma once
 
 #include <memory>
+
 #include "../util.hpp"
-#include "../quot_val_data.hpp"
+#include "quot_val_data.hpp"
 
 // Table for uninitalized elements
 

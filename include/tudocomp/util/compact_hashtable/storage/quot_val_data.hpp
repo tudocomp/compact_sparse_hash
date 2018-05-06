@@ -6,9 +6,9 @@
 #include <utility>
 #include <algorithm>
 
-#include "util.hpp"
-#include "val_quot_ptrs_t.hpp"
 #include <tudocomp/util/bit_packed_layout_t.hpp>
+#include "../util.hpp"
+#include "../val_quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashtable {
 
