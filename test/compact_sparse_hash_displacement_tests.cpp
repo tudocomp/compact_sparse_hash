@@ -2,15 +2,10 @@
 
 #include <cstdint>
 #include <algorithm>
-#include <tudocomp/util/compact_hashtable/table.hpp>
-#include <tudocomp/util/compact_hashtable/placement.hpp>
-#include <tudocomp/util/compact_hashtable/adapter.hpp>
-#include <tudocomp/util/compact_hashtable/hash_functions.hpp>
-#include <tudocomp/util/bits.hpp>
 
-using namespace tdc::compact_sparse_hashtable;
+#include <tudocomp/util/compact_sparse_displacement_hash.hpp>
 
 template<typename val_t>
-using COMPACT_TABLE = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, displacement_t<naive_displacement_table_t>>;
+using COMPACT_TABLE = tdc::compact_sparse_hashtable::compact_sparse_displacement_hashtable_t<val_t>;
 
 #include "compact_hash_tests.template.hpp"

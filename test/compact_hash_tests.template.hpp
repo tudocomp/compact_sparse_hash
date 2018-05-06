@@ -1,3 +1,8 @@
+#include <gtest/gtest.h>
+
+#include <cstdint>
+#include <algorithm>
+
 using namespace tdc;
 using namespace tdc::compact_sparse_hashtable;
 

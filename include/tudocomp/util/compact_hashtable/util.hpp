@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <cstdint>
+#include <utility>
+#include <algorithm>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
