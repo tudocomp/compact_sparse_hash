@@ -366,19 +366,15 @@ struct cv_bvs_t {
 
                 // We proceed to the next position so that we can iterate until
                 // we reach `original_start` again.
+                initial_address = i;
                 i = m_self.size_mgr.mod_add(i);
 
                 // We start iterating from an empty location
                 state = EMPTY_LOCATIONS;
             }
 
-            inline bool next(uint64_t* out_initial_address, size_t* out_i) {
+            inline bool next_a(uint64_t* out_initial_address, size_t* out_i) {
                 auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
-
-                // TODO: Simplify the logic here.
-                // In principle, it is just a loop that
-                // skips empty locations, and yields on each occupied one.
-
                 while(true) {
                     if (state == EMPTY_LOCATIONS) {
                         // skip empty locations
@@ -421,7 +417,72 @@ struct cv_bvs_t {
                     }
                 }
             }
+
+            inline bool next_b(uint64_t* out_initial_address, size_t* out_i) {
+                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
+                while (sctx.pos_is_empty(sctx.table_pos(i))) {
+                    if (i == original_start) {
+                        return false;
+                    }
+
+                    initial_address = i;
+                    i = m_self.size_mgr.mod_add(i);
+                }
+
+                // If start of group, find next v bit to find initial address
+                if (m_self.get_c(i)) {
+                    initial_address = m_self.size_mgr.mod_add(initial_address);
+                    while(!m_self.get_v(initial_address)) {
+                        initial_address = m_self.size_mgr.mod_add(initial_address);
+                    }
+                }
+
+                *out_initial_address = initial_address;
+                *out_i = i;
+
+                i = m_self.size_mgr.mod_add(i);
+                return true;
+            }
+
+            inline bool next(uint64_t* out_initial_address, size_t* out_i) {
+                uint64_t ia_bak = initial_address;
+                uint64_t i_bak = i;
+
+                uint64_t a_ia = *out_initial_address;
+                size_t a_i = *out_i;
+                initial_address = ia_bak;
+                i = i_bak;
+                bool a = next_a(&a_ia, &a_i);
+
+                uint64_t b_ia = *out_initial_address;
+                size_t b_i = *out_i;
+                initial_address = ia_bak;
+                i = i_bak;
+                bool b = next_b(&b_ia, &b_i);
+
+                DCHECK_EQ(a_ia, b_ia);
+                DCHECK_EQ(a_i, b_i);
+                DCHECK_EQ(a, b);
+
+                *out_initial_address = a_ia;
+                *out_i = a_i;
+                return a;
+            }
         };
+
+        void print_all() {
+            auto sctx = storage.context(table_size, widths);
+            std::cout << "/////////////////\n";
+            for(size_t i = 0; i < table_size; i++) {
+                auto p = sctx.table_pos(i);
+                if(sctx.pos_is_empty(p)) {
+                    std::cout << "-- -\n";
+                } else {
+                    std::cout << int(get_c(i)) << int(get_v(i)) << " #\n";
+                }
+            }
+            std::cout << "/////////////////\n";
+        }
 
         template<typename F>
         inline void drain_all(F f) {
@@ -557,6 +618,89 @@ struct displacement_t {
 
             DCHECK(false) << "unreachable";
             return {};
+        }
+
+        /// A non-STL conformer iterator for iterating over all elements
+        /// of the hashtable exactly once,
+        /// wrapping around at the end as needed.
+        struct iter_all_t {
+            context_t<storage_t, size_mgr_t>& m_self;
+            size_t i = 0;
+            size_t original_start = 0;
+            uint64_t initial_address = 0;
+
+            inline iter_all_t(context_t<storage_t, size_mgr_t>& self): m_self(self) {
+                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
+
+                // first, skip forward to the first empty location
+                // so that iteration can start at the beginning of the first complete group
+
+                i = 0;
+
+                for(;;i++) {
+                    if (sctx.pos_is_empty(sctx.table_pos(i))) {
+                        break;
+                    }
+                }
+
+                // Remember our startpoint so that we can recognize it when
+                // we wrapped around back to it
+                original_start = i;
+
+                // We proceed to the next position so that we can iterate until
+                // we reach `original_start` again.
+                initial_address = i;
+                i = m_self.size_mgr.mod_add(i);
+            }
+
+            inline bool next(uint64_t* out_initial_address, size_t* out_i) {
+                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
+                while (sctx.pos_is_empty(sctx.table_pos(i))) {
+                    if (i == original_start) {
+                        return false;
+                    }
+
+                    initial_address = i;
+                    i = m_self.size_mgr.mod_add(i);
+                }
+
+                auto disp = m_self.m_displace.get(i);
+                DCHECK_LE(disp, i);
+                initial_address = i - disp;
+
+                *out_initial_address = initial_address;
+                *out_i = i;
+
+                i = m_self.size_mgr.mod_add(i);
+                return true;
+            }
+        };
+
+        template<typename F>
+        inline void drain_all(F f) {
+            iter_all_t iter { *this };
+
+            // bool start_of_bucket = false;
+            // size_t bucket = 0;
+
+            uint64_t initial_address;
+            size_t i;
+
+            table_pos_t drain_start;
+            bool first = true;
+
+            while(iter.next(&initial_address, &i)) {
+                auto sctx = storage.context(table_size, widths);
+                auto p = sctx.table_pos(i);
+
+                if (first) {
+                    first = false;
+                    drain_start = p;
+                }
+
+                sctx.trim_storage(&drain_start, p);
+                f(initial_address, sctx.at(p));
+            }
         }
     };
     template<typename storage_t, typename size_mgr_t>

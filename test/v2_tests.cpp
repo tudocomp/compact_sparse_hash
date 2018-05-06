@@ -400,6 +400,14 @@ void FullTableTest() {
     {
         table_t<val_t> table;
 
+        auto tchk = [&](auto end) {
+            for (uint64_t w = 1; w < end; w++) {
+                auto r = table[w];
+                ASSERT_EQ(r, w);
+            }
+        };
+        bool quick = true;
+
         size_t last_bits = 0;
         for (uint64_t v = 1; v < 1000; v++) {
             size_t bits = bits_for(v);
@@ -409,12 +417,13 @@ void FullTableTest() {
             }
             table.insert_kv_width(v, std::move(v), bits, bits);
 
-            for (uint64_t w = 1; w <= v; w++) {
-                auto r = table[w];
-                ASSERT_EQ(r, w);
+            if (!quick) {
+                tchk(v + 1);
             }
         }
-
+        if (quick) {
+            tchk(1000);
+        }
     }
 }
 
@@ -441,7 +450,6 @@ MakeFullTableTest(ch_test_t, uint16_t)
 MakeFullTableTest(ch_test_t, uint64_t)
 MakeFullTableTest(ch_test_t, dynamic_t)
 MakeFullTableTest(ch_test_t, uint_t40)
-/*
 MakeFullTableTest(csh_disp_test_t, uint16_t)
 MakeFullTableTest(csh_disp_test_t, uint64_t)
 MakeFullTableTest(csh_disp_test_t, dynamic_t)
@@ -450,4 +458,3 @@ MakeFullTableTest(ch_disp_test_t, uint16_t)
 MakeFullTableTest(ch_disp_test_t, uint64_t)
 MakeFullTableTest(ch_disp_test_t, dynamic_t)
 MakeFullTableTest(ch_disp_test_t, uint_t40)
-*/
