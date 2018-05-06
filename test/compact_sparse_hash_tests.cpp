@@ -2,90 +2,107 @@
 
 #include <cstdint>
 #include <algorithm>
-#include <tudocomp/util/compact_sparse_hash.hpp>
+#include <tudocomp/util/v2/table.hpp>
+#include <tudocomp/util/v2/placement.hpp>
+#include <tudocomp/util/v2/adapter.hpp>
+#include <tudocomp/util/v2/hash_functions.hpp>
 #include <tudocomp/util/bits.hpp>
 
-#define COMPACT_TABLE compact_sparse_hashtable_t
+using namespace tdc;
+using namespace tdc::compact_sparse_hashtable;
 
-static bool print_init = false;
-static uint64_t create_counter = 0;
+using uint_t40 = uint_t<40>;
+using naive_displacement_t = displacement_t<naive_displacement_table_t>;
+using compact_displacement_t = displacement_t<compact_displacement_table_t>;
+template<typename val_t>
+using csh_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
+template<typename val_t>
+using ch_test_t = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, cv_bvs_t>;
+
+template<typename val_t>
+using csh_disp_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, naive_displacement_t>;
+template<typename val_t>
+using ch_disp_test_t = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, naive_displacement_t>;
+
+#define COMPACT_TABLE csh_test_t
 
 struct Init {
     uint32_t value = 0;
-    bool is_special = false;
-    bool destroyed = false;
+    bool m_copyable;
 
     Init() {
-        create_counter++;
-        value = create_counter;
-        this->is_special = false;
+        value = 1;
+        m_copyable = true;
     }
 
-    Init(size_t v, bool is_special) {
-        value = v;
-        this->is_special = is_special;
+    Init(size_t v, bool copyable = false) {
+        value = v + 2;
+        m_copyable = copyable;
     }
 
     ~Init() {
-        EXPECT_FALSE(destroyed);
-        destroyed = true;
+        EXPECT_NE(value, 0) << "destroying a already destroyed value";
+        value = 0;
     }
 
     Init(Init&& other) {
-        this->is_special = other.is_special;
-        this->destroyed = other.destroyed;
-        this->value = other.value;
+        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
 
-        EXPECT_FALSE(destroyed);
+        m_copyable = other.m_copyable;
+        this->value = other.value;
     }
 
     Init& operator=(Init&& other) {
-        this->is_special = other.is_special;
-        this->destroyed = other.destroyed;
-        this->value = other.value;
+        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
+        EXPECT_NE(value, 0) << "moving into a already destroyed value";
 
-        EXPECT_FALSE(destroyed);
+        m_copyable = other.m_copyable;
+        this->value = other.value;
 
         return *this;
     }
 
     Init(Init const& other) {
-        this->is_special = other.is_special;
-        this->destroyed = other.destroyed;
-        this->value = other.value;
+        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
+        EXPECT_TRUE(other.m_copyable) << "copying a non-copyable value";
 
-        EXPECT_FALSE(destroyed);
+        if (!other.m_copyable) {
+            throw std::runtime_error("asd");
+        }
+
+        m_copyable = other.m_copyable;
+        this->value = other.value;
     }
 
     Init& operator=(Init const& other) {
-        this->is_special = other.is_special;
-        this->destroyed = other.destroyed;
-        this->value = other.value;
+        EXPECT_NE(value, 0) << "moving into a already destroyed value";
+        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
+        EXPECT_TRUE(other.m_copyable) << "copying a non-copyable value";
 
-        EXPECT_FALSE(destroyed);
+        m_copyable = other.m_copyable;
+        this->value = other.value;
 
         return *this;
     }
 
-    static Init special() {
-        return Init(0, true);
-    }
-    static Init normal(size_t v) {
-        return Init(v, false);
-    }
-
-    static void reset() {
-        create_counter = 0;
+    static Init copyable(size_t v) {
+        return Init(v, true);
     }
 };
 
 std::ostream& operator<<(std::ostream& os, Init const& v) {
-    return os << "Init(" << v.value << ")";
+    if (v.value == 0) {
+        return os << "Init(<destroyed>)";
+    } else if (v.value == 1) {
+        return os << "Init()";
+    } else {
+        return os << "Init(" << (v.value - 2) << ")";
+    }
 }
 
 bool operator==(Init const& lhs, Init const& rhs) {
-    EXPECT_FALSE(lhs.destroyed);
-    EXPECT_FALSE(rhs.destroyed);
+    EXPECT_NE(lhs.value, 0);
+    EXPECT_NE(rhs.value, 0);
     return lhs.value == rhs.value;
 }
 

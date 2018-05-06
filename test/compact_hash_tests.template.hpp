@@ -47,21 +47,19 @@ TEST(hashfn, poplar_xorshift) {
 }
 
 TEST(hash, insert) {
-    Init::reset();
+    auto ch = compact_hash<Init>(256, 16, 1);
+    ch.insert(44, Init(0));
+    ch.insert(45, Init(1));
+    ch.insert(45, Init(2));
+    ch.insert(44 + 256, Init(3));
+    ch.insert(45 + 256, Init(4));
+    ch.insert(46, Init(5));
 
-    auto ch = compact_hash<Init>(256, 16, 1, Init::special());
-    ch.insert(44, Init::normal(0));
-    ch.insert(45, Init::normal(1));
-    ch.insert(45, Init::normal(2));
-    ch.insert(44 + 256, Init::normal(3));
-    ch.insert(45 + 256, Init::normal(4));
-    ch.insert(46, Init::normal(5));
-
-    ch.insert(44, Init::normal(6));
-    ch.insert(45, Init::normal(7));
-    ch.insert(44 + 256, Init::normal(8));
-    ch.insert(45 + 256, Init::normal(9));
-    ch.insert(46, Init::normal(10));
+    ch.insert(44, Init(6));
+    ch.insert(45, Init(7));
+    ch.insert(44 + 256, Init(8));
+    ch.insert(45 + 256, Init(9));
+    ch.insert(46, Init(10));
 
     //ch.insert(0);
     //ch.insert(4);
@@ -75,12 +73,10 @@ TEST(hash, insert) {
 }
 
 TEST(hash, insert_wrap) {
-    Init::reset();
-
-    auto ch = compact_hash<Init>(4, 16, 1, Init::special());
-    ch.insert(3, Init::normal(0));
-    ch.insert(7, Init::normal(1));
-    ch.insert(15, Init::normal(2));
+    auto ch = compact_hash<Init>(4, 16, 1);
+    ch.insert(3, Init(0));
+    ch.insert(7, Init(1));
+    ch.insert(15, Init(2));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
@@ -89,41 +85,39 @@ TEST(hash, insert_wrap) {
 }
 
 TEST(hash, insert_move_wrap) {
-    auto ch = compact_hash<Init>(8, 16, 1, Init::special());
-    Init::reset();
+    auto ch = compact_hash<Init>(8, 16, 1);
 
-    ch.insert(3, Init::normal(0));
-    ch.insert(3 + 8, Init::normal(1));
+    ch.insert(3, Init(0));
+    ch.insert(3 + 8, Init(1));
 
-    ch.insert(5, Init::normal(2));
-    ch.insert(5 + 8, Init::normal(3));
-    ch.insert(5 + 16, Init::normal(4));
-    ch.insert(5 + 24, Init::normal(5));
+    ch.insert(5, Init(2));
+    ch.insert(5 + 8, Init(3));
+    ch.insert(5 + 16, Init(4));
+    ch.insert(5 + 24, Init(5));
 
-    ch.insert(4, Init::normal(6));
+    ch.insert(4, Init(6));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
     //std::cout << "=======================\n";
 
-    debug_check_single(ch, 3,      Init::normal(0));
-    debug_check_single(ch, 3 + 8,  Init::normal(1));
-    debug_check_single(ch, 5,      Init::normal(2));
-    debug_check_single(ch, 5 + 8,  Init::normal(3));
-    debug_check_single(ch, 5 + 16, Init::normal(4));
-    debug_check_single(ch, 5 + 24, Init::normal(5));
-    debug_check_single(ch, 4,      Init::normal(6));
+    debug_check_single(ch, 3,      Init::copyable(0));
+    debug_check_single(ch, 3 + 8,  Init::copyable(1));
+    debug_check_single(ch, 5,      Init::copyable(2));
+    debug_check_single(ch, 5 + 8,  Init::copyable(3));
+    debug_check_single(ch, 5 + 16, Init::copyable(4));
+    debug_check_single(ch, 5 + 24, Init::copyable(5));
+    debug_check_single(ch, 4,      Init::copyable(6));
 }
 
 TEST(hash, cornercase) {
-    auto ch = compact_hash<Init>(8, 16, 1, Init::special());
-    Init::reset();
+    auto ch = compact_hash<Init>(8, 16, 1);
 
-    ch.insert(0, Init::normal(0));
-    ch.insert(0 + 8, Init::normal(1));
+    ch.insert(0, Init(0));
+    ch.insert(0 + 8, Init(1));
 
-    debug_check_single(ch, 0,      Init::normal(0));
-    debug_check_single(ch, 0 + 8,  Init::normal(1));
+    debug_check_single(ch, 0,      Init::copyable(0));
+    debug_check_single(ch, 0 + 8,  Init::copyable(1));
 
     //std::cout << "=======================\n";
     //std::cout << ch.debug_state() << "\n";
@@ -134,8 +128,7 @@ TEST(hash, cornercase) {
 TEST(hash, grow) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10, 1, Init::special()); // check that it grows to minimum 2
-    Init::reset();
+    auto ch = compact_hash<Init>(0, 10, 1); // check that it grows to minimum 2
 
     auto add = [&](auto key, auto&& v0, auto&& v1) {
         ch.insert(key, std::move(v0));
@@ -148,7 +141,7 @@ TEST(hash, grow) {
 
 
     for(size_t i = 0; i < 1000; i++) {
-        add(i, Init::normal(i), Init::normal(i));
+        add(i, Init(i), Init::copyable(i));
     }
 
     //std::cout << "=======================\n";
@@ -160,8 +153,7 @@ TEST(hash, grow) {
 TEST(hash, grow_bits) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10, 1, Init::special()); // check that it grows to minimum 2
-    Init::reset();
+    auto ch = compact_hash<Init>(0, 10, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
 
@@ -178,7 +170,7 @@ TEST(hash, grow_bits) {
 
 
     for(size_t i = 0; i < 1000; i++) {
-        add(i, Init::normal(i), Init::normal(i));
+        add(i, Init(i), Init::copyable(i));
     }
 
     //std::cout << "=======================\n";
@@ -190,8 +182,7 @@ TEST(hash, grow_bits) {
 TEST(hash, grow_bits_larger) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0, 1, Init::special()); // check that it grows to minimum 2
-    Init::reset();
+    auto ch = compact_hash<Init>(0, 0, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
 
@@ -208,22 +199,24 @@ TEST(hash, grow_bits_larger) {
 
 
     for(size_t i = 0; i < 10000; i++) {
-        add(i*13ull, Init::normal(i), Init::normal(i));
+        add(i*13ull, Init(i), Init::copyable(i));
     }
 }
 
 TEST(hash, grow_bits_larger_address) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0, 1, Init::special()); // check that it grows to minimum 2
-    Init::reset();
+    auto ch = compact_hash<Init>(0, 0, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
 
-    auto add = [&](auto key, auto&& v1) {
+    auto add = [&](auto key, auto&& v0, auto&& v1) {
         bits = std::max(bits, bits_for(key));
 
-        ASSERT_EQ(ch.access_key_width(key, bits), v1);
+        auto&& r = ch.access_key_width(key, bits);
+        ASSERT_EQ(r, Init());
+        r = std::move(v0);
+        ASSERT_EQ(r, v1);
         inserted.clear();
         inserted.push_back({ key, std::move(v1) });
         for (auto& kv : inserted) {
@@ -233,7 +226,7 @@ TEST(hash, grow_bits_larger_address) {
 
 
     for(size_t i = 0; i < 10000; i++) {
-        add(i*13ull, Init::normal(i + 1));
+        add(i*13ull, Init(i), Init::copyable(i));
     }
 
     //std::cout << "=======================\n";
@@ -263,10 +256,12 @@ struct find_or_insert_tracer_t {
             std::cout << "[before]" << "\n";
             std::cout << last << "\n";
             std::cout << "[after]" << "\n";
-            std::cout << ch.debug_state() << "\n";
+            // TODO DEBUG
+            // std::cout << ch.debug_state() << "\n";
         }
         ASSERT_EQ(val, existing_value);
-        last = ch.debug_state();
+        // TODO DEBUG
+        // last = ch.debug_state();
     };
 };
 
@@ -453,7 +448,8 @@ TEST(hash, lookup_bug2) {
 template<typename val_t = uint64_t, bool use_index = false, bool grow_values = false>
 void load_factor_test(float z) {
     auto table = compact_hash<val_t>(0, 1);
-    table.debug_state();
+    // TODO DEBUG
+    // table.debug_state();
 
     table.max_load_factor(z);
     for(size_t i = 0; i < 100000; i++) {
@@ -481,6 +477,8 @@ void load_factor_test(float z) {
     auto p = table.search(100000);
     ASSERT_EQ(p, ValPtr<val_t>());
 
+    // TODO DEBUG
+    /*
     auto stats = table.stat_gather();
 
     std::cout << "stats.buckets: " << stats.buckets << "\n";
@@ -488,6 +486,7 @@ void load_factor_test(float z) {
     std::cout << "stats.buckets_real_allocated_capacity_in_bytes: " << stats.buckets_real_allocated_capacity_in_bytes << "\n";
     std::cout << "stats.real_allocated_capacity_in_bytes: " << stats.real_allocated_capacity_in_bytes << "\n";
     std::cout << "stats.theoretical_minimum_size_in_bits: " << stats.theoretical_minimum_size_in_bits << "\n";
+    */
 }
 
 TEST(hash_load, max_load_10) {
