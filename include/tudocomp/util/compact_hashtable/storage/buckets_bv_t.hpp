@@ -1,9 +1,10 @@
 #pragma once
 
 #include <memory>
+
 #include "../util.hpp"
-#include "../bucket_t.hpp"
-#include "../sparse_pos_t.hpp"
+#include "bucket_t.hpp"
+#include "sparse_pos_t.hpp"
 
 // Table for uninitalized elements
 
