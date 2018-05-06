@@ -181,7 +181,9 @@ namespace tdc {namespace compact_sparse_hashtable {
             auto ctx = context(table_size, widths);
 
             for(size_t i = 0; i < table_size; i++) {
-                auto elem = ctx.allocate_pos(ctx.table_pos(i));
+                // NB: Using at because allocate_pos()
+                // destroys the location first.
+                auto elem = ctx.at(ctx.table_pos(i));
                 elem.set_no_drop(value_type(m_empty_value), 0);
             }
         }
@@ -234,7 +236,7 @@ namespace tdc {namespace compact_sparse_hashtable {
                 return table_pos_t { pos };
             }
             inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
-                auto tmp = qvd_t::at(m_alloc.get(), table_size, pos.offset, widths);
+                auto tmp = at(pos);
 
                 // NB: allocate_pos returns a unitialized location,
                 // but all locations are per default initialized with a empty_value.
@@ -251,7 +253,7 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
             inline iter_t make_iter(table_pos_t const& pos) {
                 return iter_t {
-                    qvd_t::at(m_alloc.get(), table_size, pos.offset, widths),
+                    at(pos),
                     m_empty_value,
                 };
             }
