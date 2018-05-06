@@ -196,9 +196,10 @@ struct cv_bvs_t {
                 // and thus can not end up with a split range with length == 0.
 
                 from_pos = sparse_shift(from,  table_size);
-                auto start_pos = sparse_shift(0, to);
-
-                sctx.at(from_pos).swap_with(sctx.at(start_pos));
+                if (to > 0) {
+                    auto start_pos = sparse_shift(0, to);
+                    sctx.at(from_pos).swap_with(sctx.at(start_pos));
+                }
             } else {
                 // [     |      |      ]
                 //   from^      ^to
