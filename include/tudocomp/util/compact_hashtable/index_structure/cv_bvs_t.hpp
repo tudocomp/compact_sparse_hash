@@ -1,7 +1,6 @@
 #pragma once
 
 #include <limits>
-#include <unordered_map>
 
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
@@ -330,65 +329,53 @@ struct cv_bvs_t {
             }
         }
 
-        /// A non-STL conformer iterator for iterating over all elements
-        /// of the hashtable exactly once,
-        /// wrapping around at the end as needed.
-        struct iter_all_t {
-            context_t<storage_t, size_mgr_t>& m_self;
+        template<typename F>
+        inline void for_all_allocated(F f) {
+            auto sctx = storage.context(table_size, widths);
+
+            // first, skip forward to the first empty location
+            // so that iteration can start at the beginning of the first complete group
+
             size_t i = 0;
-            size_t original_start = 0;
-            uint64_t initial_address = 0;
-
-            inline iter_all_t(context_t<storage_t, size_mgr_t>& self): m_self(self) {
-                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
-
-                // first, skip forward to the first empty location
-                // so that iteration can start at the beginning of the first complete group
-
-                i = 0;
-
-                for(;;i++) {
-                    if (sctx.pos_is_empty(sctx.table_pos(i))) {
-                        break;
-                    }
+            for(;;i++) {
+                if (sctx.pos_is_empty(sctx.table_pos(i))) {
+                    break;
                 }
-
-                // Remember our startpoint so that we can recognize it when
-                // we wrapped around back to it
-                original_start = i;
-
-                // We proceed to the next position so that we can iterate until
-                // we reach `original_start` again.
-                initial_address = i;
-                i = m_self.size_mgr.mod_add(i);
             }
 
-            inline bool next(uint64_t* out_initial_address, size_t* out_i) {
-                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
+            // Remember our startpoint so that we can recognize it when
+            // we wrapped around back to it
+            size_t const original_start = i;
+
+            // We proceed to the next position so that we can iterate until
+            // we reach `original_start` again.
+            uint64_t initial_address = i;
+            i = size_mgr.mod_add(i);
+
+            while(true) {
+                auto sctx = storage.context(table_size, widths);
                 while (sctx.pos_is_empty(sctx.table_pos(i))) {
                     if (i == original_start) {
-                        return false;
+                        return;
                     }
 
                     initial_address = i;
-                    i = m_self.size_mgr.mod_add(i);
+                    i = size_mgr.mod_add(i);
                 }
 
                 // If start of group, find next v bit to find initial address
-                if (m_self.get_c(i)) {
-                    initial_address = m_self.size_mgr.mod_add(initial_address);
-                    while(!m_self.get_v(initial_address)) {
-                        initial_address = m_self.size_mgr.mod_add(initial_address);
+                if (get_c(i)) {
+                    initial_address = size_mgr.mod_add(initial_address);
+                    while(!get_v(initial_address)) {
+                        initial_address = size_mgr.mod_add(initial_address);
                     }
                 }
 
-                *out_initial_address = initial_address;
-                *out_i = i;
+                f(initial_address, i);
 
-                i = m_self.size_mgr.mod_add(i);
-                return true;
+                i = size_mgr.mod_add(i);
             }
-        };
+        }
 
         void print_all() {
             auto sctx = storage.context(table_size, widths);
@@ -406,18 +393,10 @@ struct cv_bvs_t {
 
         template<typename F>
         inline void drain_all(F f) {
-            iter_all_t iter { *this };
-
-            // bool start_of_bucket = false;
-            // size_t bucket = 0;
-
-            uint64_t initial_address;
-            size_t i;
-
             table_pos_t drain_start;
             bool first = true;
 
-            while(iter.next(&initial_address, &i)) {
+            for_all_allocated([&](auto initial_address, auto i) {
                 auto sctx = storage.context(table_size, widths);
                 auto p = sctx.table_pos(i);
 
@@ -428,7 +407,7 @@ struct cv_bvs_t {
 
                 sctx.trim_storage(&drain_start, p);
                 f(initial_address, sctx.at(p));
-            }
+            });
         }
 
         inline pointer_type search(uint64_t initial_address, uint64_t stored_quotient) {
