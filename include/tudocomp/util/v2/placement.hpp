@@ -42,6 +42,7 @@ struct cv_bvs_t {
         using val_t = typename storage_t::val_t_export;
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using table_pos_t = typename storage_t::table_pos_t;
+        using pointer_type = ValPtr<val_t>;
 
         IntVector<uint_t<2>>& m_cv;
         size_t const table_size;
@@ -510,6 +511,14 @@ struct cv_bvs_t {
                 f(initial_address, sctx.at(p));
             }
         }
+
+        inline pointer_type search(uint64_t initial_address, uint64_t stored_quotient) {
+            if (get_v(initial_address)) {
+                auto grp = search_existing_group(initial_address);
+                return search_in_group(grp, stored_quotient).val_ptr();
+            }
+            return pointer_type();
+        }
     };
     template<typename storage_t, typename size_mgr_t>
     inline auto context(storage_t& storage,
@@ -580,6 +589,7 @@ struct displacement_t {
         using val_t = typename storage_t::val_t_export;
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using table_pos_t = typename storage_t::table_pos_t;
+        using pointer_type = ValPtr<val_t>;
 
         displacement_table_t& m_displace;
         size_t const table_size;
@@ -592,7 +602,7 @@ struct displacement_t {
         {
             auto sctx = storage.context(table_size, widths);
 
-            size_t cursor = initial_address;
+            auto cursor = initial_address;
             while(true) {
                 auto pos = sctx.table_pos(cursor);
 
@@ -701,6 +711,32 @@ struct displacement_t {
                 sctx.trim_storage(&drain_start, p);
                 f(initial_address, sctx.at(p));
             }
+        }
+
+        inline pointer_type search(uint64_t const initial_address,
+                                   uint64_t stored_quotient) {
+            auto sctx = storage.context(table_size, widths);
+            auto cursor = initial_address;
+            while(true) {
+                auto pos = sctx.table_pos(cursor);
+
+                if (sctx.pos_is_empty(pos)) {
+                    return pointer_type();
+                }
+
+                DCHECK_GE(cursor, initial_address);
+                if(m_displace.get(cursor) == cursor - initial_address) {
+                    auto ptrs = sctx.at(pos);
+                    if (ptrs.get_quotient() == stored_quotient) {
+                        return ptrs.val_ptr();
+                    }
+                }
+
+                cursor = size_mgr.mod_add(cursor);
+                DCHECK_NE(cursor, initial_address);
+            }
+
+            return pointer_type();
         }
     };
     template<typename storage_t, typename size_mgr_t>

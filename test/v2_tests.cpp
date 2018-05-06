@@ -400,10 +400,16 @@ void FullTableTest() {
     {
         table_t<val_t> table;
 
-        auto tchk = [&](auto end) {
+        auto tchk = [&](size_t end) {
             for (uint64_t w = 1; w < end; w++) {
                 auto r = table[w];
                 ASSERT_EQ(r, w);
+            }
+            auto nptr = typename table_t<val_t>::pointer_type();
+            for (uint64_t w = 1; w < end; w++) {
+                auto r = table.search(w);
+                ASSERT_NE(r, nptr);
+                ASSERT_EQ(*r, w);
             }
         };
         bool quick = true;

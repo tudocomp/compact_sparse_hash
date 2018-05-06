@@ -216,10 +216,8 @@ public:
     /// otherwise.
     inline pointer_type search(uint64_t key) {
         auto dkey = decompose_key(key);
-        if (get_v(dkey.initial_address)) {
-            return search_in_group(search_existing_group(dkey), dkey.stored_quotient);
-        }
-        return pointer_type();
+        auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
+        return pctx.search(dkey.initial_address, dkey.stored_quotient);
     }
 
 private:
