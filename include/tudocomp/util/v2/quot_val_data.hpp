@@ -90,6 +90,45 @@ struct quot_val_data_seq_t {
             return val_quot_ptrs_t<val_t>();
         }
     }
+
+    /*
+    inline static Ptrs debug_ptrs(uint64_t* alloc, size_t size, QVWidths widths, size_t alloc_size) {
+        DCHECK(size != 0);
+        auto layout = calc_sizes(size, widths);
+
+
+        if (layout.overall_qword_size > alloc_size) {
+            std::cout << "widths at error: qw=" << widths.quot_width << ", vw=" << uint64_t(widths.val_width.get_width()) << "\n";
+        }
+        DCHECK_LE(layout.overall_qword_size, alloc_size);
+
+        return Ptrs {
+            layout.vals_layout.ptr_relative_to(alloc),
+            layout.quots_layout.ptr_relative_to(alloc),
+        };
+    }
+
+    inline static val_quot_ptrs_t<val_t> debug_at(uint64_t* alloc, size_t size, size_t pos, QVWidths widths, size_t alloc_size) {
+        if(size != 0) {
+            auto ps = debug_ptrs(alloc, size, widths, alloc_size);
+            return val_quot_ptrs_t<val_t>(ps.vals_ptr + pos, ps.quots_ptr + pos);
+        } else {
+            DCHECK_EQ(pos, 0);
+            return val_quot_ptrs_t<val_t>();
+        }
+    }
+
+    inline static void debug_destroy_vals(uint64_t* alloc, size_t size, QVWidths widths, size_t alloc_size) {
+        if (size != 0) {
+            auto start = debug_ptrs(alloc, size, widths, alloc_size).vals_ptr;
+            auto end = start + size;
+
+            for(; start != end; start++) {
+                cbp::cbp_repr_t<val_t>::call_destructor(start);
+            }
+        }
+    }
+    */
 };
 
 }}

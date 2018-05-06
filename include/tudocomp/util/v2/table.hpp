@@ -84,7 +84,7 @@ namespace tdc {namespace compact_sparse_hashtable {
         struct context_t {
             buckets_t& m_buckets;
             size_t const table_size;
-            widths_t const& widths;
+            widths_t widths;
 
             /// Run the destructors of the elements of the `i`-th bucket,
             /// and drop it from the hashtable, replacing it with an empty one.
@@ -168,15 +168,26 @@ namespace tdc {namespace compact_sparse_hashtable {
 
         std::unique_ptr<uint64_t[]> m_alloc;
         value_type m_empty_value;
+        size_t debug_size = 0;
+        size_t debug_alloc_size = 0;
+        widths_t debug_widths;
 
         inline plain_sentinel_t() {}
         inline plain_sentinel_t(size_t table_size,
                                 widths_t widths,
                                 value_type const& empty_value = value_type()):
-            m_empty_value(empty_value)
+            m_empty_value(empty_value),
+            debug_widths(widths)
         {
             size_t alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
             m_alloc = std::make_unique<uint64_t[]>(alloc_size);
+            debug_size = table_size;
+            debug_alloc_size = alloc_size;
+            debug_widths = widths;
+
+            //std::cout << "debug_size: " << debug_size << "\n";
+            //std::cout << "debug_alloc_size: " << debug_alloc_size << "\n";
+            //std::cout << "debug_widths: qw=" << debug_widths.quot_width << ", vw=" << uint64_t(debug_widths.val_width.get_width()) << "\n";
 
             auto ctx = context(table_size, widths);
 
@@ -226,16 +237,25 @@ namespace tdc {namespace compact_sparse_hashtable {
             std::unique_ptr<uint64_t[]>& m_alloc;
             value_type const& m_empty_value;
             size_t const table_size;
-            widths_t const& widths;
+            widths_t widths;
+
+            size_t debug_size;
+            size_t debug_alloc_size;
+            widths_t debug_widths;
 
             inline void destroy_vals() {
                 qvd_t::destroy_vals(m_alloc.get(), table_size, widths);
             }
 
             inline table_pos_t table_pos(size_t pos) {
+                DCHECK_EQ(table_size, debug_size);
+                DCHECK_EQ(widths.quot_width, debug_widths.quot_width);
+                DCHECK_EQ(widths.val_width.get_width(), debug_widths.val_width.get_width());
+                DCHECK_LE(pos, debug_size);
                 return table_pos_t { pos };
             }
             inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
+                DCHECK_LT(pos.offset, debug_size);
                 auto tmp = at(pos);
 
                 // NB: allocate_pos returns a unitialized location,
@@ -246,14 +266,18 @@ namespace tdc {namespace compact_sparse_hashtable {
                 return tmp;
             }
             inline val_quot_ptrs_t<val_t> at(table_pos_t pos) {
+                DCHECK_LT(pos.offset, debug_size);
                 return qvd_t::at(m_alloc.get(), table_size, pos.offset, widths);
             }
             inline bool pos_is_empty(table_pos_t pos) {
+                DCHECK_LT(pos.offset, debug_size);
                 return *at(pos).val_ptr() == m_empty_value;
             }
             inline iter_t make_iter(table_pos_t const& pos) {
+                // NB: One-pass-the-end is acceptable for a end iterator
+                DCHECK_LE(pos.offset, debug_size);
                 return iter_t {
-                    at(pos),
+                    qvd_t::at(m_alloc.get(), table_size, pos.offset, widths),
                     m_empty_value,
                 };
             }
@@ -262,8 +286,12 @@ namespace tdc {namespace compact_sparse_hashtable {
             }
         };
         inline auto context(size_t table_size, widths_t const& widths) {
+            DCHECK_EQ(table_size, debug_size);
             return context_t {
-                m_alloc, m_empty_value, table_size, widths
+                m_alloc, m_empty_value, table_size, widths,
+                debug_size,
+                debug_alloc_size,
+                debug_widths,
             };
         }
     };

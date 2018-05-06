@@ -220,6 +220,31 @@ public:
         return pctx.search(dkey.initial_address, dkey.stored_quotient);
     }
 
+    inline std::string debug_print_storage() {
+        std::stringstream ss;
+
+        std::cout << "weird quot width: " << int(storage_widths().quot_width) << "\n";
+        std::cout << "weird val width: " << int(storage_widths().val_width.get_width()) << "\n";
+        auto sctx = m_storage.context(table_size(), storage_widths());
+        for (size_t i = 0; i < table_size(); i++) {
+            auto p = sctx.table_pos(i);
+            std::stringstream ss2;
+            ss2 << i << ": \t";
+            if (sctx.pos_is_empty(p)) {
+                ss2 << "-";
+            } else {
+                auto ptr = sctx.at(p);
+                ss2 << "(q=" << ptr.get_quotient()
+                   << ", v=" << (*ptr.val_ptr()) << ")";
+            }
+            ss2 << "\n";
+            auto x = ss2.str();
+            ss << x;
+            //std::cout << x;
+        }
+        return ss.str();
+    }
+
 private:
     using key_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
     using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;

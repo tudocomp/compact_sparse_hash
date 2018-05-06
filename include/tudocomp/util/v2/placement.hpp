@@ -46,7 +46,7 @@ struct cv_bvs_t {
 
         IntVector<uint_t<2>>& m_cv;
         size_t const table_size;
-        widths_t const& widths;
+        widths_t widths;
         size_mgr_t const& size_mgr;
         storage_t& storage;
 
@@ -513,6 +513,7 @@ struct cv_bvs_t {
         }
 
         inline pointer_type search(uint64_t initial_address, uint64_t stored_quotient) {
+            //std::cout << "search on cv(ia="<<initial_address<<", sq="<<stored_quotient<<")\n";
             if (get_v(initial_address)) {
                 auto grp = search_existing_group(initial_address);
                 return search_in_group(grp, stored_quotient).val_ptr();
@@ -593,7 +594,7 @@ struct displacement_t {
 
         displacement_table_t& m_displace;
         size_t const table_size;
-        widths_t const& widths;
+        widths_t widths;
         size_mgr_t const& size_mgr;
         storage_t& storage;
 

@@ -525,6 +525,9 @@ TEST(hash, lookup_bug2) {
     tracer.find_or_insert(6243, 34, 34);
 }
 
+constexpr size_t load_max = 100000;
+//constexpr size_t load_max = 100;
+
 template<typename val_t = uint64_t, bool use_index = false, bool grow_values = false>
 void load_factor_test(float z) {
     auto table = compact_hash<val_t>(0, 1);
@@ -532,8 +535,8 @@ void load_factor_test(float z) {
     // table.debug_state();
 
     table.max_load_factor(z);
-    for(size_t i = 0; i < 100000; i++) {
-        auto new_value = i * 2;
+    for(size_t i = 0; i < load_max; i++) {
+        auto new_value = i * 2 + 1;
 
         if (grow_values) {
             if (use_index) {
@@ -549,12 +552,13 @@ void load_factor_test(float z) {
             }
         }
     }
-    for(size_t i = 0; i < 100000; i++) {
+    //std::cout << table.debug_print_storage() << "\n";
+    for(size_t i = 0; i < load_max; i++) {
         auto p = table.search(i);
         ASSERT_NE(p, ValPtr<val_t>());
-        ASSERT_EQ(*p, i*2);
+        ASSERT_EQ(*p, i*2 + 1);
     }
-    auto p = table.search(100000);
+    auto p = table.search(load_max);
     ASSERT_EQ(p, ValPtr<val_t>());
 
     // TODO DEBUG
