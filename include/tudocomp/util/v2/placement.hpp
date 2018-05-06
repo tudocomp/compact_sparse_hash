@@ -609,14 +609,12 @@ struct displacement_t {
 
                 if (sctx.pos_is_empty(pos)) {
                     auto ptrs = sctx.allocate_pos(pos);
-                    DCHECK_GE(cursor, initial_address);
-                    m_displace.set(cursor, cursor - initial_address);
+                    m_displace.set(cursor, size_mgr.mod_sub(cursor, initial_address));
                     ptrs.set_quotient(stored_quotient);
                     return { ptrs, true };
                 }
 
-                DCHECK_GE(cursor, initial_address);
-                if(m_displace.get(cursor) == cursor - initial_address) {
+                if(m_displace.get(cursor) == size_mgr.mod_sub(cursor, initial_address)) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {
                         return { ptrs, false };
@@ -676,8 +674,7 @@ struct displacement_t {
                 }
 
                 auto disp = m_self.m_displace.get(i);
-                DCHECK_LE(disp, i);
-                initial_address = i - disp;
+                initial_address = m_self.size_mgr.mod_sub(i, disp);
 
                 *out_initial_address = initial_address;
                 *out_i = i;
@@ -725,8 +722,7 @@ struct displacement_t {
                     return pointer_type();
                 }
 
-                DCHECK_GE(cursor, initial_address);
-                if(m_displace.get(cursor) == cursor - initial_address) {
+                if(m_displace.get(cursor) == size_mgr.mod_sub(cursor, initial_address)) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {
                         return ptrs.val_ptr();
