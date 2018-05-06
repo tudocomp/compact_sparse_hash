@@ -5,7 +5,7 @@
 #include <utility>
 #include <algorithm>
 
-#include "util.hpp"
+#include "../util.hpp"
 
 namespace tdc {namespace compact_sparse_hashtable {
 
@@ -13,29 +13,35 @@ namespace tdc {namespace compact_sparse_hashtable {
 ///
 /// It is valid to have a sparse_pos_t one-past-the-end of the underlying
 /// bucket vector, to act as an end-iterator.
-template<typename buckets_t, typename bucket_layout_t>
+template<typename bucket_t, typename bucket_layout_t, typename val_t>
 class sparse_pos_t {
 private:
-    buckets_t* m_buckets;
-public:
-    using bucket_t = typename buckets_t::value_type;
+    using qvd_t = quot_val_data_seq_t<val_t>;
+    using widths_t = typename qvd_t::QVWidths;
 
+    bucket_t* m_buckets;
+
+public:
     /// Index of bucket inside the hashtable
-    size_t const idx_of_bucket;
+    size_t idx_of_bucket;
 
     /// Bit mask of the element inside the bucket
-    uint64_t const bit_mask_in_bucket;
+    uint64_t bit_mask_in_bucket;
 
-    inline sparse_pos_t(size_t pos, buckets_t& buckets):
-        m_buckets(&buckets),
+    inline sparse_pos_t(size_t pos, bucket_t* buckets):
+        m_buckets(buckets),
         idx_of_bucket(bucket_layout_t::table_pos_to_idx_of_bucket(pos)),
         bit_mask_in_bucket(1ull << bucket_layout_t::table_pos_to_idx_inside_bucket(pos))
     {}
 
+    inline sparse_pos_t(): m_buckets(nullptr) {}
+    inline sparse_pos_t(sparse_pos_t const& other) = default;
+    inline sparse_pos_t& operator=(sparse_pos_t const& other) = default;
+
     /// Accesses the bucket at this sparse position.
     inline bucket_t& bucket() const {
-        DCHECK_LT(idx_of_bucket, m_buckets->size());
-        return (*m_buckets)[idx_of_bucket];
+        //DCHECK_LT(idx_of_bucket, m_buckets->size());
+        return m_buckets[idx_of_bucket];
     }
 
     /// Check if the sparse position exists in the corresponding bucket.

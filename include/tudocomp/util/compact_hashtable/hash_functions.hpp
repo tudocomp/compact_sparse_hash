@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glog/logging.h>
+
 // Source: https://github.com/kampersanda/poplar-trie/blob/master/include/poplar/bijective_hash.hpp
 namespace poplar{namespace bijective_hash {
 
