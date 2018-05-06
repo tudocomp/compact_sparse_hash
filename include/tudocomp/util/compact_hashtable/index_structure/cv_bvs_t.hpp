@@ -338,10 +338,6 @@ struct cv_bvs_t {
             size_t i = 0;
             size_t original_start = 0;
             uint64_t initial_address = 0;
-            enum {
-                EMPTY_LOCATIONS,
-                FULL_LOCATIONS
-            } state;
 
             inline iter_all_t(context_t<storage_t, size_mgr_t>& self): m_self(self) {
                 auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
@@ -365,57 +361,9 @@ struct cv_bvs_t {
                 // we reach `original_start` again.
                 initial_address = i;
                 i = m_self.size_mgr.mod_add(i);
-
-                // We start iterating from an empty location
-                state = EMPTY_LOCATIONS;
             }
 
-            inline bool next_a(uint64_t* out_initial_address, size_t* out_i) {
-                auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
-                while(true) {
-                    if (state == EMPTY_LOCATIONS) {
-                        // skip empty locations
-                        for(;;i = m_self.size_mgr.mod_add(i)) {
-                            if (!sctx.pos_is_empty(sctx.table_pos(i))) {
-                                // we initialize init-addr at 1 pos before the start of
-                                // a group of blocks, so that the blocks iteration logic works
-                                initial_address = m_self.size_mgr.mod_sub(i);
-                                state = FULL_LOCATIONS;
-                                break;
-                            }
-                            if (i == original_start) {
-                                return false;
-                            }
-                        }
-                    } else {
-                        // process full locations
-                        if (sctx.pos_is_empty(sctx.table_pos(i)))  {
-                            state = EMPTY_LOCATIONS;
-                            continue;
-                        }
-                        if (m_self.get_c(i)) {
-                            // skip forward m_v cursor
-                            // to find initial address for this block
-                            //
-                            // this works for the first block because
-                            // initial_address starts at 1 before the group
-                            initial_address = m_self.size_mgr.mod_add(initial_address);
-
-                            while(!m_self.get_v(initial_address)) {
-                                initial_address = m_self.size_mgr.mod_add(initial_address);
-                            }
-                        }
-
-                        *out_initial_address = initial_address;
-                        *out_i = i;
-
-                        i = m_self.size_mgr.mod_add(i);
-                        return true;
-                    }
-                }
-            }
-
-            inline bool next_b(uint64_t* out_initial_address, size_t* out_i) {
+            inline bool next(uint64_t* out_initial_address, size_t* out_i) {
                 auto sctx = m_self.storage.context(m_self.table_size, m_self.widths);
                 while (sctx.pos_is_empty(sctx.table_pos(i))) {
                     if (i == original_start) {
@@ -439,31 +387,6 @@ struct cv_bvs_t {
 
                 i = m_self.size_mgr.mod_add(i);
                 return true;
-            }
-
-            inline bool next(uint64_t* out_initial_address, size_t* out_i) {
-                uint64_t ia_bak = initial_address;
-                uint64_t i_bak = i;
-
-                uint64_t a_ia = *out_initial_address;
-                size_t a_i = *out_i;
-                initial_address = ia_bak;
-                i = i_bak;
-                bool a = next_a(&a_ia, &a_i);
-
-                uint64_t b_ia = *out_initial_address;
-                size_t b_i = *out_i;
-                initial_address = ia_bak;
-                i = i_bak;
-                bool b = next_b(&b_ia, &b_i);
-
-                DCHECK_EQ(a_ia, b_ia);
-                DCHECK_EQ(a_i, b_i);
-                DCHECK_EQ(a, b);
-
-                *out_initial_address = a_ia;
-                *out_i = a_i;
-                return a;
             }
         };
 
