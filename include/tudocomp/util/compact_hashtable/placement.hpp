@@ -1,17 +1,13 @@
 #pragma once
 
-#include <tudocomp/ds/IntVector.hpp>
-#include <tudocomp/ds/IntPtr.hpp>
 #include <limits>
 #include <unordered_map>
 
-namespace tdc {namespace compact_sparse_hashtable {
+#include <tudocomp/ds/IntVector.hpp>
+#include <tudocomp/ds/IntPtr.hpp>
+#include "val_quot_ptrs_t.hpp"
 
-template<typename val_t>
-struct lookup_result_t {
-    val_quot_ptrs_t<val_t> entry;
-    bool is_empty;
-};
+namespace tdc {namespace compact_sparse_hashtable {
 
 struct cv_bvs_t {
     IntVector<uint_t<2>> m_cv;

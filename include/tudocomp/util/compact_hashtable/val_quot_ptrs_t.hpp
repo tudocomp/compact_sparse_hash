@@ -114,4 +114,10 @@ public:
     }
 };
 
+template<typename val_t>
+struct lookup_result_t {
+    val_quot_ptrs_t<val_t> entry;
+    bool is_empty;
+};
+
 }}
