@@ -2,7 +2,7 @@
 
 #include <tudocomp/util/compact_hashtable/table.hpp>
 #include <tudocomp/util/compact_hashtable/placement.hpp>
-#include <tudocomp/util/compact_hashtable/adapter.hpp>
+#include <tudocomp/util/compact_hashtable/generic_compact_hashtable.hpp>
 #include <tudocomp/util/compact_hashtable/hash_functions.hpp>
 
 namespace tdc {namespace compact_sparse_hashtable {
