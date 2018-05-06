@@ -11,6 +11,6 @@
 using namespace tdc::compact_sparse_hashtable;
 
 template<typename val_t>
-using COMPACT_TABLE = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
+using COMPACT_TABLE = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, displacement_t<naive_displacement_table_t>>;
 
 #include "compact_hash_tests.template.hpp"
