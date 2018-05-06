@@ -87,12 +87,12 @@ public:
 
     /// Current width of the keys stored in this datastructure.
     inline size_t key_width() {
-        return m_key_width.get_width();
+        return m_key_width;
     }
 
     /// Current width of the values stored in this datastructure.
     inline size_t value_width() {
-        return m_val_width.get_width();
+        return m_val_width;
     }
 
     /// Amount of bits of the key, that are stored implicitly
@@ -223,8 +223,6 @@ public:
     inline std::string debug_print_storage() {
         std::stringstream ss;
 
-        std::cout << "weird quot width: " << int(storage_widths().quot_width) << "\n";
-        std::cout << "weird val width: " << int(storage_widths().val_width.get_width()) << "\n";
         auto sctx = m_storage.context(table_size(), storage_widths());
         for (size_t i = 0; i < table_size(); i++) {
             auto p = sctx.table_pos(i);
@@ -246,14 +244,12 @@ public:
     }
 
 private:
-    using key_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
     using widths_t = typename storage_t::widths_t;
 
     /// Size of table, and width of the stored keys and values
     size_manager_t m_sizing;
-    key_width_t m_key_width;
-    val_width_t m_val_width;
+    uint8_t m_key_width;
+    uint8_t m_val_width;
 
     /// Storage of the table elements
     storage_t m_storage;
@@ -281,11 +277,11 @@ private:
     /// - Otherwise the current maximum key width `m_key_width`
     ///   determines the real width.
     inline size_t real_width() {
-        return std::max<size_t>(m_sizing.capacity_log2() + 1, m_key_width.get_width());
+        return std::max<size_t>(m_sizing.capacity_log2() + 1, m_key_width);
     }
 
     inline widths_t storage_widths() {
-        return { quotient_width(), value_width() };
+        return { uint8_t(quotient_width()), uint8_t(value_width()) };
     }
 
     /// Debug check that a key does not occupy more bits than the

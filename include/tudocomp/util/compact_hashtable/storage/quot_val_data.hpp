@@ -14,12 +14,9 @@ namespace tdc {namespace compact_sparse_hashtable {
 
 template<typename val_t>
 struct quot_val_data_seq_t {
-    using quot_width_t = typename cbp::cbp_repr_t<dynamic_t>::width_repr_t;
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
-
     struct QVWidths {
-        size_t quot_width;
-        val_width_t val_width;
+        uint8_t quot_width;
+        uint8_t val_width;
     };
 
     /// Calculates the offsets of the two different arrays inside the allocation.
@@ -36,13 +33,12 @@ struct quot_val_data_seq_t {
         DCHECK_LE(alignof(val_t), alignof(uint64_t));
 
         auto layout = cbp::bit_layout_t();
-        auto quots_width = quot_width_t(widths.quot_width);
 
         // The values
         auto values = layout.cbp_elements<val_t>(size, widths.val_width);
 
         // The quotients
-        auto quots = layout.cbp_elements<dynamic_t>(size, quots_width);
+        auto quots = layout.cbp_elements<dynamic_t>(size, widths.quot_width);
 
         Layout r;
         r.vals_layout = values;

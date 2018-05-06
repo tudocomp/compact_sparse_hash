@@ -17,12 +17,10 @@ using namespace tdc;
 template<typename val_t>
 void BucketTest() {
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
 
     auto b = bucket_t<val_t, 8>();
 
-    val_width_t vw { 7 };
-    widths_t ws { 5, vw };
+    widths_t ws { 5, 7 };
     b = bucket_t<val_t, 8>(0b10, ws);
 
     ASSERT_EQ(b.bv(), 2);
@@ -57,13 +55,11 @@ template<template<typename> typename table_t, typename val_t>
 void TableTest() {
     using tab_t = table_t<val_t>;
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
-    using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
 
     {
         auto t = tab_t();
 
-        val_width_t vw { 7 };
-        widths_t ws { 5, vw };
+        widths_t ws { 5, 7 };
         size_t table_size = 16;
         t = tab_t(table_size, ws);
         auto ctx = t.context(table_size, ws);
@@ -87,8 +83,7 @@ void TableTest() {
     }
 
     {
-        val_width_t vw { 7 };
-        widths_t ws { 5, vw };
+        widths_t ws { 5, 7 };
         size_t table_size = 128;
         auto t = tab_t(table_size, ws);
         auto ctx = t.context(table_size, ws);
@@ -134,7 +129,6 @@ template<typename placement_t, template<typename> typename table_t, typename val
 void CVTableTest() {
     using tab_t = table_t<val_t>;
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
-    //using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
     struct TestSizeMgr {
@@ -258,7 +252,6 @@ template<typename placement_t, template<typename> typename table_t, typename val
 void DPTableTest() {
     using tab_t = table_t<val_t>;
     using widths_t = typename bucket_t<val_t, 8>::widths_t;
-    //using val_width_t = typename cbp::cbp_repr_t<val_t>::width_repr_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
     struct TestSizeMgr {
