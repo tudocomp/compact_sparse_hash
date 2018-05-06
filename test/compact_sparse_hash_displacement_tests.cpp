@@ -2,10 +2,10 @@
 
 #include <cstdint>
 #include <algorithm>
-#include <tudocomp/util/v2/table.hpp>
-#include <tudocomp/util/v2/placement.hpp>
-#include <tudocomp/util/v2/adapter.hpp>
-#include <tudocomp/util/v2/hash_functions.hpp>
+#include <tudocomp/util/compact_hashtable/table.hpp>
+#include <tudocomp/util/compact_hashtable/placement.hpp>
+#include <tudocomp/util/compact_hashtable/adapter.hpp>
+#include <tudocomp/util/compact_hashtable/hash_functions.hpp>
 #include <tudocomp/util/bits.hpp>
 
 using namespace tdc::compact_sparse_hashtable;
