@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <tudocomp/util/compact_hashtable/storage/buckets_bv_t.hpp>
 #include <tudocomp/util/compact_hashtable/storage/plain_sentinel_t.hpp>
-#include <tudocomp/util/compact_hashtable/placement.hpp>
+#include <tudocomp/util/compact_hashtable/index_structure/cv_bvs_t.hpp>
+#include <tudocomp/util/compact_hashtable/index_structure/displacement_t.hpp>
 #include <tudocomp/util/compact_hashtable/generic_compact_hashtable.hpp>
 #include <tudocomp/util/compact_hashtable/bucket_t.hpp>
 #include <tudocomp/util/compact_hashtable/hash_functions.hpp>

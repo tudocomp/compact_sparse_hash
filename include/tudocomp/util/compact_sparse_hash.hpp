@@ -2,7 +2,7 @@
 
 #include <tudocomp/util/compact_hashtable/hash_functions.hpp>
 #include <tudocomp/util/compact_hashtable/storage/buckets_bv_t.hpp>
-#include <tudocomp/util/compact_hashtable/placement.hpp>
+#include <tudocomp/util/compact_hashtable/index_structure/cv_bvs_t.hpp>
 #include <tudocomp/util/compact_hashtable/generic_compact_hashtable.hpp>
 
 namespace tdc {namespace compact_sparse_hashtable {
