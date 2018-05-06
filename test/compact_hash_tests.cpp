@@ -2,45 +2,30 @@
 
 #include <cstdint>
 #include <algorithm>
-#include <tudocomp/util/compact_hash.hpp>
+#include <tudocomp/util/v2/table.hpp>
+#include <tudocomp/util/v2/placement.hpp>
+#include <tudocomp/util/v2/adapter.hpp>
+#include <tudocomp/util/v2/hash_functions.hpp>
 #include <tudocomp/util/bits.hpp>
 
-#define COMPACT_TABLE compact_hashtable_t
-static bool print_init = false;
-static uint64_t global_c = 0;
-struct Init {
-    uint16_t c = 0;
-    bool empty = false;
-    bool fake = false;
+using namespace tdc;
+using namespace tdc::compact_sparse_hashtable;
 
-    Init() {
-        c = global_c++;
-        if (print_init) std::cout << "construct(" << c << ")\n";
-    }
-    Init(size_t v) {
-        c = v;
-        if (print_init) std::cout << "construct fake(" << c << ")\n";
-        fake = true;
-    }
-    ~Init() {
-        if (empty) {
-            if (print_init) std::cout << "destruct(-)\n";
-        } else if (fake) {
-            if (print_init) std::cout << "destruct fake(" << c << ")\n";
-        } else {
-            if (print_init) std::cout << "destruct(" << c << ")\n";
-        }
-    }
+using uint_t40 = uint_t<40>;
+using naive_displacement_t = displacement_t<naive_displacement_table_t>;
+using compact_displacement_t = displacement_t<compact_displacement_table_t>;
+template<typename val_t>
+using csh_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
+template<typename val_t>
+using ch_test_t = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, cv_bvs_t>;
 
-    Init(Init&& other) = default;
-    Init& operator=(Init&& other) = default;
-    Init(const Init& other) = default;
-    Init& operator=(const Init& other) = default;
+template<typename val_t>
+using csh_disp_test_t = generic_hashtable_t<poplar_xorshift_t, buckets_bv_t<val_t>, naive_displacement_t>;
+template<typename val_t>
+using ch_disp_test_t = generic_hashtable_t<poplar_xorshift_t, plain_sentinel_t<val_t>, naive_displacement_t>;
 
-    static void reset() {
-        global_c = 0;
-    }
-};
+#define COMPACT_TABLE ch_test_t
+
 #include "compact_hash_tests.template.hpp"
 
 
