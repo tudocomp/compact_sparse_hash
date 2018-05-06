@@ -1,7 +1,7 @@
 #pragma once
 
 #include <tudocomp/util/compact_hashtable/hash_functions.hpp>
-#include <tudocomp/util/compact_hashtable/table.hpp>
+#include <tudocomp/util/compact_hashtable/storage/buckets_bv_t.hpp>
 #include <tudocomp/util/compact_hashtable/placement.hpp>
 #include <tudocomp/util/compact_hashtable/generic_compact_hashtable.hpp>
 

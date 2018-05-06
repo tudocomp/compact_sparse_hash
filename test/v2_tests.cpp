@@ -2,7 +2,8 @@
 
 #include <cstdint>
 #include <algorithm>
-#include <tudocomp/util/compact_hashtable/table.hpp>
+#include <tudocomp/util/compact_hashtable/storage/buckets_bv_t.hpp>
+#include <tudocomp/util/compact_hashtable/storage/plain_sentinel_t.hpp>
 #include <tudocomp/util/compact_hashtable/placement.hpp>
 #include <tudocomp/util/compact_hashtable/generic_compact_hashtable.hpp>
 #include <tudocomp/util/compact_hashtable/bucket_t.hpp>
