@@ -74,10 +74,12 @@ public:
 };
 
 struct elias_gamma_bucket_t {
-    std::unique_ptr<uint64_t[]> m_data;
-    uint64_t m_bits = 0;
-    uint64_t m_elem_cursor = 0;
-    uint64_t m_bit_cursor = 0;
+    struct context_t {
+    std::unique_ptr<uint64_t[]>& m_data;
+    uint64_t& m_bits;
+    uint64_t& m_elem_cursor;
+    uint64_t& m_bit_cursor;
+
 
     inline void dump_all() {
         auto ptr = cbp::cbp_repr_t<uint_t<1>>::construct_relative_to(m_data.get(), 0, 1);
@@ -164,20 +166,6 @@ struct elias_gamma_bucket_t {
         }
         m_bits = bits;
         // std::cout << "realloc " << m_bits << " bits, @" << bits2alloc(m_bits) << "\n";
-    }
-
-    inline elias_gamma_bucket_t(size_t size) {
-        // Allocate memory for all encoded 0s
-        auto all_bits = encoded_bit_size(0) * size;
-        // std::cout << "-------\n";
-        // std::cout << "size: " << size << "\n";
-        realloc_bits(all_bits);
-
-        // Encode all 0s.
-        // TODO: Just copy the encoding of the first one
-        for(size_t i = 0; i < size; i++) {
-            write(fixed_sink(), 0);
-        }
     }
 
     inline size_t get(size_t pos) {
@@ -292,19 +280,55 @@ struct elias_gamma_bucket_t {
         }
         // std::cout << "\n";
     }
+    };
+
+    auto context(uint64_t& element_cursor, uint64_t& bit_cursor) {
+        return context_t {
+            m_data,
+            m_bits,
+            element_cursor,
+            bit_cursor,
+        };
+    }
+
+    std::unique_ptr<uint64_t[]> m_data;
+    uint64_t m_bits = 0;
+
+    inline elias_gamma_bucket_t(size_t size,
+                                uint64_t& elem_cursor,
+                                uint64_t& bit_cursor)
+    {
+        auto ctx = this->context(elem_cursor, bit_cursor);
+
+        // Allocate memory for all encoded 0s
+        auto all_bits = ctx.encoded_bit_size(0) * size;
+        // std::cout << "-------\n";
+        // std::cout << "size: " << size << "\n";
+        ctx.realloc_bits(all_bits);
+
+        // Encode all 0s.
+        // TODO: Just copy the encoding of the first one
+        for(size_t i = 0; i < size; i++) {
+            ctx.write(ctx.fixed_sink(), 0);
+        }
+    }
 };
 
 struct elias_gamma_displacement_table_t {
+    uint64_t m_elem_cursor = 0;
+    uint64_t m_bit_cursor = 0;
+    size_t m_bucket_cursor = 0;
+
     elias_gamma_bucket_t m_bucket;
 
     inline elias_gamma_displacement_table_t(size_t table_size):
-        m_bucket(table_size) {}
+        m_bucket(table_size, m_elem_cursor, m_bit_cursor) {}
 
     inline size_t get(size_t pos) {
-        return m_bucket.get(pos);
+        return m_bucket.context(m_elem_cursor, m_bit_cursor).get(pos);
     }
     inline void set(size_t pos, size_t val) {
-        m_bucket.set(pos, val);
+        m_bucket.context(m_elem_cursor, m_bit_cursor).set(pos, val);
     }
 };
 
