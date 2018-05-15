@@ -3,6 +3,7 @@
 #include <limits>
 #include <unordered_map>
 #include <type_traits>
+#include <cmath>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/int_coder.hpp>
@@ -81,6 +82,7 @@ struct elias_gamma_bucket_t {
     uint64_t& m_bit_cursor;
 
 
+    /*
     inline void dump_all() {
         auto ptr = cbp::cbp_repr_t<uint_t<1>>::construct_relative_to(m_data.get(), 0, 1);
         auto s = m_bits;
@@ -90,6 +92,7 @@ struct elias_gamma_bucket_t {
         }
         // std::cout << "]";
     }
+    */
 
     template<typename sink_t>
     inline size_t read(sink_t&& sink) {
@@ -224,7 +227,7 @@ struct elias_gamma_bucket_t {
     inline void set(size_t pos, size_t val) {
         // std::cout << "set " << pos << " to " << val << "\n";
         // std::cout << "vector: ";
-        dump_all();
+        // dump_all();
         // std::cout << "\n";
 
         seek(pos);
@@ -294,10 +297,10 @@ struct elias_gamma_bucket_t {
     std::unique_ptr<uint64_t[]> m_data;
     uint64_t m_bits = 0;
 
-    inline elias_gamma_bucket_t(size_t size,
-                                uint64_t& elem_cursor,
-                                uint64_t& bit_cursor)
+    inline elias_gamma_bucket_t(size_t size)
     {
+        uint64_t elem_cursor = 0;
+        uint64_t bit_cursor = 0;
         auto ctx = this->context(elem_cursor, bit_cursor);
 
         // Allocate memory for all encoded 0s
@@ -312,6 +315,8 @@ struct elias_gamma_bucket_t {
             ctx.write(ctx.fixed_sink(), 0);
         }
     }
+
+    inline elias_gamma_bucket_t() {}
 };
 
 struct elias_gamma_displacement_table_t {
@@ -319,16 +324,55 @@ struct elias_gamma_displacement_table_t {
     uint64_t m_bit_cursor = 0;
     size_t m_bucket_cursor = 0;
 
-    elias_gamma_bucket_t m_bucket;
+    size_t m_bucket_size;
 
-    inline elias_gamma_displacement_table_t(size_t table_size):
-        m_bucket(table_size, m_elem_cursor, m_bit_cursor) {}
+    std::unique_ptr<elias_gamma_bucket_t[]> m_buckets;
+
+    inline elias_gamma_displacement_table_t(size_t table_size) {
+        m_bucket_size = 1024;
+        //m_bucket_size = std::pow(std::log2(table_size), 3);
+
+        size_t full_buckets = table_size / m_bucket_size;
+        size_t remainder_bucket_size = table_size % m_bucket_size;
+        size_t buckets = full_buckets + (remainder_bucket_size != 0);
+
+        m_buckets = std::make_unique<elias_gamma_bucket_t[]>(buckets);
+
+        for (size_t i = 0; i < full_buckets; i++) {
+            m_buckets[i] = elias_gamma_bucket_t(m_bucket_size);
+        }
+        if (remainder_bucket_size != 0) {
+            m_buckets[buckets - 1] = elias_gamma_bucket_t(remainder_bucket_size);
+        }
+    }
 
     inline size_t get(size_t pos) {
-        return m_bucket.context(m_elem_cursor, m_bit_cursor).get(pos);
+        size_t bucket = pos / m_bucket_size;
+        size_t offset = pos % m_bucket_size;
+        if (bucket != m_bucket_cursor) {
+            m_bucket_cursor = bucket;
+            m_elem_cursor = 0;
+            m_bit_cursor = 0;
+        }
+
+        auto ctx = m_buckets[m_bucket_cursor]
+            .context(m_elem_cursor, m_bit_cursor);
+
+        return ctx.get(offset);
     }
     inline void set(size_t pos, size_t val) {
-        m_bucket.context(m_elem_cursor, m_bit_cursor).set(pos, val);
+        size_t bucket = pos / m_bucket_size;
+        size_t offset = pos % m_bucket_size;
+        if (bucket != m_bucket_cursor) {
+            m_bucket_cursor = bucket;
+            m_elem_cursor = 0;
+            m_bit_cursor = 0;
+        }
+
+        auto ctx = m_buckets[m_bucket_cursor]
+            .context(m_elem_cursor, m_bit_cursor);
+
+        ctx.set(offset, val);
     }
 };
 

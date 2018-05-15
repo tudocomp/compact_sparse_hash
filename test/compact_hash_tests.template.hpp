@@ -93,10 +93,11 @@ bool operator==(Init const& lhs, Init const& rhs) {
 template<typename table_t>
 inline void debug_check_single(table_t& table, uint64_t key, typename table_t::value_type const& val) {
     auto ptr = table.search(key);
-    ASSERT_NE(ptr, nullptr) << "key " << key << " not found!";
+    EXPECT_NE(ptr, nullptr) << "key " << key << " not found!";
     if (ptr != nullptr) {
-        ASSERT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+        EXPECT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
     }
+    if (ptr == nullptr) abort();
 }
 
 
