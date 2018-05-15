@@ -330,7 +330,7 @@ struct elias_gamma_displacement_table_t {
 
     inline elias_gamma_displacement_table_t(size_t table_size) {
         m_bucket_size = 1024;
-        //m_bucket_size = std::pow(std::log2(table_size), 3);
+        //m_bucket_size = std::pow(std::log2(table_size), 3.0 / 2.0);
 
         size_t full_buckets = table_size / m_bucket_size;
         size_t remainder_bucket_size = table_size % m_bucket_size;
