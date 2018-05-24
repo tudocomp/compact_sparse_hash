@@ -124,7 +124,7 @@ public:
     inline bool found() {
         return !m_not_found;
     }
-    inline uint64_t& id() {
+    inline uint64_t id() {
         DCHECK(found());
         return m_id;
     }

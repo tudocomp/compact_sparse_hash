@@ -10,16 +10,74 @@ using namespace tdc::compact_sparse_hashset;
 using compact_hash = COMPACT_TABLE;
 
 struct shadow_sets_t {
+    std::unordered_set<uint64_t> keys;
+    std::unordered_set<uint64_t> ids;
+    compact_hash& table;
 
+    shadow_sets_t(compact_hash& t): table(t) {}
+
+    void new_key(uint64_t key, uint64_t id) {
+        // std::cout << "insert(key=" << key << ", id=" << id << ")\n";
+        EXPECT_TRUE(keys.count(key) == 0) << "Key " << key << " already exists";
+        EXPECT_TRUE(ids.count(id) == 0) << "Id " << id << " already exists";
+        keys.insert(key);
+        ids.insert(id);
+    }
+
+    void existing_key(uint64_t key, uint64_t id) {
+        EXPECT_TRUE(keys.count(key) == 1) << "Key " << key << " does not exists";
+        EXPECT_TRUE(ids.count(id) == 1) << "Id " << id << " does not exists";
+    }
+
+    auto lookup(uint64_t key) {
+        auto r = table.lookup(key);
+
+        if (r.found()) {
+            EXPECT_TRUE(r.key_already_exist());
+            existing_key(key, r.id());
+        }
+
+        return r;
+    }
+    auto lookup_insert(uint64_t key) {
+        auto r = table.lookup_insert(key);
+
+        if (r.key_already_exist()) {
+            existing_key(key, r.id());
+        } else {
+            new_key(key, r.id());
+        }
+
+        return r;
+    }
+    auto lookup_insert_key_width(uint64_t key, uint8_t key_width) {
+        auto r = table.lookup_insert_key_width(key, key_width);
+
+        if (r.key_already_exist()) {
+            existing_key(key, r.id());
+        } else {
+            new_key(key, r.id());
+        }
+
+        return r;
+    }
+    void max_load_factor(double v) {
+        table.max_load_factor(v);
+    }
 };
 
 /// Assert that a element exists in the hashtable
-template<typename table_t>
-inline void debug_check_single(table_t& table, uint64_t key) {
+inline void debug_check_single(compact_hash& table, uint64_t key) {
     auto r = table.lookup(key);
-    EXPECT_TRUE(r.found()) << "key " << key << " not found!";
+    ASSERT_TRUE(r.found()) << "key " << key << " not found!";
 }
 
+/// Assert that a element exists in the hashtable
+inline void debug_check_single(shadow_sets_t& table, uint64_t key) {
+    auto r = table.lookup(key);
+    ASSERT_TRUE(r.found()) << "key " << key << " not found!";
+    table.existing_key(key, r.id());
+}
 
 template<typename hashfn_t>
 void test_hashfn() {
@@ -53,7 +111,9 @@ TEST(hashfn, poplar_xorshift) {
 }
 
 TEST(hash, lookup_insert) {
-    auto ch = compact_hash(256, 16);
+    auto chx = compact_hash(256, 16);
+    auto ch = shadow_sets_t(chx);
+
     ch.lookup_insert(44);
     ch.lookup_insert(45);
     ch.lookup_insert(45);
@@ -79,7 +139,10 @@ TEST(hash, lookup_insert) {
 }
 
 TEST(hash, lookup_insert_wrap) {
-    auto ch = compact_hash(4, 16);
+    auto chx = compact_hash(4, 16);
+    auto ch = shadow_sets_t(chx);
+    ch.max_load_factor(1.0);
+
     ch.lookup_insert(3);
     ch.lookup_insert(7);
     ch.lookup_insert(15);
@@ -91,7 +154,9 @@ TEST(hash, lookup_insert_wrap) {
 }
 
 TEST(hash, lookup_insert_move_wrap) {
-    auto ch = compact_hash(8, 16);
+    auto chx = compact_hash(8, 16);
+    auto ch = shadow_sets_t(chx);
+    ch.max_load_factor(1.0);
 
     ch.lookup_insert(3);
     ch.lookup_insert(3 + 8);
@@ -117,7 +182,8 @@ TEST(hash, lookup_insert_move_wrap) {
 }
 
 TEST(hash, cornercase) {
-    auto ch = compact_hash(8, 16);
+    auto chx = compact_hash(8, 16);
+    auto ch = shadow_sets_t(chx);
 
     ch.lookup_insert(0);
     ch.lookup_insert(0 + 8);
@@ -135,6 +201,7 @@ TEST(hash, grow) {
     std::vector<uint64_t> lookup_inserted;
 
     auto ch = compact_hash(0, 10); // check that it grows to minimum 2
+    // auto ch = shadow_sets_t(chx);
 
     auto add = [&](auto key) {
         ch.lookup_insert(key);
@@ -160,6 +227,7 @@ TEST(hash, grow_bits) {
     std::vector<uint64_t> lookup_inserted;
 
     auto ch = compact_hash(0, 10); // check that it grows to minimum 2
+    // auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
 
@@ -189,6 +257,7 @@ TEST(hash, grow_bits_larger) {
     std::vector<uint64_t> lookup_inserted;
 
     auto ch = compact_hash(0, 0); // check that it grows to minimum 2
+    // auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
 
@@ -213,6 +282,7 @@ TEST(hash, grow_bits_larger_address) {
     std::vector<uint64_t> lookup_inserted;
 
     auto ch = compact_hash(0, 0); // check that it grows to minimum 2
+    // auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
 
@@ -243,6 +313,7 @@ constexpr size_t load_max = 100000;
 
 void load_factor_test(float z) {
     auto table = compact_hash(0, 1);
+    // auto table = shadow_sets_t(tablex);
     // TODO DEBUG
     // table.debug_state();
 
