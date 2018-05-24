@@ -6,5 +6,10 @@ run_test(compact_sparse_hash_displacement_tests DEPS compact_sparse_hash)
 run_test(compact_hash_displacement_tests DEPS compact_sparse_hash)
 run_test(compact_sparse_hash_elias_displacement_tests DEPS compact_sparse_hash)
 run_test(compact_hash_elias_displacement_tests DEPS compact_sparse_hash)
+
 run_test(v2_tests DEPS compact_sparse_hash)
 run_test(sandbox_test DEPS compact_sparse_hash)
+
+run_test(compact_sparse_hashset_tests DEPS compact_sparse_hash)
+run_test(compact_sparse_hashset_displacement_tests DEPS compact_sparse_hash)
+run_test(compact_sparse_hashset_elias_displacement_tests DEPS compact_sparse_hash)
