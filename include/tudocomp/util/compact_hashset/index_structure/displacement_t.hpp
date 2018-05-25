@@ -14,6 +14,7 @@
 
 namespace tdc {namespace compact_sparse_hashset {
 
+/// Stores displacement entries as `size_t` integers.
 struct naive_displacement_table_t {
     std::vector<size_t> m_displace;
     inline naive_displacement_table_t(size_t table_size) {
@@ -28,9 +29,12 @@ struct naive_displacement_table_t {
     }
 };
 
-
+/// Stores displacement entries as integers with a width of
+/// `displace_size` Bits. Displacement value larger than that
+/// will be spilled into a `std::unordered_map<size_t, size_t>`.
+template<size_t displace_size>
 struct compact_displacement_table_t {
-    using elem_t = uint_t<4>;
+    using elem_t = uint_t<displace_size>;
 
     IntVector<elem_t> m_displace;
     std::unordered_map<size_t, size_t> m_spill;

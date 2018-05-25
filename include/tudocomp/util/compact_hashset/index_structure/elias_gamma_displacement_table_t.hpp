@@ -319,6 +319,26 @@ struct elias_gamma_bucket_t {
     inline elias_gamma_bucket_t() {}
 };
 
+/// Buckets take up exactly `N` elements.
+template<size_t N>
+struct fixed_elias_gamma_bucket_size_t {
+    inline static size_t bucket_size(size_t table_size) { return N; }
+};
+
+/// Bucket sizes grow according to the table size.
+struct growing_elias_gamma_bucket_size_t {
+    inline static size_t bucket_size(size_t table_size) {
+        // TODO: Add reference for the growth formula.
+        return std::pow(std::log2(table_size), 3.0 / 2.0);
+    }
+};
+
+/// Stores displacement entries as elias-gamma encoded integers.
+///
+/// To prevent large scanning costs, the entries are split up into buckets.
+///
+/// The size of each buckets is determined by `elias_gamma_bucket_size_t`.
+template<typename elias_gamma_bucket_size_t>
 struct elias_gamma_displacement_table_t {
     uint64_t m_elem_cursor = 0;
     uint64_t m_bit_cursor = 0;
@@ -329,8 +349,7 @@ struct elias_gamma_displacement_table_t {
     std::unique_ptr<elias_gamma_bucket_t[]> m_buckets;
 
     inline elias_gamma_displacement_table_t(size_t table_size) {
-        m_bucket_size = 1024;
-        //m_bucket_size = std::pow(std::log2(table_size), 3.0 / 2.0);
+        m_bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
 
         size_t full_buckets = table_size / m_bucket_size;
         size_t remainder_bucket_size = table_size % m_bucket_size;
