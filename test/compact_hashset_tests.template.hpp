@@ -16,6 +16,21 @@ struct shadow_sets_t {
 
     shadow_sets_t(compact_hash& t): table(t) {}
 
+    struct on_resize_t {
+        shadow_sets_t& self;
+
+        inline void on_resize(size_t table_size) {
+            self.keys.clear();
+            self.ids.clear();
+        }
+        inline void reinsert(uint64_t key, uint64_t id) {
+            self.new_key(key, id);
+        }
+    };
+    auto on_resize() {
+        return on_resize_t { *this };
+    }
+
     void new_key(uint64_t key, uint64_t id) {
         // std::cout << "insert(key=" << key << ", id=" << id << ")\n";
         EXPECT_TRUE(keys.count(key) == 0) << "Key " << key << " already exists";
@@ -40,7 +55,7 @@ struct shadow_sets_t {
         return r;
     }
     auto lookup_insert(uint64_t key) {
-        auto r = table.lookup_insert(key);
+        auto r = table.lookup_insert(key, on_resize());
 
         if (r.key_already_exist()) {
             existing_key(key, r.id());
@@ -51,7 +66,7 @@ struct shadow_sets_t {
         return r;
     }
     auto lookup_insert_key_width(uint64_t key, uint8_t key_width) {
-        auto r = table.lookup_insert_key_width(key, key_width);
+        auto r = table.lookup_insert_key_width(key, key_width, on_resize());
 
         if (r.key_already_exist()) {
             existing_key(key, r.id());
@@ -200,8 +215,8 @@ TEST(hash, cornercase) {
 TEST(hash, grow) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto ch = compact_hash(0, 10); // check that it grows to minimum 2
-    // auto ch = shadow_sets_t(chx);
+    auto chx = compact_hash(0, 10); // check that it grows to minimum 2
+    auto ch = shadow_sets_t(chx);
 
     auto add = [&](auto key) {
         ch.lookup_insert(key);
@@ -226,8 +241,8 @@ TEST(hash, grow) {
 TEST(hash, grow_bits) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto ch = compact_hash(0, 10); // check that it grows to minimum 2
-    // auto ch = shadow_sets_t(chx);
+    auto chx = compact_hash(0, 10); // check that it grows to minimum 2
+    auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
 
@@ -256,8 +271,8 @@ TEST(hash, grow_bits) {
 TEST(hash, grow_bits_larger) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto ch = compact_hash(0, 0); // check that it grows to minimum 2
-    // auto ch = shadow_sets_t(chx);
+    auto chx = compact_hash(0, 0); // check that it grows to minimum 2
+    auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
 
@@ -281,8 +296,8 @@ TEST(hash, grow_bits_larger) {
 TEST(hash, grow_bits_larger_address) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto ch = compact_hash(0, 0); // check that it grows to minimum 2
-    // auto ch = shadow_sets_t(chx);
+    auto chx = compact_hash(0, 0); // check that it grows to minimum 2
+    auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
 
@@ -312,8 +327,8 @@ constexpr size_t load_max = 100000;
 //constexpr size_t load_max = 100;
 
 void load_factor_test(float z) {
-    auto table = compact_hash(0, 1);
-    // auto table = shadow_sets_t(tablex);
+    auto tablex = compact_hash(0, 1);
+    auto table = shadow_sets_t(tablex);
     // TODO DEBUG
     // table.debug_state();
 

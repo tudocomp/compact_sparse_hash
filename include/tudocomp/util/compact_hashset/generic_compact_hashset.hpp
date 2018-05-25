@@ -90,12 +90,19 @@ public:
         return m_sizing.max_load_factor();
     }
 
+    struct default_on_resize_t {
+        inline void on_resize(size_t table_size) {}
+        inline void reinsert(uint64_t key, uint64_t id) {}
+    };
+
     /// Returns a reference to the element with key `key`.
     ///
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
-    inline entry_t lookup_insert(uint64_t key) {
-        return lookup_insert_key_width(key, key_width());
+    template<typename on_resize_t = default_on_resize_t>
+    inline entry_t lookup_insert(uint64_t key,
+                                 on_resize_t&& onr = on_resize_t()) {
+        return lookup_insert_key_width(key, key_width(), onr);
     }
 
     /// Returns a reference to the element with key `key`,
@@ -103,18 +110,23 @@ public:
     ///
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
-    inline entry_t lookup_insert_key_width(uint64_t key, uint8_t key_width) {
+    template<typename on_resize_t = default_on_resize_t>
+    inline entry_t lookup_insert_key_width(uint64_t key,
+                                           uint8_t key_width,
+                                           on_resize_t&& onr = on_resize_t()) {
         auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        return grow_and_insert(key, raw_key_width);
+        return grow_and_insert(key, raw_key_width, onr);
     }
 
     /// Grow the key width as needed.
     ///
     /// Note that it is more efficient to change the width directly during
     /// insertion of a new value.
-    inline void grow_key_width(size_t key_width) {
+    template<typename on_resize_t = default_on_resize_t>
+    inline void grow_key_width(size_t key_width,
+                               on_resize_t&& onr = on_resize_t()) {
         auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        grow_if_needed(size(), raw_key_width);
+        grow_if_needed(size(), raw_key_width, onr);
     }
 
     /// Search for a key inside the hashtable.
@@ -198,8 +210,9 @@ private:
     /// `handler` is a type that allows reacting correctly to different ways
     /// to access or create a new or existing value in the hashtable.
     /// See `InsertHandler` and `AddressDefaultHandler` below.
-    inline auto grow_and_insert(uint64_t key, size_t key_width) {
-        grow_if_needed(this->size() + 1, key_width);
+    template<typename on_resize_t>
+    inline auto grow_and_insert(uint64_t key, size_t key_width, on_resize_t& onr) {
+        grow_if_needed(this->size() + 1, key_width, onr);
         auto const dkey = this->decompose_key(key);
 
         DCHECK_EQ(key, this->compose_key(dkey.initial_address, dkey.stored_quotient));
@@ -217,7 +230,10 @@ private:
 
     /// Check the current key width and table site against the arguments,
     /// and grows the table or quotient bitvectors as needed.
-    inline void grow_if_needed(size_t new_size, size_t new_key_width) {
+    template<typename on_resize_t>
+    inline void grow_if_needed(size_t new_size,
+                               size_t new_key_width,
+                               on_resize_t& onr) {
         auto needs_to_grow_capacity = [&]() {
             return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
         };
@@ -256,11 +272,16 @@ private:
                 << "\n";
             */
 
+            onr.on_resize(new_capacity);
+
             auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
             pctx.drain_all([&](auto initial_address, auto kv) {
                 auto stored_quotient = kv.get_quotient();
                 auto key = compose_key(initial_address, stored_quotient);
-                new_table.lookup_insert(key);
+                auto r = new_table.lookup_insert(key);
+                DCHECK(r.found());
+                DCHECK(!r.key_already_exist());
+                onr.reinsert(key, r.id());
             });
 
             *this = std::move(new_table);
