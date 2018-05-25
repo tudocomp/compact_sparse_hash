@@ -23,7 +23,7 @@ struct shadow_sets_t {
             self.keys.clear();
             self.ids.clear();
         }
-        inline void reinsert(uint64_t key, uint64_t id) {
+        inline void on_reinsert(uint64_t key, uint64_t id) {
             self.new_key(key, id);
         }
     };

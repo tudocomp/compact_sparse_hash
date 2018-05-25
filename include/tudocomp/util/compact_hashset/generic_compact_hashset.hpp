@@ -2,6 +2,7 @@
 
 #include "util.hpp"
 #include "size_manager_t.hpp"
+#include "entry_t.hpp"
 #include "storage/buckets_bv_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashset {
@@ -91,31 +92,44 @@ public:
     }
 
     struct default_on_resize_t {
+        /// Will be called in case of an resize.
         inline void on_resize(size_t table_size) {}
-        inline void reinsert(uint64_t key, uint64_t id) {}
+        /// Will be called after `on_resize()` for each element
+        /// that gets re-inserted into the new set.
+        inline void on_reinsert(uint64_t key, uint64_t id) {}
     };
 
-    /// Returns a reference to the element with key `key`.
+    /// Looks up the key `key` in the set, inserting it if
+    /// it doesn't already exist.
     ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
+    /// The returned `entry_t` contains both an _id_ that is unique for each
+    /// element in the set for a given table size,
+    /// and a boolean indicating if the key already exists.
+    ///
+    /// If the set needs to be resized, the observer `on_resize` will be
+    /// used to notify the code about the changed size and new key-id mappings.
     template<typename on_resize_t = default_on_resize_t>
     inline entry_t lookup_insert(uint64_t key,
-                                 on_resize_t&& onr = on_resize_t()) {
-        return lookup_insert_key_width(key, key_width(), onr);
+                                 on_resize_t&& on_resize = on_resize_t()) {
+        return lookup_insert_key_width(key, key_width(), on_resize);
     }
 
-    /// Returns a reference to the element with key `key`,
-    /// and grow the key width as needed.
+    /// Looks up the key `key` in the set, inserting it if
+    /// it doesn't already exist, and grows the key width to `key_width`
+    /// bits.
     ///
-    /// If the value does not already exist in the table, it will be
-    /// default-constructed.
+    /// The returned `entry_t` contains both an _id_ that is unique for each
+    /// element in the set for a given table size,
+    /// and a boolean indicating if the key already exists.
+    ///
+    /// If the set needs to be resized, the observer `on_resize` will be
+    /// used to notify the code about the changed size and new key-id mappings.
     template<typename on_resize_t = default_on_resize_t>
     inline entry_t lookup_insert_key_width(uint64_t key,
                                            uint8_t key_width,
-                                           on_resize_t&& onr = on_resize_t()) {
+                                           on_resize_t&& on_resize = on_resize_t()) {
         auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        return grow_and_insert(key, raw_key_width, onr);
+        return grow_and_insert(key, raw_key_width, on_resize);
     }
 
     /// Grow the key width as needed.
@@ -124,15 +138,15 @@ public:
     /// insertion of a new value.
     template<typename on_resize_t = default_on_resize_t>
     inline void grow_key_width(size_t key_width,
-                               on_resize_t&& onr = on_resize_t()) {
+                               on_resize_t&& on_resize = on_resize_t()) {
         auto raw_key_width = std::max<size_t>(key_width, this->key_width());
-        grow_if_needed(size(), raw_key_width, onr);
+        grow_if_needed(size(), raw_key_width, on_resize);
     }
 
-    /// Search for a key inside the hashtable.
+    /// Search for a key inside the hashset.
     ///
-    /// This returns a pointer to the value if its found, or null
-    /// otherwise.
+    /// The returned `entry_t` contains a boolean indicating if the key was found.
+    /// If it is, then it contains the corresponding _id_ of the entry.
     inline entry_t lookup(uint64_t key) {
         auto dkey = decompose_key(key);
         auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
@@ -281,7 +295,7 @@ private:
                 auto r = new_table.lookup_insert(key);
                 DCHECK(r.found());
                 DCHECK(!r.key_already_exist());
-                onr.reinsert(key, r.id());
+                onr.on_reinsert(key, r.id());
             });
 
             *this = std::move(new_table);
