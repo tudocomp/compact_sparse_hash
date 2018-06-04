@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 
-project (bit_span)
+project (compact_sparse_hash)
 
 # Check if this project is build standalone
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
@@ -73,3 +73,7 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 
     MESSAGE( STATUS "Built Type: " ${CMAKE_BUILD_TYPE} )
 endif()
+
+# Examples
+add_subdirectory(examples)
+

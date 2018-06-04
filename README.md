@@ -74,7 +74,7 @@ Currently, we have set the bucket size `B` to 64.
 # Features
 * The bit width of the keys can be updated on-line.
   Changing the bit width causes a rehashing of the complete hash table.
-* Supports multiple hash functions. Currently, a xorshift hash function is implemented.
+* Supports multiple hash functions. Currently, a `xorshift` hash function is implemented.
 * On resizing the hash table, each bucket of the old hash table is rehashed and subsequently freed,
   such that there is no high memory peak like in traditional hash tables that need to keep entire old and new hash table
   in RAM during a resize operation.
