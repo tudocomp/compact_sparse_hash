@@ -291,7 +291,7 @@ private:
             auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
             pctx.drain_all([&](auto initial_address, auto kv) {
                 auto stored_quotient = kv.get_quotient();
-                auto key = compose_key(initial_address, stored_quotient);
+                auto key = this->compose_key(initial_address, stored_quotient);
                 auto r = new_table.lookup_insert(key);
                 DCHECK(r.found());
                 DCHECK(!r.key_already_exist());
