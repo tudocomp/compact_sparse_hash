@@ -21,7 +21,12 @@ int main() {
          set.lookup_insert(i*i);
     }
     for(int i = 0; i <= 15; ++i) { 
-        std::cout << i << " -> " << set.lookup(i).found() << std::endl; // checks whether set[i] is set
+        auto ret = set.lookup(i);
+        if(ret.found()) {
+            std::cout << "Id of node : " << ret.id() << std::endl; // returns the unique ID of the entry. This ID does not change until resizing occurs.
+            std::cout << i << " -> " << ret.found() << std::endl; // checks whether set[i] is set
+            std::cout << std::endl;
+        }
     } 
 }
 

@@ -63,6 +63,36 @@ When inserting a new kv-pair into the bucket, we update the bit vector, and move
 this operation is computed efficiently on modern computer hardware.
 Currently, we have set the bucket size `B` to 64.
 
+
+# API
+We have a `set` and a `map` interface to the (sparse) compact hash table:
+ - `tdc::compact_sparse_hashset::generic_hashset_t`
+ - `tdc::compact_sparse_hashtable::generic_hashtable_t`
+Each of these hash table classes is templated by the following parameters:
+ - the hash function
+ - how the storage of the hash table is represented (e.g., sparse)
+ - how to maintain entries that are stored not at their initial address, i.e., how the displacement works
+   - `cv_bvs_t` : Approach by Cleary using two bit vectors setting a virgin and change bit
+   - `displacement_t<T>`: using a displacement array represented by `T`, which can be
+     - `compact_displacement_table_t`: the recursive m-Bonsai approach of Poyias et al.
+     - `elias_gamma_displacement_table_t`: the gamma m-Bonsai approach of Poyias et al.
+
+The `generic_hashset_t` has the following helpful methods:
+ - `lookup(key)` looks up a key and returns an `entry_t`,
+ - `lookup_insert(key)` additionally inserts `key` if not present,
+ - `lookup_insert_key_width(key, key_width)` works like above, but additionally increases the bit widths of the keys to `key_width`,
+ - `grow_key_width(key_width)` increases the bit width of the keys to `key_width`.
+All `lookup*` methods return an `entry_t` object, which contains an _id_ (`uint64_t`)
+which is unique and immutable until the hash table needs to be rehashed.
+This _id_ is computed based on the displament setting:
+ - For `displacement_t<T>` it is the position in the hash table the entry was hashed to. The id needs `log_2(table_size)` bits.
+ - For `cv_bvs_t` it is the local position within its group (the approach `cv_bvs_t` clusters all entries with the same initial address to one group)
+   It is `id = initial_address | (local_position << log2(table_size))`. The id needs `log_2(table_size) + log2(x)` bits, where `x` is the size of the specific group (which is at most the maximal number of collisions at an initial address) .
+
+It is possible to let the hash table call an event handler before it rehashes its contents.
+For that, methods that can cause a rehashing provide a template parameter `on_resize_t` that can be set to an event handler.
+See the class `default_on_resize_t` in `generic_compact_hashset` for an example.
+
 # Constraints
 
 * keys have to be integers
