@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 project (compact_sparse_hash)
 
 # Check if this project is build standalone
+#
+# We do this in case we want to use this repo as a GIT submodule,
+# because then we only need the source files themselves
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     # I am top-level project.
 
@@ -67,13 +70,16 @@ add_library(compact_sparse_hash INTERFACE)
 target_link_libraries(compact_sparse_hash INTERFACE bit_span)
 target_include_directories(compact_sparse_hash INTERFACE include)
 
+# Check if this project is build standalone
+#
+# We do this in case we want to use this repo as a GIT submodule,
+# because then we only need the source files themselves
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     # Unit tests for everything in src
     add_subdirectory(test)
 
+    # Examples
+    add_subdirectory(examples)
+
     MESSAGE( STATUS "Built Type: " ${CMAKE_BUILD_TYPE} )
 endif()
-
-# Examples
-add_subdirectory(examples)
-
