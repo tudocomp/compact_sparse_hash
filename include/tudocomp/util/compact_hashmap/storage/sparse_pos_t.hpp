@@ -7,7 +7,7 @@
 
 #include "../util.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 /// This type represents a position inside the compact sparse hashtable.
 ///

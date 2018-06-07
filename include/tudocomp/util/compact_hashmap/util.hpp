@@ -7,7 +7,7 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 inline uint8_t log2_upper(uint64_t v) { // TODO: this is slow. Use the highest set bit
     uint8_t m = 0;

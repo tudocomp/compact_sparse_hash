@@ -4,7 +4,7 @@
 
 #include "decomposed_key_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 /// This manages the size of the hashtable, and related calculations.
 class size_manager_t {

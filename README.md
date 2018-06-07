@@ -20,7 +20,7 @@ A minimal example is
 #include <tudocomp/util/compact_sparse_hash.hpp>
 ...
 // creates a hash table with zero entries, set the bit-width of the keys to four
-auto map = tdc::compact_sparse_hashtable::compact_sparse_hashtable_t<int>(0, 4); 
+auto map = tdc::compact_sparse_hashmap::compact_sparse_hashmap_t<int>(0, 4); 
 for(int i = 0; i <= 15; ++i) { // interval [0..15] can be represented by four bits 
 	map.insert(i, std::move(i*i)); // insert key i, value i*i 
 	std::cout << i << " -> " << map[i] << std::endl; // map[i] returns value i*i with key i 
@@ -67,7 +67,7 @@ Currently, we have set the bucket size `B` to 64.
 # API
 We have a `set` and a `map` interface to the (sparse) compact hash table:
  - `tdc::compact_sparse_hashset::generic_hashset_t`
- - `tdc::compact_sparse_hashtable::generic_hashtable_t`
+ - `tdc::compact_sparse_hashmap::generic_hashmap_t`
 Each of these hash table classes is templated by the following parameters:
  - the hash function
  - how the storage of the hash table is represented (e.g., sparse)

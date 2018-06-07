@@ -7,7 +7,7 @@
 
 #include "../util.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 /// Represents a pair of pointers to value and quotient inside a bucket.
 template<typename val_t>

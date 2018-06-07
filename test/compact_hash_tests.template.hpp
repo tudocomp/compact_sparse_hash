@@ -4,7 +4,7 @@
 #include <algorithm>
 
 using namespace tdc;
-using namespace tdc::compact_sparse_hashtable;
+using namespace tdc::compact_sparse_hashmap;
 
 template<typename val_t>
 using compact_hash = COMPACT_TABLE <val_t>;

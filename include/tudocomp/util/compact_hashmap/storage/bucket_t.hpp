@@ -10,7 +10,7 @@
 #include "val_quot_ptrs_t.hpp"
 #include "quot_val_data.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 /// A bucket of quotient-value pairs in a sparse compact hashtable.
 ///

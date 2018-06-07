@@ -6,7 +6,7 @@
 #include <tudocomp/util/compact_displacement_hash.hpp>
 #include <algorithm>
 
-template<typename val_t> using table_type = tdc::compact_sparse_hashtable::compact_elias_displacement_hashtable_t<val_t>;
+template<typename val_t> using table_type = tdc::compact_sparse_hashmap::compact_elias_displacement_hashmap_t<val_t>;
 
 int main() {
     // creates a hash table with zero entries, set the bit-width of the keys to four

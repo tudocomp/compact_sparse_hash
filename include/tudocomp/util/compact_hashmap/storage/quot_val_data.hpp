@@ -10,7 +10,7 @@
 #include "../util.hpp"
 #include "val_quot_ptrs_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 template<typename val_t>
 struct quot_val_data_seq_t {

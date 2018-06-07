@@ -6,7 +6,7 @@
 #include <tudocomp/ds/IntPtr.hpp>
 #include "../storage/val_quot_ptrs_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 struct cv_bvs_t {
     IntVector<uint_t<2>> m_cv;

@@ -8,7 +8,7 @@
 
 // Table for uninitalized elements
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
     template<typename val_t>
     struct buckets_bv_t {
         using my_bucket_t = bucket_t<val_t, 8>;

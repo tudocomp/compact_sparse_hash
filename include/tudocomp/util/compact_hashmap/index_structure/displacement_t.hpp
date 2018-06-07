@@ -12,7 +12,7 @@
 
 #include "elias_gamma_displacement_table_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 struct naive_displacement_table_t {
     std::vector<size_t> m_displace;

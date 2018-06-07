@@ -151,7 +151,7 @@ private:
 }} //ns - poplar::bijective_hash
 
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 class xorshift_t {
     uint64_t m_j;

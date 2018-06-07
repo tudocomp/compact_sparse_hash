@@ -7,7 +7,7 @@
 
 // Table for uninitalized elements
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
     template<typename val_t>
     struct plain_sentinel_t {
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;

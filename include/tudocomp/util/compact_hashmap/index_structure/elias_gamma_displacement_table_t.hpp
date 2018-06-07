@@ -11,7 +11,7 @@
 #include <tudocomp/ds/IntPtr.hpp>
 #include "../storage/val_quot_ptrs_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashtable {
+namespace tdc {namespace compact_sparse_hashmap {
 
 template<typename base_type>
 struct alloc_callback_ret_t {
