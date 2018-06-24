@@ -153,6 +153,11 @@ public:
         return pctx.search(dkey.initial_address, dkey.stored_quotient);
     }
 
+    /// Swap this instance of the data structure with another one.
+    inline void swap(generic_hashset_t& other) {
+        std::swap(*this, other);
+    }
+
 private:
     using quot_width_t = typename storage_t::quot_width_t;
 

@@ -386,3 +386,33 @@ TEST(hash_load, max_load_90) {
 TEST(hash_load, max_load_100) {
     load_factor_test(1.0);
 }
+
+TEST(hash, swap) {
+    auto a = compact_hash(8, 16);
+    {
+        auto& ch = a;
+        ch.max_load_factor(1.0);
+        ch.lookup_insert(3);
+        ch.lookup_insert(3 + 8);
+        ch.lookup_insert(5);
+        ch.lookup_insert(5 + 8);
+        ch.lookup_insert(5 + 16);
+        ch.lookup_insert(5 + 24);
+        ch.lookup_insert(4);
+    }
+    auto b = compact_hash(8, 16);
+    {
+        auto& ch = b;
+        ch.max_load_factor(1.0);
+        ch.lookup_insert(3);
+        ch.lookup_insert(3 + 8);
+        ch.lookup_insert(5);
+        ch.lookup_insert(5 + 8);
+        ch.lookup_insert(5 + 16);
+        ch.lookup_insert(5 + 24);
+        ch.lookup_insert(4);
+    }
+
+    a.swap(b);
+    std::swap(a, b);
+}
