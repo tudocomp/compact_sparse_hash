@@ -6,6 +6,8 @@
 #include "bucket_t.hpp"
 #include "sparse_pos_t.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 // Table for uninitalized elements
 
 namespace tdc {namespace compact_sparse_hashset {
@@ -17,6 +19,9 @@ namespace tdc {namespace compact_sparse_hashset {
         using quot_width_t = uint8_t;
 
         buckets_t m_buckets;
+
+        template<typename T>
+        friend struct ::tdc::serialize;
 
         inline buckets_bv_t() {}
         inline buckets_bv_t(size_t table_size, quot_width_t widths) {
@@ -80,6 +85,7 @@ namespace tdc {namespace compact_sparse_hashset {
             }
         };
 
+        template<typename buckets_t>
         struct context_t {
             buckets_t& m_buckets;
             size_t const table_size;
@@ -144,9 +150,43 @@ namespace tdc {namespace compact_sparse_hashset {
         };
         inline auto context(size_t table_size, quot_width_t const& widths) {
             DCHECK(m_buckets);
-            return context_t {
+            return context_t<buckets_t> {
+                m_buckets, table_size, widths
+            };
+        }
+        inline auto context(size_t table_size, quot_width_t const& widths) const {
+            DCHECK(m_buckets);
+            return context_t<buckets_t const> {
                 m_buckets, table_size, widths
             };
         }
     };
-}}
+}
+
+template<>
+struct serialize<compact_sparse_hashset::buckets_bv_t> {
+    using T = compact_sparse_hashset::buckets_bv_t;
+    using bucket_t = typename T::my_bucket_t;
+    using quot_width_t = typename T::quot_width_t;
+
+    static void write(std::ostream& out, T const& val, size_t table_size, quot_width_t const& widths) {
+        using namespace compact_sparse_hashset;
+
+        auto ctx = val.context(table_size, widths);
+
+        DCHECK(false);
+    }
+    static T read(std::istream& in, size_t table_size, quot_width_t const& widths) {
+        using namespace compact_sparse_hashset;
+
+        T ret;
+
+        auto ctx = ret.context(table_size, widths);
+
+        DCHECK(false);
+
+        return ret;
+    }
+};
+
+}

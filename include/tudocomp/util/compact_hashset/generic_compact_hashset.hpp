@@ -59,24 +59,24 @@ public:
     /// Returns the current size of the hashtable.
     /// This value is greater-or-equal the amount of the elements
     /// currently contained in it, which is represented by `size()`.
-    inline size_t table_size() {
+    inline size_t table_size() const {
         return m_sizing.capacity();
     }
 
     /// Current width of the keys stored in this datastructure.
-    inline size_t key_width() {
+    inline size_t key_width() const {
         return m_key_width;
     }
 
     /// Amount of bits of the key, that are stored implicitly
     /// by its position in the table.
-    inline size_t initial_address_width() {
+    inline size_t initial_address_width() const {
         return m_sizing.capacity_log2();
     }
 
     /// Amount of bits of the key, that are stored explicitly
     /// in the buckets.
-    inline size_t quotient_width() {
+    inline size_t quotient_width() const {
         return real_width() - m_sizing.capacity_log2();
     }
 
@@ -192,11 +192,11 @@ private:
     ///   with the current code, so we add a padding bit.
     /// - Otherwise the current maximum key width `m_key_width`
     ///   determines the real width.
-    inline size_t real_width() {
+    inline size_t real_width() const {
         return std::max<size_t>(m_sizing.capacity_log2() + 1, m_key_width);
     }
 
-    inline quot_width_t storage_widths() {
+    inline quot_width_t storage_widths() const {
         return uint8_t(quotient_width());
     }
 
@@ -327,7 +327,7 @@ struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>>
 
         serialize<size_manager_t>::write(out, val.m_sizing);
         serialize<uint8_t>::write(out, val.m_key_width);
-        serialize<storage_t>::write(out, val.m_storage);
+        serialize<storage_t>::write(out, val.m_storage, val.table_size(), val.storage_widths());
         serialize<placement_t>::write(out, val.m_placement);
         serialize<hash_t>::write(out, val.m_hash);
     }
@@ -338,12 +338,13 @@ struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>>
 
         auto sizing = serialize<size_manager_t>::read(in);
         auto key_width = serialize<uint8_t>::read(in);
-        auto storage = serialize<storage_t>::read(in);
+        ret.m_sizing = std::move(sizing);
+        ret.m_key_width = std::move(key_width);
+
+        auto storage = serialize<storage_t>::read(in, ret.table_size(), ret.storage_widths());
         auto placement = serialize<placement_t>::read(in);
         auto hash = serialize<hash_t>::read(in);
 
-        ret.m_sizing = std::move(sizing);
-        ret.m_key_width = std::move(key_width);
         ret.m_storage = std::move(storage);
         ret.m_placement = std::move(placement);
         ret.m_hash = std::move(hash);
