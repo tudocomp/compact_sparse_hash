@@ -178,7 +178,7 @@ struct serialize<compact_sparse_hashset::buckets_bv_t> {
         size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
         for(size_t i = 0; i < buckets_size; i++) {
             auto& bucket = ctx.m_buckets[i];
-            serialize<bucket_t>::write(out, bucket);
+            serialize<bucket_t>::write(out, bucket, widths);
         }
     }
     static T read(std::istream& in, size_t table_size, quot_width_t const& widths) {
@@ -191,7 +191,7 @@ struct serialize<compact_sparse_hashset::buckets_bv_t> {
         ctx.m_buckets = std::make_unique<bucket_t[]>(buckets_size);
         for(size_t i = 0; i < buckets_size; i++) {
             auto& bucket = ctx.m_buckets[i];
-            bucket = serialize<bucket_t>::read(in);
+            bucket = serialize<bucket_t>::read(in, widths);
         }
 
         return ret;
