@@ -5,6 +5,8 @@
 #include "entry_t.hpp"
 #include "storage/buckets_bv_t.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashset {
 
 template<typename hash_t, typename placement_t>
@@ -174,6 +176,9 @@ private:
     /// Hash function
     hash_t m_hash {1};
 
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     /// The actual amount of bits currently usable for
     /// storing a key in the hashtable.
     ///
@@ -310,4 +315,41 @@ private:
     }
 };
 
-}}
+}
+
+template<typename hash_t, typename placement_t>
+struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>> {
+    using T = compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>;
+    using storage_t = typename T::storage_t;
+
+    static void write(std::ostream& out, T const& val) {
+        using namespace compact_sparse_hashset;
+
+        serialize<size_manager_t>::write(out, val.m_sizing);
+        serialize<uint8_t>::write(out, val.m_key_width);
+        serialize<storage_t>::write(out, val.m_storage);
+        serialize<placement_t>::write(out, val.m_placement);
+        serialize<hash_t>::write(out, val.m_hash);
+    }
+    static T read(std::istream& in) {
+        using namespace compact_sparse_hashset;
+
+        T ret;
+
+        auto sizing = serialize<size_manager_t>::read(in);
+        auto key_width = serialize<uint8_t>::read(in);
+        auto storage = serialize<storage_t>::read(in);
+        auto placement = serialize<placement_t>::read(in);
+        auto hash = serialize<hash_t>::read(in);
+
+        ret.m_sizing = std::move(sizing);
+        ret.m_key_width = std::move(key_width);
+        ret.m_storage = std::move(storage);
+        ret.m_placement = std::move(placement);
+        ret.m_hash = std::move(hash);
+
+        return ret;
+    }
+};
+
+}
