@@ -1,15 +1,16 @@
 #pragma once
 
 #include <iostream>
+#include <typeinfo>
 
 namespace tdc {
     template<typename T>
     struct serialize {
         static void write(std::ostream& out, T const& val) {
-            DCHECK(false) << "Need to implement the trait for a custom type";
+            DCHECK(false) << "Need to implement the trait for type " << typeid(T).name();
         }
         static T read(std::istream& in) {
-            DCHECK(false) << "Need to implement the trait for a custom type";
+            DCHECK(false) << "Need to implement the trait for type " << typeid(T).name();
         }
     };
 

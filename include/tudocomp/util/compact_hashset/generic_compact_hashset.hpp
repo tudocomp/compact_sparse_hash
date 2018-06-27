@@ -327,9 +327,10 @@ struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>>
 
         serialize<size_manager_t>::write(out, val.m_sizing);
         serialize<uint8_t>::write(out, val.m_key_width);
+        serialize<hash_t>::write(out, val.m_hash);
+
         serialize<storage_t>::write(out, val.m_storage, val.table_size(), val.storage_widths());
         serialize<placement_t>::write(out, val.m_placement);
-        serialize<hash_t>::write(out, val.m_hash);
     }
     static T read(std::istream& in) {
         using namespace compact_sparse_hashset;
@@ -338,16 +339,16 @@ struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>>
 
         auto sizing = serialize<size_manager_t>::read(in);
         auto key_width = serialize<uint8_t>::read(in);
+        auto hash = serialize<hash_t>::read(in);
         ret.m_sizing = std::move(sizing);
         ret.m_key_width = std::move(key_width);
+        ret.m_hash = std::move(hash);
 
         auto storage = serialize<storage_t>::read(in, ret.table_size(), ret.storage_widths());
         auto placement = serialize<placement_t>::read(in);
-        auto hash = serialize<hash_t>::read(in);
 
         ret.m_storage = std::move(storage);
         ret.m_placement = std::move(placement);
-        ret.m_hash = std::move(hash);
 
         return ret;
     }
