@@ -13,3 +13,5 @@ run_test(sandbox_test DEPS compact_sparse_hash)
 run_test(compact_sparse_hashset_tests DEPS compact_sparse_hash)
 run_test(compact_sparse_hashset_displacement_tests DEPS compact_sparse_hash)
 run_test(compact_sparse_hashset_elias_displacement_tests DEPS compact_sparse_hash)
+
+run_test(compact_sparse_hashset_serialization_tests DEPS compact_sparse_hash)
