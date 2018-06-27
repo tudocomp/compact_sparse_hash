@@ -10,12 +10,17 @@
 #include <tudocomp/ds/IntPtr.hpp>
 #include "../storage/quot_ptrs_t.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 #include "elias_gamma_displacement_table_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashset {
 
 /// Stores displacement entries as `size_t` integers.
 struct naive_displacement_table_t {
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     std::vector<size_t> m_displace;
     inline naive_displacement_table_t(size_t table_size) {
         m_displace.reserve(table_size);
@@ -34,6 +39,9 @@ struct naive_displacement_table_t {
 /// will be spilled into a `std::unordered_map<size_t, size_t>`.
 template<size_t displace_size>
 struct compact_displacement_table_t {
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     using elem_t = uint_t<displace_size>;
 
     IntVector<elem_t> m_displace;
@@ -64,6 +72,9 @@ struct compact_displacement_table_t {
 
 template<typename displacement_table_t>
 struct displacement_t {
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     displacement_table_t m_displace;
 
     inline displacement_t(size_t table_size):
