@@ -27,19 +27,6 @@ namespace tdc {
         }
     };
     template<>
-    struct serialize<size_t> {
-        using T = size_t;
-
-        static void write(std::ostream& out, T const& val) {
-            out.write((char const*) &val, sizeof(T));
-        }
-        static T read(std::istream& in) {
-            T val;
-            in.read((char*) &val, sizeof(T));
-            return val;
-        }
-    };
-    template<>
     struct serialize<float> {
         using T = float;
 
@@ -52,5 +39,45 @@ namespace tdc {
             return val;
         }
     };
+    template<>
+    struct serialize<unsigned int> {
+        using T = unsigned int;
+
+        static void write(std::ostream& out, T const& val) {
+            out.write((char const*) &val, sizeof(T));
+        }
+        static T read(std::istream& in) {
+            T val;
+            in.read((char*) &val, sizeof(T));
+            return val;
+        }
+    };
+    template<>
+    struct serialize<unsigned long int> {
+        using T = unsigned long int;
+
+        static void write(std::ostream& out, T const& val) {
+            out.write((char const*) &val, sizeof(T));
+        }
+        static T read(std::istream& in) {
+            T val;
+            in.read((char*) &val, sizeof(T));
+            return val;
+        }
+    };
+    template<>
+    struct serialize<unsigned long long int> {
+        using T = unsigned long long int;
+
+        static void write(std::ostream& out, T const& val) {
+            out.write((char const*) &val, sizeof(T));
+        }
+        static T read(std::istream& in) {
+            T val;
+            in.read((char*) &val, sizeof(T));
+            return val;
+        }
+    };
+
 
 }

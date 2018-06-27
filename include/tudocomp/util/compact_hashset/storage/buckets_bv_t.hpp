@@ -168,13 +168,18 @@ struct serialize<compact_sparse_hashset::buckets_bv_t> {
     using T = compact_sparse_hashset::buckets_bv_t;
     using bucket_t = typename T::my_bucket_t;
     using quot_width_t = typename T::quot_width_t;
+    using bucket_layout_t = typename T::bucket_layout_t;
 
     static void write(std::ostream& out, T const& val, size_t table_size, quot_width_t const& widths) {
         using namespace compact_sparse_hashset;
 
         auto ctx = val.context(table_size, widths);
 
-        DCHECK(false);
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+        for(size_t i = 0; i < buckets_size; i++) {
+            auto& bucket = ctx.m_buckets[i];
+            serialize<bucket_t>::write(out, bucket);
+        }
     }
     static T read(std::istream& in, size_t table_size, quot_width_t const& widths) {
         using namespace compact_sparse_hashset;
@@ -182,8 +187,12 @@ struct serialize<compact_sparse_hashset::buckets_bv_t> {
         T ret;
 
         auto ctx = ret.context(table_size, widths);
-
-        DCHECK(false);
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+        ctx.m_buckets = std::make_unique<bucket_t[]>(buckets_size);
+        for(size_t i = 0; i < buckets_size; i++) {
+            auto& bucket = ctx.m_buckets[i];
+            bucket = serialize<bucket_t>::read(in);
+        }
 
         return ret;
     }
