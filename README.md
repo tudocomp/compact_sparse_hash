@@ -74,8 +74,8 @@ Each of these hash table classes is templated by the following parameters:
  - how to maintain entries that are stored not at their initial address, i.e., how the displacement works
    - `cv_bvs_t` : Approach by Cleary using two bit vectors setting a virgin and change bit
    - `displacement_t<T>`: using a displacement array represented by `T`, which can be
-     - `compact_displacement_table_t`: the recursive m-Bonsai approach of Poyias et al.
-     - `elias_gamma_displacement_table_t`: the gamma m-Bonsai approach of Poyias et al.
+     - `compact_displacement_table_t`: the recursive m-Bonsai approach of [3]
+     - `elias_gamma_displacement_table_t`: the gamma m-Bonsai approach of [3]
 
 The `generic_hashset_t` has the following helpful methods:
  - `lookup(key)` looks up a key and returns an `entry_t`,
@@ -85,9 +85,9 @@ The `generic_hashset_t` has the following helpful methods:
 All `lookup*` methods return an `entry_t` object, which contains an _id_ (`uint64_t`)
 which is unique and immutable until the hash table needs to be rehashed.
 This _id_ is computed based on the displament setting:
- - For `displacement_t<T>` it is the position in the hash table the entry was hashed to. The id needs `log_2(table_size)` bits.
+ - For `displacement_t<T>` it is the position in the hash table the entry was hashed to. The id needs `log2(table_size)` bits.
  - For `cv_bvs_t` it is the local position within its group (the approach `cv_bvs_t` clusters all entries with the same initial address to one group)
-   It is `id = initial_address | (local_position << log2(table_size))`. The id needs `log_2(table_size) + log2(x)` bits, where `x` is the size of the specific group (which is at most the maximal number of collisions at an initial address) .
+   It is `id = initial_address | (local_position << log2(table_size))`. The id needs `log2(table_size) + log2(x)` bits, where `x` is the size of the specific group (which is at most the maximal number of collisions at an initial address) .
 
 It is possible to let the hash table call an event handler before it rehashes its contents.
 For that, methods that can cause a rehashing provide a template parameter `on_resize_t` that can be set to an event handler.
@@ -146,3 +146,4 @@ The code in this repository is published under the
 # References
 * [1] J. G. Cleary. Compact hash tables using bidirectional linear probing. IEEE Trans. Computers, 33(9): 828-834, 1984.
 * [2] J. Fischer, D. Köppl: Practical Evaluation of Lempel-Ziv-78 and Lempel-Ziv-Welch Tries. SPIRE 2017: 191-207.
+* [3] A. Poyias, R. Raman: Improved Practical Compact Dynamic Tries. SPIRE 2015: 324-336
