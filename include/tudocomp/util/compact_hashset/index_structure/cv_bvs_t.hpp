@@ -6,11 +6,18 @@
 #include <tudocomp/ds/IntPtr.hpp>
 #include "../storage/quot_ptrs_t.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashset {
 
-struct cv_bvs_t {
-    IntVector<uint_t<2>> m_cv;
+class cv_bvs_t {
+    template<typename T>
+    friend struct ::tdc::serialize;
 
+    IntVector<uint_t<2>> m_cv;
+    inline cv_bvs_t(IntVector<uint_t<2>>&& cv): m_cv(std::move(cv)) {}
+
+public:
     inline cv_bvs_t(size_t table_size) {
         m_cv.reserve(table_size);
         m_cv.resize(table_size);
@@ -453,4 +460,39 @@ struct cv_bvs_t {
     }
 };
 
-}}
+}
+
+template<>
+struct serialize<compact_sparse_hashset::cv_bvs_t> {
+    using T = compact_sparse_hashset::cv_bvs_t;
+
+    static void write(std::ostream& out, T const& val,
+                      size_t table_size) {
+        DCHECK_EQ(val.m_cv.size(), table_size);
+        auto data = (char const*) val.m_cv.data();
+        auto size = val.m_cv.stat_allocation_size_in_bytes();
+
+        out.write(data, size);
+    }
+
+    static T read(std::istream& in,
+                  size_t table_size) {
+        auto cv = IntVector<uint_t<2>>();
+        cv.reserve(table_size);
+        cv.resize(table_size);
+        auto data = (char*) cv.data();
+        auto size = cv.stat_allocation_size_in_bytes();
+
+        in.read(data, size);
+
+        return T {
+            std::move(cv)
+        };
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs, size_t table_size) {
+        return gen_equal_diagnostic(lhs.m_cv == rhs.m_cv);
+    }
+};
+
+}

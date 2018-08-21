@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glog/logging.h>
+#include <tudocomp/util/serialization.hpp>
 
 // Source: https://github.com/kampersanda/poplar-trie/blob/master/include/poplar/bijective_hash.hpp
 namespace poplar{namespace bijective_hash {
@@ -134,6 +135,9 @@ private:
   uint32_t shift_{};
   size_p2_t univ_size_{};
 
+  template<typename T>
+  friend struct ::tdc::serialize;
+
   template <uint32_t N>
   uint64_t hash_(uint64_t x) const {
     x = x ^ (x >> (shift_ + N));
@@ -156,6 +160,11 @@ namespace tdc {namespace compact_sparse_hashset {
 class xorshift_t {
     uint64_t m_j;
     uint64_t m_w_mask;
+
+    template<typename T>
+    friend struct ::tdc::serialize;
+
+    xorshift_t() = default;
 public:
     /// Constructs a hash function for values with a width of `w` bits.
     xorshift_t(uint32_t w):
@@ -187,4 +196,55 @@ public:
 
 using poplar_xorshift_t = poplar::bijective_hash::Xorshift;
 
-}}
+}
+
+template<>
+struct serialize<compact_sparse_hashset::xorshift_t> {
+    using T = compact_sparse_hashset::xorshift_t;
+
+    static void write(std::ostream& out, T const& val) {
+        using namespace compact_sparse_hashset;
+
+        serialize<uint64_t>::write(out, val.m_j);
+        serialize<uint64_t>::write(out, val.m_w_mask);
+    }
+    static T read(std::istream& in) {
+        using namespace compact_sparse_hashset;
+
+        T ret;
+        ret.m_j = serialize<uint64_t>::read(in);
+        ret.m_w_mask = serialize<uint64_t>::read(in);
+        return ret;
+    }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(m_j)
+        && gen_equal_check(m_w_mask);
+    }
+};
+
+template<>
+struct serialize<poplar::bijective_hash::Xorshift> {
+    using T = poplar::bijective_hash::Xorshift;
+
+    static void write(std::ostream& out, T const& val) {
+        using namespace compact_sparse_hashset;
+
+        serialize<uint64_t>::write(out, val.shift_);
+        serialize<uint64_t>::write(out, val.univ_size_.bits());
+    }
+    static T read(std::istream& in) {
+        using namespace compact_sparse_hashset;
+
+        T ret;
+        ret.shift_ = serialize<uint64_t>::read(in);
+        ret.univ_size_ = poplar::bijective_hash::size_p2_t(serialize<uint64_t>::read(in));
+        return ret;
+    }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(shift_)
+        && gen_equal_check(univ_size_.bits());
+
+    }
+};
+
+}

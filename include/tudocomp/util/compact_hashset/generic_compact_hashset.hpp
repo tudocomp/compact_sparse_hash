@@ -5,6 +5,8 @@
 #include "entry_t.hpp"
 #include "storage/buckets_bv_t.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashset {
 
 template<typename hash_t, typename placement_t>
@@ -57,24 +59,24 @@ public:
     /// Returns the current size of the hashtable.
     /// This value is greater-or-equal the amount of the elements
     /// currently contained in it, which is represented by `size()`.
-    inline size_t table_size() {
+    inline size_t table_size() const {
         return m_sizing.capacity();
     }
 
     /// Current width of the keys stored in this datastructure.
-    inline size_t key_width() {
+    inline size_t key_width() const {
         return m_key_width;
     }
 
     /// Amount of bits of the key, that are stored implicitly
     /// by its position in the table.
-    inline size_t initial_address_width() {
+    inline size_t initial_address_width() const {
         return m_sizing.capacity_log2();
     }
 
     /// Amount of bits of the key, that are stored explicitly
     /// in the buckets.
-    inline size_t quotient_width() {
+    inline size_t quotient_width() const {
         return real_width() - m_sizing.capacity_log2();
     }
 
@@ -174,6 +176,9 @@ private:
     /// Hash function
     hash_t m_hash {1};
 
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     /// The actual amount of bits currently usable for
     /// storing a key in the hashtable.
     ///
@@ -187,11 +192,11 @@ private:
     ///   with the current code, so we add a padding bit.
     /// - Otherwise the current maximum key width `m_key_width`
     ///   determines the real width.
-    inline size_t real_width() {
+    inline size_t real_width() const {
         return std::max<size_t>(m_sizing.capacity_log2() + 1, m_key_width);
     }
 
-    inline quot_width_t storage_widths() {
+    inline quot_width_t storage_widths() const {
         return uint8_t(quotient_width());
     }
 
@@ -310,4 +315,59 @@ private:
     }
 };
 
-}}
+}
+
+template<typename hash_t, typename placement_t>
+struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>> {
+    using T = compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>;
+    using storage_t = typename T::storage_t;
+
+    static void write(std::ostream& out, T const& val) {
+        using namespace compact_sparse_hashset;
+
+        serialize<size_manager_t>::write(out, val.m_sizing);
+        serialize<uint8_t>::write(out, val.m_key_width);
+        serialize<hash_t>::write(out, val.m_hash);
+
+        serialize<storage_t>::write(out, val.m_storage, val.table_size(), val.storage_widths());
+        serialize<placement_t>::write(out, val.m_placement, val.table_size());
+    }
+    static T read(std::istream& in) {
+        using namespace compact_sparse_hashset;
+
+        T ret;
+
+        auto sizing = serialize<size_manager_t>::read(in);
+        auto key_width = serialize<uint8_t>::read(in);
+        auto hash = serialize<hash_t>::read(in);
+        ret.m_sizing = std::move(sizing);
+        ret.m_key_width = std::move(key_width);
+        ret.m_hash = std::move(hash);
+
+        auto storage = serialize<storage_t>::read(in, ret.table_size(), ret.storage_widths());
+        auto placement = serialize<placement_t>::read(in, ret.table_size());
+
+        ret.m_storage = std::move(storage);
+        ret.m_placement = std::move(placement);
+
+        return ret;
+    }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        if (!(gen_equal_check(table_size()) && gen_equal_check(storage_widths()))) {
+            return false;
+        }
+
+        auto table_size = lhs.table_size();
+        auto storage_widths = lhs.storage_widths();
+
+        bool deep_eq = gen_equal_check(m_sizing)
+        && gen_equal_check(m_key_width)
+        && gen_equal_check(m_hash)
+        && gen_equal_check(m_storage, table_size, storage_widths)
+        && gen_equal_check(m_placement, table_size);
+
+        return deep_eq;
+    }
+};
+
+}
