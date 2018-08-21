@@ -2,15 +2,33 @@
 
 #include <iostream>
 #include <typeinfo>
+#include <tuple>
 
 namespace tdc {
+    inline bool equal_diagnostic(bool v, char const* msg) {
+        if (!v) {
+            std::cerr << "not equal: " << msg << "\n";
+        }
+        return v;
+    }
+#define gen_equal_diagnostic(e) \
+    equal_diagnostic(e, #e)
+
+#define gen_equal_check(field, ...)                                          \
+    gen_equal_diagnostic(                                                         \
+        serialize<decltype(lhs.field)>::equal_check(lhs.field, rhs.field, ##__VA_ARGS__))
+
     template<typename T>
     struct serialize {
         static void write(std::ostream& out, T const& val) {
-            DCHECK(false) << "Need to implement the trait for type " << typeid(T).name();
+            CHECK(false) << "Need to implement the trait for type " << typeid(T).name();
         }
         static T read(std::istream& in) {
-            DCHECK(false) << "Need to implement the trait for type " << typeid(T).name();
+            CHECK(false) << "Need to implement the trait for type " << typeid(T).name();
+        }
+        static bool equal_check(T const& lhs, T const& rhs) {
+            CHECK(false) << "Need to implement the trait for type " << typeid(T).name();
+            return false;
         }
     };
 
@@ -26,6 +44,9 @@ namespace tdc {
             in.get(v);
             return v;
         }
+        static bool equal_check(T const& lhs, T const& rhs) {
+            return gen_equal_diagnostic(lhs == rhs);
+        }
     };
     template<>
     struct serialize<float> {
@@ -38,6 +59,9 @@ namespace tdc {
             T val;
             in.read((char*) &val, sizeof(T));
             return val;
+        }
+        static bool equal_check(T const& lhs, T const& rhs) {
+            return gen_equal_diagnostic(lhs == rhs);
         }
     };
     template<>
@@ -52,6 +76,9 @@ namespace tdc {
             in.read((char*) &val, sizeof(T));
             return val;
         }
+        static bool equal_check(T const& lhs, T const& rhs) {
+            return gen_equal_diagnostic(lhs == rhs);
+        }
     };
     template<>
     struct serialize<unsigned long int> {
@@ -65,6 +92,9 @@ namespace tdc {
             in.read((char*) &val, sizeof(T));
             return val;
         }
+        static bool equal_check(T const& lhs, T const& rhs) {
+            return gen_equal_diagnostic(lhs == rhs);
+        }
     };
     template<>
     struct serialize<unsigned long long int> {
@@ -77,6 +107,9 @@ namespace tdc {
             T val;
             in.read((char*) &val, sizeof(T));
             return val;
+        }
+        static bool equal_check(T const& lhs, T const& rhs) {
+            return gen_equal_diagnostic(lhs == rhs);
         }
     };
 

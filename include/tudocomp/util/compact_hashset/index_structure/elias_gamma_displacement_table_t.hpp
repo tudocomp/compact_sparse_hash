@@ -141,10 +141,6 @@ struct elias_gamma_bucket_t {
         return sink_t<decltype(f)> { f };
     }
 
-    inline size_t bits2alloc(uint64_t bits) {
-        return (bits + 63ull) >> 6ull;
-    }
-
     inline void realloc(size_t old_size, size_t new_size) {
         auto n = std::make_unique<uint64_t[]>(new_size);
         for (size_t i = 0; i < old_size; i++) {
@@ -293,9 +289,17 @@ struct elias_gamma_bucket_t {
             bit_cursor,
         };
     }
+    auto context(uint64_t& element_cursor, uint64_t& bit_cursor) const {
+        return context_t {
+            m_data,
+            m_bits,
+            element_cursor,
+            bit_cursor,
+        };
+    }
 
-    std::unique_ptr<uint64_t[]> m_data;
-    uint64_t m_bits = 0;
+    mutable std::unique_ptr<uint64_t[]> m_data;
+    mutable uint64_t m_bits = 0;
 
     inline elias_gamma_bucket_t(size_t size)
     {
@@ -317,6 +321,10 @@ struct elias_gamma_bucket_t {
     }
 
     inline elias_gamma_bucket_t() {}
+
+    inline static size_t bits2alloc(uint64_t bits) {
+        return (bits + 63ull) >> 6ull;
+    }
 };
 
 /// Buckets take up exactly `N` elements.
@@ -340,32 +348,50 @@ struct growing_elias_gamma_bucket_size_t {
 /// The size of each buckets is determined by `elias_gamma_bucket_size_t`.
 template<typename elias_gamma_bucket_size_t>
 struct elias_gamma_displacement_table_t {
-    uint64_t m_elem_cursor = 0;
-    uint64_t m_bit_cursor = 0;
-    size_t m_bucket_cursor = 0;
+    mutable uint64_t m_elem_cursor = 0;
+    mutable uint64_t m_bit_cursor = 0;
+    mutable size_t m_bucket_cursor = 0;
 
     size_t m_bucket_size;
 
     std::unique_ptr<elias_gamma_bucket_t[]> m_buckets;
 
-    inline elias_gamma_displacement_table_t(size_t table_size) {
-        m_bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
+    using bucket_size_t = elias_gamma_bucket_size_t;
 
-        size_t full_buckets = table_size / m_bucket_size;
-        size_t remainder_bucket_size = table_size % m_bucket_size;
+    struct BucketSizes {
+        size_t full_buckets;
+        size_t remainder_bucket_size;
+        size_t buckets;
+    };
+    inline static BucketSizes calc_buckets(size_t table_size) {
+        auto bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
+
+        size_t full_buckets = table_size / bucket_size;
+        size_t remainder_bucket_size = table_size % bucket_size;
         size_t buckets = full_buckets + (remainder_bucket_size != 0);
 
-        m_buckets = std::make_unique<elias_gamma_bucket_t[]>(buckets);
+        return {
+            full_buckets,
+            remainder_bucket_size,
+            buckets,
+        };
+    }
 
-        for (size_t i = 0; i < full_buckets; i++) {
+    inline elias_gamma_displacement_table_t(size_t table_size) {
+        m_bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
+        auto r = calc_buckets(table_size);
+
+        m_buckets = std::make_unique<elias_gamma_bucket_t[]>(r.buckets);
+
+        for (size_t i = 0; i < r.full_buckets; i++) {
             m_buckets[i] = elias_gamma_bucket_t(m_bucket_size);
         }
-        if (remainder_bucket_size != 0) {
-            m_buckets[buckets - 1] = elias_gamma_bucket_t(remainder_bucket_size);
+        if (r.remainder_bucket_size != 0) {
+            m_buckets[r.buckets - 1] = elias_gamma_bucket_t(r.remainder_bucket_size);
         }
     }
 
-    inline size_t get(size_t pos) {
+    inline size_t get(size_t pos) const {
         size_t bucket = pos / m_bucket_size;
         size_t offset = pos % m_bucket_size;
         if (bucket != m_bucket_cursor) {
@@ -374,10 +400,9 @@ struct elias_gamma_displacement_table_t {
             m_bit_cursor = 0;
         }
 
-        auto ctx = m_buckets[m_bucket_cursor]
-            .context(m_elem_cursor, m_bit_cursor);
-
-        return ctx.get(offset);
+        return m_buckets[m_bucket_cursor]
+            .context(m_elem_cursor, m_bit_cursor)
+            .get(offset);
     }
     inline void set(size_t pos, size_t val) {
         size_t bucket = pos / m_bucket_size;
@@ -388,11 +413,74 @@ struct elias_gamma_displacement_table_t {
             m_bit_cursor = 0;
         }
 
-        auto ctx = m_buckets[m_bucket_cursor]
-            .context(m_elem_cursor, m_bit_cursor);
-
-        ctx.set(offset, val);
+        m_buckets[m_bucket_cursor]
+            .context(m_elem_cursor, m_bit_cursor)
+            .set(offset, val);
     }
 };
 
-}}
+}
+
+template<typename elias_gamma_bucket_size_t>
+struct serialize<compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>> {
+    using T = compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+    static void write(std::ostream& out, T const& val, size_t table_size) {
+        using bucket_t = compact_sparse_hashset::elias_gamma_bucket_t;
+        using table_t =
+            compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+        table_t const& table = val;
+        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+
+        auto& buckets = table.m_buckets;
+        auto s = T::calc_buckets(table_size);
+        for (size_t i = 0; i < s.buckets; i++) {
+            bucket_t const& b = buckets[i];
+
+            serialize<uint64_t>::write(out, b.m_bits);
+
+            size_t words = bucket_t::bits2alloc(b.m_bits);
+            for (size_t j = 0; j < words; j++) {
+                serialize<uint64_t>::write(out, b.m_data[j]);
+            }
+        }
+    }
+
+    static T read(std::istream& in, size_t table_size) {
+        using bucket_t = compact_sparse_hashset::elias_gamma_bucket_t;
+        using table_t =
+            compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+        table_t table = table_t(table_size);
+        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+
+        auto& buckets = table.m_buckets;
+        auto s = T::calc_buckets(table_size);
+
+        for (size_t i = 0; i < s.buckets; i++) {
+            bucket_t& b = buckets[i];
+
+            b.m_bits = serialize<uint64_t>::read(in);
+
+            size_t words = bucket_t::bits2alloc(b.m_bits);
+            b.m_data = std::make_unique<uint64_t[]>(words);
+            for (size_t j = 0; j < words; j++) {
+                b.m_data[j] = serialize<uint64_t>::read(in);
+            }
+        }
+
+        return table;
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs, size_t table_size) {
+        for (size_t i = 0; i < table_size; i++) {
+            if (!gen_equal_diagnostic(lhs.get(i) == rhs.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+};
+
+}

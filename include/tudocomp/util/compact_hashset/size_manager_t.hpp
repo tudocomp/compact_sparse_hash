@@ -155,6 +155,11 @@ struct serialize<compact_sparse_hashset::size_manager_t> {
         ret.m_load_factor = serialize<float>::read(in);
         return ret;
     }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(m_capacity_log2)
+        && gen_equal_check(m_size)
+        && gen_equal_check(m_load_factor);
+    }
 };
 
 }

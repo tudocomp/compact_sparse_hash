@@ -216,6 +216,10 @@ struct serialize<compact_sparse_hashset::xorshift_t> {
         ret.m_w_mask = serialize<uint64_t>::read(in);
         return ret;
     }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(m_j)
+        && gen_equal_check(m_w_mask);
+    }
 };
 
 template<>
@@ -235,6 +239,11 @@ struct serialize<poplar::bijective_hash::Xorshift> {
         ret.shift_ = serialize<uint64_t>::read(in);
         ret.univ_size_ = poplar::bijective_hash::size_p2_t(serialize<uint64_t>::read(in));
         return ret;
+    }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(shift_)
+        && gen_equal_check(univ_size_.bits());
+
     }
 };
 

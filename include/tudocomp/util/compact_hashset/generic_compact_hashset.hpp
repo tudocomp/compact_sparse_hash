@@ -330,7 +330,7 @@ struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>>
         serialize<hash_t>::write(out, val.m_hash);
 
         serialize<storage_t>::write(out, val.m_storage, val.table_size(), val.storage_widths());
-        serialize<placement_t>::write(out, val.m_placement);
+        serialize<placement_t>::write(out, val.m_placement, val.table_size());
     }
     static T read(std::istream& in) {
         using namespace compact_sparse_hashset;
@@ -345,12 +345,28 @@ struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>>
         ret.m_hash = std::move(hash);
 
         auto storage = serialize<storage_t>::read(in, ret.table_size(), ret.storage_widths());
-        auto placement = serialize<placement_t>::read(in);
+        auto placement = serialize<placement_t>::read(in, ret.table_size());
 
         ret.m_storage = std::move(storage);
         ret.m_placement = std::move(placement);
 
         return ret;
+    }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        if (!(gen_equal_check(table_size()) && gen_equal_check(storage_widths()))) {
+            return false;
+        }
+
+        auto table_size = lhs.table_size();
+        auto storage_widths = lhs.storage_widths();
+
+        bool deep_eq = gen_equal_check(m_sizing)
+        && gen_equal_check(m_key_width)
+        && gen_equal_check(m_hash)
+        && gen_equal_check(m_storage, table_size, storage_widths)
+        && gen_equal_check(m_placement, table_size);
+
+        return deep_eq;
     }
 };
 
