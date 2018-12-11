@@ -82,9 +82,10 @@ The `generic_hashset_t` has the following helpful methods:
  - `lookup_insert(key)` additionally inserts `key` if not present,
  - `lookup_insert_key_width(key, key_width)` works like above, but additionally increases the bit widths of the keys to `key_width`,
  - `grow_key_width(key_width)` increases the bit width of the keys to `key_width`.
+
 All `lookup*` methods return an `entry_t` object, which contains an _id_ (`uint64_t`)
 which is unique and immutable until the hash table needs to be rehashed.
-This _id_ is computed based on the displament setting:
+This _id_ is computed based on the displacement setting:
  - For `displacement_t<T>` it is the position in the hash table the entry was hashed to. The id needs `log2(table_size)` bits.
  - For `cv_bvs_t` it is the local position within its group (the approach `cv_bvs_t` clusters all entries with the same initial address to one group)
    It is `id = initial_address | (local_position << log2(table_size))`. The id needs `log2(table_size) + log2(x)` bits, where `x` is the size of the specific group (which is at most the maximal number of collisions at an initial address) .
