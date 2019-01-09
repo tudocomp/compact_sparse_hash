@@ -74,8 +74,9 @@ Each of these hash table classes is templated by the following parameters:
  - how to maintain entries that are stored not at their initial address, i.e., how the displacement works
    - `cv_bvs_t` : Approach by Cleary using two bit vectors setting a virgin and change bit
    - `displacement_t<T>`: using a displacement array represented by `T`, which can be
-     - `compact_displacement_table_t`: the recursive m-Bonsai approach of [3]
+     - `compact_displacement_table_t<size_t i>`: the recursive m-Bonsai approach of [3], where we implemented the simpler practical approach that uses an integer array with fixed bit-width `i` and an auxiliary `std::unordered_map<size_t,size_t>` for storing displacement values that cannot be represented with `i` bits.
      - `elias_gamma_displacement_table_t`: the gamma m-Bonsai approach of [3]
+     - `naive_displacement_table_t`: stores the displacement array as a plain array with `size_t` integers (for debug purposes)
 
 The `generic_hashset_t` has the following helpful methods:
  - `lookup(key)` looks up a key and returns an `entry_t`,
