@@ -155,7 +155,7 @@ private:
 }} //ns - poplar::bijective_hash
 
 
-namespace tdc {namespace compact_sparse_hashset {
+namespace tdc {namespace compact_hash {
 
 class xorshift_t {
     uint64_t m_j;
@@ -199,17 +199,17 @@ using poplar_xorshift_t = poplar::bijective_hash::Xorshift;
 }
 
 template<>
-struct serialize<compact_sparse_hashset::xorshift_t> {
-    using T = compact_sparse_hashset::xorshift_t;
+struct serialize<compact_hash::xorshift_t> {
+    using T = compact_hash::xorshift_t;
 
     static void write(std::ostream& out, T const& val) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash;
 
         serialize<uint64_t>::write(out, val.m_j);
         serialize<uint64_t>::write(out, val.m_w_mask);
     }
     static T read(std::istream& in) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash;
 
         T ret;
         ret.m_j = serialize<uint64_t>::read(in);
@@ -227,13 +227,13 @@ struct serialize<poplar::bijective_hash::Xorshift> {
     using T = poplar::bijective_hash::Xorshift;
 
     static void write(std::ostream& out, T const& val) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash;
 
         serialize<uint64_t>::write(out, val.shift_);
         serialize<uint64_t>::write(out, val.univ_size_.bits());
     }
     static T read(std::istream& in) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash;
 
         T ret;
         ret.shift_ = serialize<uint64_t>::read(in);

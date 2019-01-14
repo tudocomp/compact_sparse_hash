@@ -4,48 +4,15 @@
 #include <algorithm>
 
 #include <tudocomp/util/compact_hashset/generic_compact_hashset.hpp>
-#include <tudocomp/util/compact_hashset/hash_functions.hpp>
 #include <tudocomp/util/compact_hashset/index_structure/displacement_t.hpp>
 #include <tudocomp/util/compact_hashset/index_structure/cv_bvs_t.hpp>
 
+#include <tudocomp/util/compact_hashmap/generic_compact_hashmap.hpp>
+#include <tudocomp/util/compact_hashmap/index_structure/displacement_t.hpp>
+#include <tudocomp/util/compact_hashmap/index_structure/cv_bvs_t.hpp>
+
+#include <tudocomp/util/compact_hash/common/hash_functions.hpp>
 #include <tudocomp/util/serialization.hpp>
-
-template<typename hash_t = tdc::compact_sparse_hashset::poplar_xorshift_t>
-using compact_sparse_displacement_hashset_t = tdc::compact_sparse_hashset::generic_hashset_t<
-    hash_t,
-    tdc::compact_sparse_hashset::displacement_t<
-        tdc::compact_sparse_hashset::compact_displacement_table_t<4>
-    >
->;
-
-
-template<typename hash_t = tdc::compact_sparse_hashset::poplar_xorshift_t>
-using compact_sparse_hashset_t = tdc::compact_sparse_hashset::generic_hashset_t<
-    hash_t,
-    tdc::compact_sparse_hashset::cv_bvs_t
->;
-
-
-template<typename hash_t = tdc::compact_sparse_hashset::poplar_xorshift_t>
-using compact_sparse_elias_displacement_hashset_t = tdc::compact_sparse_hashset::generic_hashset_t<
-    hash_t,
-    tdc::compact_sparse_hashset::displacement_t<
-        tdc::compact_sparse_hashset::elias_gamma_displacement_table_t<
-            tdc::compact_sparse_hashset::fixed_elias_gamma_bucket_size_t<1024>
-        >
-    >
->;
-
-template<typename hash_t = tdc::compact_sparse_hashset::poplar_xorshift_t>
-using compact_sparse_elias_displacement_hashset_2_t = tdc::compact_sparse_hashset::generic_hashset_t<
-    hash_t,
-    tdc::compact_sparse_hashset::displacement_t<
-        tdc::compact_sparse_hashset::elias_gamma_displacement_table_t<
-            tdc::compact_sparse_hashset::growing_elias_gamma_bucket_size_t
-        >
-    >
->;
-
 
 template<typename table_t, typename build_func>
 void serialize_test_builder(build_func f) {
@@ -144,18 +111,94 @@ void serialize_test() {
     });
 }
 
-TEST(serialize, compact_sparse_displacement_hashset_t) {
-    serialize_test<compact_sparse_displacement_hashset_t<>>();
+#define gen_test(name, ...)        \
+TEST(serialize, name) {            \
+    serialize_test<__VA_ARGS__>(); \
 }
 
-TEST(serialize, compact_sparse_hashset_t) {
-    serialize_test<compact_sparse_hashset_t<>>();
-}
+namespace chc = tdc::compact_hash;
 
-TEST(serialize, compact_sparse_elias_displacement_hashset_t) {
-    serialize_test<compact_sparse_elias_displacement_hashset_t<>>();
-}
+namespace chs = tdc::compact_sparse_hashset;
 
-TEST(serialize, compact_sparse_elias_displacement_hashset_2_t) {
-    serialize_test<compact_sparse_elias_displacement_hashset_2_t<>>();
-}
+gen_test(set_poplar_displacement_compact_4,
+    chs::generic_hashset_t<
+        chc::poplar_xorshift_t,
+        chs::displacement_t<
+            chs::compact_displacement_table_t<4>
+        >
+    >
+)
+
+gen_test(set_poplar_cv,
+    chs::generic_hashset_t<
+        chc::poplar_xorshift_t,
+        chs::cv_bvs_t
+    >
+)
+
+gen_test(set_poplar_displacement_elias_fixed_1024,
+    chs::generic_hashset_t<
+        chc::poplar_xorshift_t,
+        chs::displacement_t<
+            chs::elias_gamma_displacement_table_t<
+                chs::fixed_elias_gamma_bucket_size_t<1024>
+            >
+        >
+    >
+)
+
+gen_test(set_poplar_displacement_elias_growing,
+    chs::generic_hashset_t<
+        chc::poplar_xorshift_t,
+        chs::displacement_t<
+            chs::elias_gamma_displacement_table_t<
+                chs::growing_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
+// tdc::compact_sparse_hashmap::generic_hashmap_t<poplar::bijective_hash::Xorshift, tdc::compact_sparse_hashmap::buckets_bv_t<unsigned long>, tdc::compact_sparse_hashmap::cv_bvs_t>
+
+/*
+namespace chm = tdc::compact_sparse_hashmap;
+
+gen_test(map_poplar_displacement_compact_4,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::displacement_t<
+            chm::compact_displacement_table_t<4>
+        >
+    >
+)
+
+gen_test(map_poplar_cv,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::cv_bvs_t
+    >
+)
+
+gen_test(map_poplar_displacement_elias_fixed_1024,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::displacement_t<
+            chm::elias_gamma_displacement_table_t<
+                chm::fixed_elias_gamma_bucket_size_t<1024>
+            >
+        >
+    >
+)
+
+// tdc::compact_sparse_hashmap::generic_hashmap_t<poplar::bijective_hash::Xorshift, tdc::compact_sparse_hashmap::buckets_bv_t<unsigned long>, tdc::compact_sparse_hashmap::cv_bvs_t>
+gen_test(map_poplar_displacement_elias_growing,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::displacement_t<
+            chm::elias_gamma_displacement_table_t<
+                chm::growing_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+*/

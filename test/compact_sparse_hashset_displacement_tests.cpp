@@ -4,10 +4,10 @@
 #include <algorithm>
 
 #include <tudocomp/util/compact_hashset/generic_compact_hashset.hpp>
-#include <tudocomp/util/compact_hashset/hash_functions.hpp>
+#include <tudocomp/util/compact_hash/common/hash_functions.hpp>
 #include <tudocomp/util/compact_hashset/index_structure/displacement_t.hpp>
 
-template<typename hash_t = tdc::compact_sparse_hashset::poplar_xorshift_t>
+template<typename hash_t = tdc::compact_hash::poplar_xorshift_t>
 using compact_sparse_displacement_hashset_t = tdc::compact_sparse_hashset::generic_hashset_t<
     hash_t,
     tdc::compact_sparse_hashset::displacement_t<

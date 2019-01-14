@@ -7,7 +7,7 @@ using namespace tdc;
 using namespace tdc::compact_sparse_hashmap;
 
 template<typename val_t>
-using compact_hash = COMPACT_TABLE <val_t>;
+using compact_hash_type = COMPACT_TABLE <val_t>;
 
 struct Init {
     uint32_t value = 0;
@@ -125,15 +125,15 @@ void test_hashfn() {
 }
 
 TEST(hashfn, xorshift) {
-    test_hashfn<xorshift_t>();
+    test_hashfn<compact_hash::xorshift_t>();
 }
 
 TEST(hashfn, poplar_xorshift) {
-    test_hashfn<poplar_xorshift_t>();
+    test_hashfn<compact_hash::poplar_xorshift_t>();
 }
 
 TEST(hash, insert) {
-    auto ch = compact_hash<Init>(256, 16, 1);
+    auto ch = compact_hash_type<Init>(256, 16, 1);
     ch.insert(44, Init(0));
     ch.insert(45, Init(1));
     ch.insert(45, Init(2));
@@ -159,7 +159,7 @@ TEST(hash, insert) {
 }
 
 TEST(hash, insert_wrap) {
-    auto ch = compact_hash<Init>(4, 16, 1);
+    auto ch = compact_hash_type<Init>(4, 16, 1);
     ch.insert(3, Init(0));
     ch.insert(7, Init(1));
     ch.insert(15, Init(2));
@@ -171,7 +171,7 @@ TEST(hash, insert_wrap) {
 }
 
 TEST(hash, insert_move_wrap) {
-    auto ch = compact_hash<Init>(8, 16, 1);
+    auto ch = compact_hash_type<Init>(8, 16, 1);
 
     ch.insert(3, Init(0));
     ch.insert(3 + 8, Init(1));
@@ -197,7 +197,7 @@ TEST(hash, insert_move_wrap) {
 }
 
 TEST(hash, cornercase) {
-    auto ch = compact_hash<Init>(8, 16, 1);
+    auto ch = compact_hash_type<Init>(8, 16, 1);
 
     ch.insert(0, Init(0));
     ch.insert(0 + 8, Init(1));
@@ -214,7 +214,7 @@ TEST(hash, cornercase) {
 TEST(hash, grow) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10, 1); // check that it grows to minimum 2
+    auto ch = compact_hash_type<Init>(0, 10, 1); // check that it grows to minimum 2
 
     auto add = [&](auto key, auto&& v0, auto&& v1) {
         ch.insert(key, std::move(v0));
@@ -239,7 +239,7 @@ TEST(hash, grow) {
 TEST(hash, grow_bits) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 10, 1); // check that it grows to minimum 2
+    auto ch = compact_hash_type<Init>(0, 10, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
 
@@ -268,7 +268,7 @@ TEST(hash, grow_bits) {
 TEST(hash, grow_bits_larger) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0, 1); // check that it grows to minimum 2
+    auto ch = compact_hash_type<Init>(0, 0, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
 
@@ -292,7 +292,7 @@ TEST(hash, grow_bits_larger) {
 TEST(hash, grow_bits_larger_address) {
     std::vector<std::pair<uint64_t, Init>> inserted;
 
-    auto ch = compact_hash<Init>(0, 0, 1); // check that it grows to minimum 2
+    auto ch = compact_hash_type<Init>(0, 0, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
 
@@ -321,7 +321,7 @@ TEST(hash, grow_bits_larger_address) {
 }
 
 struct find_or_insert_tracer_t {
-    compact_hash<uint64_t> ch;
+    compact_hash_type<uint64_t> ch;
     find_or_insert_tracer_t(size_t bit_width):
         ch {0, bit_width} {}
     size_t i = 0;
@@ -536,7 +536,7 @@ constexpr size_t load_max = 100000;
 
 template<typename val_t = uint64_t, bool use_index = false, bool grow_values = false>
 void load_factor_test(float z) {
-    auto table = compact_hash<val_t>(0, 1);
+    auto table = compact_hash_type<val_t>(0, 1);
     // TODO DEBUG
     // table.debug_state();
 
