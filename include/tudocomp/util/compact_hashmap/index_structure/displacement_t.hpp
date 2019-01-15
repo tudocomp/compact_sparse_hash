@@ -10,54 +10,15 @@
 #include <tudocomp/ds/IntPtr.hpp>
 
 #include <tudocomp/util/compact_hash/index_structure/elias_gamma_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/compact_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
 
 #include "../storage/val_quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashmap {
 
-struct naive_displacement_table_t {
-    std::vector<size_t> m_displace;
-    inline naive_displacement_table_t(size_t table_size) {
-        m_displace.reserve(table_size);
-        m_displace.resize(table_size);
-    }
-    inline size_t get(size_t pos) {
-        return m_displace[pos];
-    }
-    inline void set(size_t pos, size_t val) {
-        m_displace[pos] = val;
-    }
-};
 
 
-struct compact_displacement_table_t {
-    using elem_t = uint_t<4>;
-
-    IntVector<elem_t> m_displace;
-    std::unordered_map<size_t, size_t> m_spill;
-    inline compact_displacement_table_t(size_t table_size) {
-        m_displace.reserve(table_size);
-        m_displace.resize(table_size);
-    }
-    inline size_t get(size_t pos) {
-        size_t max = elem_t(std::numeric_limits<elem_t>::max());
-        size_t tmp = elem_t(m_displace[pos]);
-        if (tmp == max) {
-            return m_spill[pos];
-        } else {
-            return tmp;
-        }
-    }
-    inline void set(size_t pos, size_t val) {
-        size_t max = elem_t(std::numeric_limits<elem_t>::max());
-        if (val >= max) {
-            m_displace[pos] = max;
-            m_spill[pos] = val;
-        } else {
-            m_displace[pos] = val;
-        }
-    }
-};
 
 template<typename displacement_table_t>
 struct displacement_t {

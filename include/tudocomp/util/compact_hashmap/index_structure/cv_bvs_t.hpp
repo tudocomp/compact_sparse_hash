@@ -6,9 +6,14 @@
 #include <tudocomp/ds/IntPtr.hpp>
 #include "../storage/val_quot_ptrs_t.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashmap {
 
 struct cv_bvs_t {
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     IntVector<uint_t<2>> m_cv;
 
     inline cv_bvs_t(size_t table_size) {
