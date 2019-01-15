@@ -10,7 +10,7 @@
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
 
-namespace tdc {namespace compact_sparse_hashmap {
+namespace tdc {namespace compact_hash {
 
 template<typename base_type>
 struct alloc_callback_ret_t {
@@ -288,7 +288,6 @@ struct elias_gamma_bucket_t {
             bit_cursor,
         };
     }
-
     auto context(uint64_t& element_cursor, uint64_t& bit_cursor) const {
         return context_t {
             m_data,
@@ -419,4 +418,68 @@ struct elias_gamma_displacement_table_t {
     }
 };
 
-}}
+}
+
+template<typename elias_gamma_bucket_size_t>
+struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>> {
+    using T = compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+    static void write(std::ostream& out, T const& val, size_t table_size) {
+        using bucket_t = compact_hash::elias_gamma_bucket_t;
+        using table_t =
+            compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+        table_t const& table = val;
+        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+
+        auto& buckets = table.m_buckets;
+        auto s = T::calc_buckets(table_size);
+        for (size_t i = 0; i < s.buckets; i++) {
+            bucket_t const& b = buckets[i];
+
+            serialize<uint64_t>::write(out, b.m_bits);
+
+            size_t words = bucket_t::bits2alloc(b.m_bits);
+            for (size_t j = 0; j < words; j++) {
+                serialize<uint64_t>::write(out, b.m_data[j]);
+            }
+        }
+    }
+
+    static T read(std::istream& in, size_t table_size) {
+        using bucket_t = compact_hash::elias_gamma_bucket_t;
+        using table_t =
+            compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+        table_t table = table_t(table_size);
+        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+
+        auto& buckets = table.m_buckets;
+        auto s = T::calc_buckets(table_size);
+
+        for (size_t i = 0; i < s.buckets; i++) {
+            bucket_t& b = buckets[i];
+
+            b.m_bits = serialize<uint64_t>::read(in);
+
+            size_t words = bucket_t::bits2alloc(b.m_bits);
+            b.m_data = std::make_unique<uint64_t[]>(words);
+            for (size_t j = 0; j < words; j++) {
+                b.m_data[j] = serialize<uint64_t>::read(in);
+            }
+        }
+
+        return table;
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs, size_t table_size) {
+        for (size_t i = 0; i < table_size; i++) {
+            if (!gen_equal_diagnostic(lhs.get(i) == rhs.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+};
+
+}
