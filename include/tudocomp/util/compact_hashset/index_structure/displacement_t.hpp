@@ -11,7 +11,8 @@
 
 #include <tudocomp/util/serialization.hpp>
 
-#include "elias_gamma_displacement_table_t.hpp"
+#include <tudocomp/util/compact_hash/common/index_structure/elias_gamma_displacement_table_t.hpp>
+
 #include "../storage/quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashset {

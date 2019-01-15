@@ -10,6 +10,8 @@
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_hash {
 
 template<typename base_type>
