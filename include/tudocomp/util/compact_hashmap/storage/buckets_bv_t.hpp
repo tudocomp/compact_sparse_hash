@@ -3,8 +3,8 @@
 #include <memory>
 
 #include <tudocomp/util/compact_hash/util.hpp>
+#include <tudocomp/util/compact_hash/storage/sparse_pos_t.hpp>
 #include "bucket_t.hpp"
-#include "sparse_pos_t.hpp"
 
 // Table for uninitalized elements
 
@@ -28,7 +28,7 @@ using namespace compact_hash;
 
             m_buckets = std::make_unique<my_bucket_t[]>(buckets_size);
         }
-        using table_pos_t = sparse_pos_t<my_bucket_t, bucket_layout_t, val_t>;
+        using table_pos_t = sparse_pos_t<my_bucket_t, bucket_layout_t>;
 
         // pseudo-iterator for iterating over bucket elements
         // NB: does not wrap around!

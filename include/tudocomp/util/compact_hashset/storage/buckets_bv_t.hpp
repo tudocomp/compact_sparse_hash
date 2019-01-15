@@ -3,8 +3,8 @@
 #include <memory>
 
 #include <tudocomp/util/compact_hash/util.hpp>
+#include <tudocomp/util/compact_hash/storage/sparse_pos_t.hpp>
 #include "bucket_t.hpp"
-#include "sparse_pos_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
