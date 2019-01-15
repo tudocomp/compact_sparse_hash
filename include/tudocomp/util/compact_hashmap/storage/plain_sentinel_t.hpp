@@ -5,6 +5,8 @@
 #include <tudocomp/util/compact_hash/util.hpp>
 #include "quot_val_data.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 // Table for uninitalized elements
 
 namespace tdc {namespace compact_sparse_hashmap {

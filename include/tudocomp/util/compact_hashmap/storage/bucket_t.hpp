@@ -10,6 +10,8 @@
 #include "val_quot_ptrs_t.hpp"
 #include "quot_val_data.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;
 
