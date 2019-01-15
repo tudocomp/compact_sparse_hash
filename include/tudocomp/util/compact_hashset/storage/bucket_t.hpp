@@ -57,7 +57,7 @@ public:
     /// `bv` and `quot_width`.
     inline bucket_t(uint64_t bv, quot_width_t width) {
         if (bv != 0) {
-            auto qvd_size = qvd_data_size(popcount(bv), width);
+            auto qvd_size = qvd_data_size(size(bv), width);
 
             m_data = std::make_unique<uint64_t[]>(qvd_size + 1);
             m_data[0] = bv;
