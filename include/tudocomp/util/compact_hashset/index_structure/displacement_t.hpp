@@ -19,8 +19,6 @@
 
 namespace tdc {namespace compact_sparse_hashset {
 
-
-
 template<typename displacement_table_t>
 class displacement_t {
     template<typename T>
@@ -173,6 +171,7 @@ public:
         };
     }
 };
+
 }
 
 template<typename displacement_table_t>

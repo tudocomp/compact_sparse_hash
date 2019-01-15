@@ -15,15 +15,21 @@
 
 #include "../storage/val_quot_ptrs_t.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashmap {
 
-
-
-
 template<typename displacement_table_t>
-struct displacement_t {
+class displacement_t {
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     displacement_table_t m_displace;
 
+    displacement_t(displacement_table_t&& table):
+        m_displace(std::move(table)) {}
+
+public:
     inline displacement_t(size_t table_size):
         m_displace(table_size) {}
 
@@ -168,4 +174,27 @@ struct displacement_t {
     }
 };
 
-}}
+}
+
+template<typename displacement_table_t>
+struct serialize<compact_sparse_hashmap::displacement_t<displacement_table_t>> {
+    using T = compact_sparse_hashmap::displacement_t<displacement_table_t>;
+
+    static void write(std::ostream& out, T const& val, size_t table_size) {
+        serialize<displacement_table_t>::write(out, val.m_displace, table_size);
+    }
+
+    static T read(std::istream& in, size_t table_size) {
+        auto displace =
+            serialize<displacement_table_t>::read(in, table_size);
+
+        return T {
+            std::move(displace)
+        };
+    }
+    static bool equal_check(T const& lhs, T const& rhs, size_t table_size) {
+        return gen_equal_check(m_displace, table_size);
+    }
+};
+
+}
