@@ -7,8 +7,7 @@
 
 #include <tudocomp/util/compact_hash/util.hpp>
 
-namespace tdc {namespace compact_sparse_hashset {
-using namespace compact_hash;
+namespace tdc {namespace compact_hash {
 
 /// This type represents a position inside the compact sparse hashtable.
 ///
