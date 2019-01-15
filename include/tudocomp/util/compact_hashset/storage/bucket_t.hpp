@@ -6,13 +6,14 @@
 #include <algorithm>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "quot_ptrs_t.hpp"
 #include "quot_data.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
 namespace tdc {namespace compact_sparse_hashset {
+using namespace compact_hash;
 
 /// A bucket of quotient-value pairs in a sparse compact hashtable.
 ///
