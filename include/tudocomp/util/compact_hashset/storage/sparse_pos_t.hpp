@@ -16,9 +16,6 @@ namespace tdc {namespace compact_sparse_hashset {
 template<typename bucket_t, typename bucket_layout_t>
 class sparse_pos_t {
 private:
-    using qvd_t = quot_data_seq_t;
-    using quot_width_t = uint8_t;
-
     bucket_t* m_buckets;
 
 public:

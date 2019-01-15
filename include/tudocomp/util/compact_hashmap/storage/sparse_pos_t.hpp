@@ -16,9 +16,6 @@ namespace tdc {namespace compact_sparse_hashmap {
 template<typename bucket_t, typename bucket_layout_t, typename val_t>
 class sparse_pos_t {
 private:
-    using qvd_t = quot_val_data_seq_t<val_t>;
-    using widths_t = typename qvd_t::QVWidths;
-
     bucket_t* m_buckets;
 
 public:
