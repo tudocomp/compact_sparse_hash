@@ -1,9 +1,10 @@
 #pragma once
 
-#include "util.hpp"
-#include "size_manager_t.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
+#include <tudocomp/util/compact_hash/size_manager_t.hpp>
 
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
 
 template<typename hash_t, typename storage_t, typename placement_t>
 class generic_hashmap_t {

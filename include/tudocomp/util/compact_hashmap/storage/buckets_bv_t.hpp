@@ -2,13 +2,15 @@
 
 #include <memory>
 
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "bucket_t.hpp"
 #include "sparse_pos_t.hpp"
 
 // Table for uninitalized elements
 
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
+
     template<typename val_t>
     struct buckets_bv_t {
         using my_bucket_t = bucket_t<val_t, 8>;

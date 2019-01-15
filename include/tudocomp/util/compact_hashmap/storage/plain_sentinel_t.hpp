@@ -2,12 +2,14 @@
 
 #include <memory>
 
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "quot_val_data.hpp"
 
 // Table for uninitalized elements
 
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
+
     template<typename val_t>
     struct plain_sentinel_t {
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;

@@ -6,11 +6,12 @@
 #include <algorithm>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "val_quot_ptrs_t.hpp"
 #include "quot_val_data.hpp"
 
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
 
 /// A bucket of quotient-value pairs in a sparse compact hashtable.
 ///
