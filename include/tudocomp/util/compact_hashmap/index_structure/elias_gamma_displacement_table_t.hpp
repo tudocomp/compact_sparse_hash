@@ -9,7 +9,6 @@
 #include <tudocomp/util/int_coder.hpp>
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
-#include "../storage/val_quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashmap {
 

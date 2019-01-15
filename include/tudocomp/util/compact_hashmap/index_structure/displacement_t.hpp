@@ -8,9 +8,9 @@
 #include <tudocomp/util/int_coder.hpp>
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
-#include "../storage/val_quot_ptrs_t.hpp"
 
 #include "elias_gamma_displacement_table_t.hpp"
+#include "../storage/val_quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashmap {
 
