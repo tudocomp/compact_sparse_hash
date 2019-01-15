@@ -140,10 +140,6 @@ struct elias_gamma_bucket_t {
         return sink_t<decltype(f)> { f };
     }
 
-    inline size_t bits2alloc(uint64_t bits) {
-        return (bits + 63ull) >> 6ull;
-    }
-
     inline void realloc(size_t old_size, size_t new_size) {
         auto n = std::make_unique<uint64_t[]>(new_size);
         for (size_t i = 0; i < old_size; i++) {
@@ -293,8 +289,17 @@ struct elias_gamma_bucket_t {
         };
     }
 
-    std::unique_ptr<uint64_t[]> m_data;
-    uint64_t m_bits = 0;
+    auto context(uint64_t& element_cursor, uint64_t& bit_cursor) const {
+        return context_t {
+            m_data,
+            m_bits,
+            element_cursor,
+            bit_cursor,
+        };
+    }
+
+    mutable std::unique_ptr<uint64_t[]> m_data;
+    mutable uint64_t m_bits = 0;
 
     inline elias_gamma_bucket_t(size_t size)
     {
@@ -316,36 +321,77 @@ struct elias_gamma_bucket_t {
     }
 
     inline elias_gamma_bucket_t() {}
+
+    inline static size_t bits2alloc(uint64_t bits) {
+        return (bits + 63ull) >> 6ull;
+    }
 };
 
+/// Buckets take up exactly `N` elements.
+template<size_t N>
+struct fixed_elias_gamma_bucket_size_t {
+    inline static size_t bucket_size(size_t table_size) { return N; }
+};
+
+/// Bucket sizes grow according to the table size.
+struct growing_elias_gamma_bucket_size_t {
+    inline static size_t bucket_size(size_t table_size) {
+        // TODO: Add reference for the growth formula.
+        return std::pow(std::log2(table_size), 3.0 / 2.0);
+    }
+};
+
+/// Stores displacement entries as elias-gamma encoded integers.
+///
+/// To prevent large scanning costs, the entries are split up into buckets.
+///
+/// The size of each buckets is determined by `elias_gamma_bucket_size_t`.
+template<typename elias_gamma_bucket_size_t>
 struct elias_gamma_displacement_table_t {
-    uint64_t m_elem_cursor = 0;
-    uint64_t m_bit_cursor = 0;
-    size_t m_bucket_cursor = 0;
+    mutable uint64_t m_elem_cursor = 0;
+    mutable uint64_t m_bit_cursor = 0;
+    mutable size_t m_bucket_cursor = 0;
 
     size_t m_bucket_size;
 
     std::unique_ptr<elias_gamma_bucket_t[]> m_buckets;
 
-    inline elias_gamma_displacement_table_t(size_t table_size) {
-        m_bucket_size = 1024;
-        //m_bucket_size = std::pow(std::log2(table_size), 3.0 / 2.0);
+    using bucket_size_t = elias_gamma_bucket_size_t;
 
-        size_t full_buckets = table_size / m_bucket_size;
-        size_t remainder_bucket_size = table_size % m_bucket_size;
+    struct BucketSizes {
+        size_t full_buckets;
+        size_t remainder_bucket_size;
+        size_t buckets;
+    };
+    inline static BucketSizes calc_buckets(size_t table_size) {
+        auto bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
+
+        size_t full_buckets = table_size / bucket_size;
+        size_t remainder_bucket_size = table_size % bucket_size;
         size_t buckets = full_buckets + (remainder_bucket_size != 0);
 
-        m_buckets = std::make_unique<elias_gamma_bucket_t[]>(buckets);
+        return {
+            full_buckets,
+            remainder_bucket_size,
+            buckets,
+        };
+    }
 
-        for (size_t i = 0; i < full_buckets; i++) {
+    inline elias_gamma_displacement_table_t(size_t table_size) {
+        m_bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
+        auto r = calc_buckets(table_size);
+
+        m_buckets = std::make_unique<elias_gamma_bucket_t[]>(r.buckets);
+
+        for (size_t i = 0; i < r.full_buckets; i++) {
             m_buckets[i] = elias_gamma_bucket_t(m_bucket_size);
         }
-        if (remainder_bucket_size != 0) {
-            m_buckets[buckets - 1] = elias_gamma_bucket_t(remainder_bucket_size);
+        if (r.remainder_bucket_size != 0) {
+            m_buckets[r.buckets - 1] = elias_gamma_bucket_t(r.remainder_bucket_size);
         }
     }
 
-    inline size_t get(size_t pos) {
+    inline size_t get(size_t pos) const {
         size_t bucket = pos / m_bucket_size;
         size_t offset = pos % m_bucket_size;
         if (bucket != m_bucket_cursor) {
@@ -354,10 +400,9 @@ struct elias_gamma_displacement_table_t {
             m_bit_cursor = 0;
         }
 
-        auto ctx = m_buckets[m_bucket_cursor]
-            .context(m_elem_cursor, m_bit_cursor);
-
-        return ctx.get(offset);
+        return m_buckets[m_bucket_cursor]
+            .context(m_elem_cursor, m_bit_cursor)
+            .get(offset);
     }
     inline void set(size_t pos, size_t val) {
         size_t bucket = pos / m_bucket_size;
@@ -368,10 +413,9 @@ struct elias_gamma_displacement_table_t {
             m_bit_cursor = 0;
         }
 
-        auto ctx = m_buckets[m_bucket_cursor]
-            .context(m_elem_cursor, m_bit_cursor);
-
-        ctx.set(offset, val);
+        m_buckets[m_bucket_cursor]
+            .context(m_elem_cursor, m_bit_cursor)
+            .set(offset, val);
     }
 };
 

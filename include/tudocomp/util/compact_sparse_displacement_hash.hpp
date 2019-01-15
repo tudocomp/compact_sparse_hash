@@ -16,7 +16,7 @@ using compact_sparse_displacement_hashmap_t = generic_hashmap_t<hash_t,
 template<typename val_t, typename hash_t = compact_hash::poplar_xorshift_t>
 using compact_sparse_elias_displacement_hashmap_t = generic_hashmap_t<hash_t,
     buckets_bv_t<val_t>,
-    displacement_t<elias_gamma_displacement_table_t>
+    displacement_t<elias_gamma_displacement_table_t<fixed_elias_gamma_bucket_size_t<1024>>>
 >;
 
 }}
