@@ -160,9 +160,6 @@ gen_test_set(set_poplar_displacement_elias_growing,
     >
 )
 
-// tdc::compact_sparse_hashmap::generic_hashmap_t<poplar::bijective_hash::Xorshift, tdc::compact_sparse_hashmap::buckets_bv_t<unsigned long>, tdc::compact_sparse_hashmap::cv_bvs_t>
-
-//*
 template<typename table_t>
 void serialize_test_map() {
     serialize_test_builder<table_t>([] {
@@ -334,4 +331,3 @@ gen_test_map(map_poplar_ps_displacement_elias_growing,
         >
     >
 )
-//*/
