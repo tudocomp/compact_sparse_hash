@@ -458,7 +458,7 @@ struct serialize<compact_sparse_hashmap::generic_hashmap_t<hash_t, storage_t, pl
         return ret;
     }
     static bool equal_check(T const& lhs, T const& rhs) {
-        if (!(gen_equal_check(table_size()) && gen_equal_check(storage_widths()))) {
+        if (!(gen_equal_check(table_size()) && gen_equal_check(storage_widths().quot_width)&& gen_equal_check(storage_widths().val_width))) {
             return false;
         }
 

@@ -20,6 +20,7 @@ namespace tdc {
 
     template<typename T>
     struct serialize {
+        //*
         static void write(std::ostream& out, T const& val) {
             CHECK(false) << "Need to implement the trait for type " << typeid(T).name();
         }
@@ -30,11 +31,28 @@ namespace tdc {
             CHECK(false) << "Need to implement the trait for type " << typeid(T).name();
             return false;
         }
+        //*/
     };
 
     template<>
     struct serialize<uint8_t> {
         using T = uint8_t;
+
+        static void write(std::ostream& out, T const& val) {
+            out.put(val);
+        }
+        static T read(std::istream& in) {
+            char v;
+            in.get(v);
+            return v;
+        }
+        static bool equal_check(T const& lhs, T const& rhs) {
+            return gen_equal_diagnostic(lhs == rhs);
+        }
+    };
+    template<>
+    struct serialize<bool> {
+        using T = bool;
 
         static void write(std::ostream& out, T const& val) {
             out.put(val);
