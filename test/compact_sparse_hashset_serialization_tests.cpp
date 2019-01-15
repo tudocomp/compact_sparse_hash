@@ -10,6 +10,8 @@
 #include <tudocomp/util/compact_hashmap/generic_compact_hashmap.hpp>
 #include <tudocomp/util/compact_hashmap/index_structure/displacement_t.hpp>
 #include <tudocomp/util/compact_hashmap/index_structure/cv_bvs_t.hpp>
+#include <tudocomp/util/compact_hashmap/storage/plain_sentinel_t.hpp>
+#include <tudocomp/util/compact_hashmap/storage/buckets_bv_t.hpp>
 
 #include <tudocomp/util/compact_hash/common/hash_functions.hpp>
 #include <tudocomp/util/serialization.hpp>
@@ -161,27 +163,32 @@ gen_test(set_poplar_displacement_elias_growing,
 // tdc::compact_sparse_hashmap::generic_hashmap_t<poplar::bijective_hash::Xorshift, tdc::compact_sparse_hashmap::buckets_bv_t<unsigned long>, tdc::compact_sparse_hashmap::cv_bvs_t>
 
 /*
+using val_t = uint64_t;
+
 namespace chm = tdc::compact_sparse_hashmap;
 
-gen_test(map_poplar_displacement_compact_4,
+gen_test(map_poplar_bbv_displacement_compact_4,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
+        chm::buckets_bv_t<val_t>,
         chm::displacement_t<
             chm::compact_displacement_table_t<4>
         >
     >
 )
 
-gen_test(map_poplar_cv,
+gen_test(map_poplar_bbv_cv,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
+        chm::buckets_bv_t<val_t>,
         chm::cv_bvs_t
     >
 )
 
-gen_test(map_poplar_displacement_elias_fixed_1024,
+gen_test(map_poplar_bbv_displacement_elias_fixed_1024,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
+        chm::buckets_bv_t<val_t>,
         chm::displacement_t<
             chm::elias_gamma_displacement_table_t<
                 chm::fixed_elias_gamma_bucket_size_t<1024>
@@ -190,10 +197,52 @@ gen_test(map_poplar_displacement_elias_fixed_1024,
     >
 )
 
-// tdc::compact_sparse_hashmap::generic_hashmap_t<poplar::bijective_hash::Xorshift, tdc::compact_sparse_hashmap::buckets_bv_t<unsigned long>, tdc::compact_sparse_hashmap::cv_bvs_t>
-gen_test(map_poplar_displacement_elias_growing,
+gen_test(map_poplar_bbv_displacement_elias_growing,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
+        chm::buckets_bv_t<val_t>,
+        chm::displacement_t<
+            chm::elias_gamma_displacement_table_t<
+                chm::growing_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
+gen_test(map_poplar_ps_displacement_compact_4,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::plain_sentinel_t<val_t>,
+        chm::displacement_t<
+            chm::compact_displacement_table_t<4>
+        >
+    >
+)
+
+gen_test(map_poplar_ps_cv,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::plain_sentinel_t<val_t>,
+        chm::cv_bvs_t
+    >
+)
+
+gen_test(map_poplar_ps_displacement_elias_fixed_1024,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::plain_sentinel_t<val_t>,
+        chm::displacement_t<
+            chm::elias_gamma_displacement_table_t<
+                chm::fixed_elias_gamma_bucket_size_t<1024>
+            >
+        >
+    >
+)
+
+gen_test(map_poplar_ps_displacement_elias_growing,
+    chm::generic_hashmap_t<
+        chc::poplar_xorshift_t,
+        chm::plain_sentinel_t<val_t>,
         chm::displacement_t<
             chm::elias_gamma_displacement_table_t<
                 chm::growing_elias_gamma_bucket_size_t
