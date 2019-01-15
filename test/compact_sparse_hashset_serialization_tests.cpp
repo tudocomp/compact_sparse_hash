@@ -168,25 +168,25 @@ void serialize_test_map() {
     serialize_test_builder<table_t>([] {
         auto ch = table_t(8, 16);
         ch.max_load_factor(1.0);
-        ch.lookup_insert(3);
-        ch.lookup_insert(3 + 8);
-        ch.lookup_insert(5);
-        ch.lookup_insert(5 + 8);
-        ch.lookup_insert(5 + 16);
-        ch.lookup_insert(5 + 24);
-        ch.lookup_insert(4);
+        ch.insert(3, 42);
+        ch.insert(3 + 8, 43);
+        ch.insert(5, 44);
+        ch.insert(5 + 8, 45);
+        ch.insert(5 + 16, 46);
+        ch.insert(5 + 24, 47);
+        ch.insert(4, 48);
         return ch;
     });
     serialize_test_builder<table_t>([] {
         auto ch = table_t(8, 16);
         ch.max_load_factor(1.0);
-        ch.lookup_insert(3);
-        ch.lookup_insert(3 + 8);
-        ch.lookup_insert(5);
-        ch.lookup_insert(5 + 8);
-        ch.lookup_insert(5 + 16);
-        ch.lookup_insert(5 + 24);
-        ch.lookup_insert(4);
+        ch.insert(3, 49);
+        ch.insert(3 + 8, 50);
+        ch.insert(5, 51);
+        ch.insert(5 + 8, 52);
+        ch.insert(5 + 16, 53);
+        ch.insert(5 + 24, 54);
+        ch.insert(4, 55);
         return ch;
     });
 
@@ -194,7 +194,7 @@ void serialize_test_map() {
         auto ch = table_t(0, 10);
 
         auto add = [&](auto key) {
-            ch.lookup_insert(key);
+            ch.insert(key, key * 3);
         };
 
         for(size_t i = 0; i < 1000; i++) {
@@ -212,7 +212,7 @@ void serialize_test_map() {
         auto add = [&](auto key) {
             bits = std::max(bits, tdc::bits_for(key));
 
-            ch.lookup_insert_key_width(key, bits);
+            ch.insert_key_width(key, key * 4, bits);
 
         };
 
@@ -230,7 +230,7 @@ void serialize_test_map() {
 
         auto add = [&](auto key) {
             bits = std::max(bits, tdc::bits_for(key));
-            ch.lookup_insert_key_width(key, bits);
+            ch.insert_key_width(key, key * 5, bits);
         };
 
 
