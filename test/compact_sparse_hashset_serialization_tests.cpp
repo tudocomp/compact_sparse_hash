@@ -35,7 +35,7 @@ void serialize_test_builder(build_func f) {
 
 
 template<typename table_t>
-void serialize_test() {
+void serialize_test_set() {
     serialize_test_builder<table_t>([] {
         auto ch = table_t(8, 16);
         ch.max_load_factor(1.0);
@@ -113,16 +113,16 @@ void serialize_test() {
     });
 }
 
-#define gen_test(name, ...)        \
+#define gen_test_set(name, ...)        \
 TEST(serialize, name) {            \
-    serialize_test<__VA_ARGS__>(); \
+    serialize_test_set<__VA_ARGS__>(); \
 }
 
 namespace chc = tdc::compact_hash;
 
 namespace chs = tdc::compact_sparse_hashset;
 
-gen_test(set_poplar_displacement_compact_4,
+gen_test_set(set_poplar_displacement_compact_4,
     chs::generic_hashset_t<
         chc::poplar_xorshift_t,
         chs::displacement_t<
@@ -131,14 +131,14 @@ gen_test(set_poplar_displacement_compact_4,
     >
 )
 
-gen_test(set_poplar_cv,
+gen_test_set(set_poplar_cv,
     chs::generic_hashset_t<
         chc::poplar_xorshift_t,
         chs::cv_bvs_t
     >
 )
 
-gen_test(set_poplar_displacement_elias_fixed_1024,
+gen_test_set(set_poplar_displacement_elias_fixed_1024,
     chs::generic_hashset_t<
         chc::poplar_xorshift_t,
         chs::displacement_t<
@@ -149,7 +149,7 @@ gen_test(set_poplar_displacement_elias_fixed_1024,
     >
 )
 
-gen_test(set_poplar_displacement_elias_growing,
+gen_test_set(set_poplar_displacement_elias_growing,
     chs::generic_hashset_t<
         chc::poplar_xorshift_t,
         chs::displacement_t<
@@ -162,12 +162,96 @@ gen_test(set_poplar_displacement_elias_growing,
 
 // tdc::compact_sparse_hashmap::generic_hashmap_t<poplar::bijective_hash::Xorshift, tdc::compact_sparse_hashmap::buckets_bv_t<unsigned long>, tdc::compact_sparse_hashmap::cv_bvs_t>
 
-/*
+//*
+template<typename table_t>
+void serialize_test_map() {
+    serialize_test_builder<table_t>([] {
+        auto ch = table_t(8, 16);
+        ch.max_load_factor(1.0);
+        ch.lookup_insert(3);
+        ch.lookup_insert(3 + 8);
+        ch.lookup_insert(5);
+        ch.lookup_insert(5 + 8);
+        ch.lookup_insert(5 + 16);
+        ch.lookup_insert(5 + 24);
+        ch.lookup_insert(4);
+        return ch;
+    });
+    serialize_test_builder<table_t>([] {
+        auto ch = table_t(8, 16);
+        ch.max_load_factor(1.0);
+        ch.lookup_insert(3);
+        ch.lookup_insert(3 + 8);
+        ch.lookup_insert(5);
+        ch.lookup_insert(5 + 8);
+        ch.lookup_insert(5 + 16);
+        ch.lookup_insert(5 + 24);
+        ch.lookup_insert(4);
+        return ch;
+    });
+
+    serialize_test_builder<table_t>([] {
+        auto ch = table_t(0, 10);
+
+        auto add = [&](auto key) {
+            ch.lookup_insert(key);
+        };
+
+        for(size_t i = 0; i < 1000; i++) {
+            add(i);
+        }
+
+        return ch;
+    });
+
+    serialize_test_builder<table_t>([] {
+        auto ch = table_t(0, 10);
+
+        uint8_t bits = 1;
+
+        auto add = [&](auto key) {
+            bits = std::max(bits, tdc::bits_for(key));
+
+            ch.lookup_insert_key_width(key, bits);
+
+        };
+
+        for(size_t i = 0; i < 1000; i++) {
+            add(i);
+        }
+
+        return ch;
+    });
+
+    serialize_test_builder<table_t>([] {
+        auto ch = table_t(0, 0);
+
+        uint8_t bits = 1;
+
+        auto add = [&](auto key) {
+            bits = std::max(bits, tdc::bits_for(key));
+            ch.lookup_insert_key_width(key, bits);
+        };
+
+
+        for(size_t i = 0; i < 10000; i++) {
+            add(i*13ull);
+        }
+
+        return ch;
+    });
+}
+
+#define gen_test_map(name, ...)        \
+TEST(serialize, name) {            \
+    serialize_test_map<__VA_ARGS__>(); \
+}
+
 using val_t = uint64_t;
 
 namespace chm = tdc::compact_sparse_hashmap;
 
-gen_test(map_poplar_bbv_displacement_compact_4,
+gen_test_map(map_poplar_bbv_displacement_compact_4,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::buckets_bv_t<val_t>,
@@ -177,7 +261,7 @@ gen_test(map_poplar_bbv_displacement_compact_4,
     >
 )
 
-gen_test(map_poplar_bbv_cv,
+gen_test_map(map_poplar_bbv_cv,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::buckets_bv_t<val_t>,
@@ -185,7 +269,7 @@ gen_test(map_poplar_bbv_cv,
     >
 )
 
-gen_test(map_poplar_bbv_displacement_elias_fixed_1024,
+gen_test_map(map_poplar_bbv_displacement_elias_fixed_1024,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::buckets_bv_t<val_t>,
@@ -197,7 +281,7 @@ gen_test(map_poplar_bbv_displacement_elias_fixed_1024,
     >
 )
 
-gen_test(map_poplar_bbv_displacement_elias_growing,
+gen_test_map(map_poplar_bbv_displacement_elias_growing,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::buckets_bv_t<val_t>,
@@ -209,7 +293,7 @@ gen_test(map_poplar_bbv_displacement_elias_growing,
     >
 )
 
-gen_test(map_poplar_ps_displacement_compact_4,
+gen_test_map(map_poplar_ps_displacement_compact_4,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::plain_sentinel_t<val_t>,
@@ -219,7 +303,7 @@ gen_test(map_poplar_ps_displacement_compact_4,
     >
 )
 
-gen_test(map_poplar_ps_cv,
+gen_test_map(map_poplar_ps_cv,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::plain_sentinel_t<val_t>,
@@ -227,7 +311,7 @@ gen_test(map_poplar_ps_cv,
     >
 )
 
-gen_test(map_poplar_ps_displacement_elias_fixed_1024,
+gen_test_map(map_poplar_ps_displacement_elias_fixed_1024,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::plain_sentinel_t<val_t>,
@@ -239,7 +323,7 @@ gen_test(map_poplar_ps_displacement_elias_fixed_1024,
     >
 )
 
-gen_test(map_poplar_ps_displacement_elias_growing,
+gen_test_map(map_poplar_ps_displacement_elias_growing,
     chm::generic_hashmap_t<
         chc::poplar_xorshift_t,
         chm::plain_sentinel_t<val_t>,
@@ -250,4 +334,4 @@ gen_test(map_poplar_ps_displacement_elias_growing,
         >
     >
 )
-*/
+//*/
