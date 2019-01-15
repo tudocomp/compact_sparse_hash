@@ -9,7 +9,7 @@
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
 
-#include <tudocomp/util/compact_hash/common/index_structure/elias_gamma_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/elias_gamma_displacement_table_t.hpp>
 
 #include "../storage/val_quot_ptrs_t.hpp"
 

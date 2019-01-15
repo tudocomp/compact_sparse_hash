@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include <tudocomp/util/compact_hashset/generic_compact_hashset.hpp>
-#include <tudocomp/util/compact_hash/common/hash_functions.hpp>
+#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/compact_hashset/index_structure/cv_bvs_t.hpp>
 
 template<typename hash_t = tdc::compact_hash::poplar_xorshift_t>

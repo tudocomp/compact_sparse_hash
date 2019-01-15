@@ -8,10 +8,11 @@
 #include <tudocomp/util/compact_hashmap/index_structure/displacement_t.hpp>
 #include <tudocomp/util/compact_hashmap/generic_compact_hashmap.hpp>
 #include <tudocomp/util/compact_hashmap/storage/bucket_t.hpp>
-#include <tudocomp/util/compact_hash/common/hash_functions.hpp>
+#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
 using namespace tdc::compact_sparse_hashmap;
+using namespace tdc::compact_hash;
 using namespace tdc;
 
 template<typename val_t>
@@ -444,14 +445,14 @@ TEST(FullTable, tab##_##tname##_test) { \
 }
 
 template<typename val_t>
-using csh_test_t = generic_hashmap_t<compact_hash::poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
+using csh_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
 template<typename val_t>
-using ch_test_t = generic_hashmap_t<compact_hash::poplar_xorshift_t, plain_sentinel_t<val_t>, cv_bvs_t>;
+using ch_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<val_t>, cv_bvs_t>;
 
 template<typename val_t>
-using csh_disp_test_t = generic_hashmap_t<compact_hash::poplar_xorshift_t, buckets_bv_t<val_t>, naive_displacement_t>;
+using csh_disp_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<val_t>, naive_displacement_t>;
 template<typename val_t>
-using ch_disp_test_t = generic_hashmap_t<compact_hash::poplar_xorshift_t, plain_sentinel_t<val_t>, naive_displacement_t>;
+using ch_disp_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<val_t>, naive_displacement_t>;
 
 MakeFullTableTest(csh_test_t, uint16_t)
 MakeFullTableTest(csh_test_t, uint64_t)

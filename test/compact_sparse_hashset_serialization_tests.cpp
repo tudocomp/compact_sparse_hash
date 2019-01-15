@@ -13,7 +13,7 @@
 #include <tudocomp/util/compact_hashmap/storage/plain_sentinel_t.hpp>
 #include <tudocomp/util/compact_hashmap/storage/buckets_bv_t.hpp>
 
-#include <tudocomp/util/compact_hash/common/hash_functions.hpp>
+#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/serialization.hpp>
 
 template<typename table_t, typename build_func>
@@ -142,8 +142,8 @@ gen_test(set_poplar_displacement_elias_fixed_1024,
     chs::generic_hashset_t<
         chc::poplar_xorshift_t,
         chs::displacement_t<
-            chs::elias_gamma_displacement_table_t<
-                chs::fixed_elias_gamma_bucket_size_t<1024>
+            chc::elias_gamma_displacement_table_t<
+                chc::fixed_elias_gamma_bucket_size_t<1024>
             >
         >
     >
@@ -153,8 +153,8 @@ gen_test(set_poplar_displacement_elias_growing,
     chs::generic_hashset_t<
         chc::poplar_xorshift_t,
         chs::displacement_t<
-            chs::elias_gamma_displacement_table_t<
-                chs::growing_elias_gamma_bucket_size_t
+            chc::elias_gamma_displacement_table_t<
+                chc::growing_elias_gamma_bucket_size_t
             >
         >
     >
@@ -190,8 +190,8 @@ gen_test(map_poplar_bbv_displacement_elias_fixed_1024,
         chc::poplar_xorshift_t,
         chm::buckets_bv_t<val_t>,
         chm::displacement_t<
-            chm::elias_gamma_displacement_table_t<
-                chm::fixed_elias_gamma_bucket_size_t<1024>
+            chc::elias_gamma_displacement_table_t<
+                chc::fixed_elias_gamma_bucket_size_t<1024>
             >
         >
     >
@@ -202,8 +202,8 @@ gen_test(map_poplar_bbv_displacement_elias_growing,
         chc::poplar_xorshift_t,
         chm::buckets_bv_t<val_t>,
         chm::displacement_t<
-            chm::elias_gamma_displacement_table_t<
-                chm::growing_elias_gamma_bucket_size_t
+            chc::elias_gamma_displacement_table_t<
+                chc::growing_elias_gamma_bucket_size_t
             >
         >
     >
@@ -232,8 +232,8 @@ gen_test(map_poplar_ps_displacement_elias_fixed_1024,
         chc::poplar_xorshift_t,
         chm::plain_sentinel_t<val_t>,
         chm::displacement_t<
-            chm::elias_gamma_displacement_table_t<
-                chm::fixed_elias_gamma_bucket_size_t<1024>
+            chc::elias_gamma_displacement_table_t<
+                chc::fixed_elias_gamma_bucket_size_t<1024>
             >
         >
     >
@@ -244,8 +244,8 @@ gen_test(map_poplar_ps_displacement_elias_growing,
         chc::poplar_xorshift_t,
         chm::plain_sentinel_t<val_t>,
         chm::displacement_t<
-            chm::elias_gamma_displacement_table_t<
-                chm::growing_elias_gamma_bucket_size_t
+            chc::elias_gamma_displacement_table_t<
+                chc::growing_elias_gamma_bucket_size_t
             >
         >
     >
