@@ -6,11 +6,14 @@
 #include <algorithm>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "val_quot_ptrs_t.hpp"
 #include "quot_val_data.hpp"
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
 
 /// A bucket of quotient-value pairs in a sparse compact hashtable.
 ///
@@ -32,6 +35,9 @@ namespace tdc {namespace compact_sparse_hashmap {
 template<typename val_t, size_t N>
 class bucket_t {
     std::unique_ptr<uint64_t[]> m_data;
+
+    template<typename T>
+    friend struct ::tdc::serialize;
 
     using qvd_t = quot_val_data_seq_t<val_t>;
 public:
@@ -61,7 +67,7 @@ public:
     /// `bv` and `quot_width`.
     inline bucket_t(uint64_t bv, widths_t widths) {
         if (bv != 0) {
-            auto qvd_size = qvd_data_size(popcount(bv), widths);
+            auto qvd_size = qvd_data_size(size(bv), widths);
 
             m_data = std::make_unique<uint64_t[]>(qvd_size + 1);
             m_data[0] = bv;
@@ -87,7 +93,7 @@ public:
 
     /// Returns the amount of elements in the bucket.
     inline size_t size() const {
-        return popcount(bv());
+        return size(bv());
     }
 
     // Run destructors of each element in the bucket.
@@ -171,6 +177,10 @@ public:
         return ret;
     }
 private:
+    inline static size_t size(uint64_t bv) {
+        return popcount(bv);
+    }
+
     inline uint64_t* get_qv() const {
         return static_cast<uint64_t*>(m_data.get()) + 1;
     }
@@ -187,4 +197,45 @@ private:
     }
 };
 
-}}
+}
+
+template<typename val_t, size_t N>
+struct serialize<compact_sparse_hashmap::bucket_t<val_t, N>> {
+    using T = compact_sparse_hashmap::bucket_t<val_t, N>;
+    using widths_t = typename T::widths_t;
+
+    static void write(std::ostream& out, T const& val, widths_t const& widths) {
+        using namespace compact_sparse_hashmap;
+
+        serialize<uint64_t>::write(out, val.bv());
+        size_t size = val.size();
+
+        if (size > 0) {
+            size_t raw_size = T::qvd_data_size(size, widths) + 1;
+            for (size_t i = 1; i < raw_size; i++) {
+                serialize<uint64_t>::write(out, val.m_data[i]);
+            }
+        }
+    }
+    static T read(std::istream& in, widths_t const& widths) {
+        using namespace compact_sparse_hashmap;
+
+        T ret;
+
+        uint64_t bv = serialize<uint64_t>::read(in);
+        size_t size = T::size(bv);
+
+        if (size > 0) {
+            size_t raw_size = T::qvd_data_size(size, widths) + 1;
+            ret.m_data = std::make_unique<uint64_t[]>(raw_size);
+            ret.m_data[0] = bv;
+            for (size_t i = 1; i < raw_size; i++) {
+                ret.m_data[i] = serialize<uint64_t>::read(in);
+            }
+        }
+
+        return ret;
+    }
+};
+
+}

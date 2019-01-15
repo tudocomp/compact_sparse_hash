@@ -7,14 +7,14 @@
 using namespace tdc;
 using namespace tdc::compact_sparse_hashset;
 
-using compact_hash = COMPACT_TABLE;
+using compact_hash_type = COMPACT_TABLE;
 
 struct shadow_sets_t {
     std::unordered_set<uint64_t> keys;
     std::unordered_set<uint64_t> ids;
-    compact_hash& table;
+    compact_hash_type& table;
 
-    shadow_sets_t(compact_hash& t): table(t) {}
+    shadow_sets_t(compact_hash_type& t): table(t) {}
 
     struct on_resize_t {
         shadow_sets_t& self;
@@ -82,7 +82,7 @@ struct shadow_sets_t {
 };
 
 /// Assert that a element exists in the hashtable
-inline void debug_check_single(compact_hash& table, uint64_t key) {
+inline void debug_check_single(compact_hash_type& table, uint64_t key) {
     auto r = table.lookup(key);
     ASSERT_TRUE(r.found()) << "key " << key << " not found!";
 }
@@ -118,15 +118,15 @@ void test_hashfn() {
 }
 
 TEST(hashfn, xorshift) {
-    test_hashfn<xorshift_t>();
+    test_hashfn<compact_hash::xorshift_t>();
 }
 
 TEST(hashfn, poplar_xorshift) {
-    test_hashfn<poplar_xorshift_t>();
+    test_hashfn<compact_hash::poplar_xorshift_t>();
 }
 
 TEST(hash, lookup_insert) {
-    auto chx = compact_hash(256, 16);
+    auto chx = compact_hash_type(256, 16);
     auto ch = shadow_sets_t(chx);
 
     ch.lookup_insert(44);
@@ -154,7 +154,7 @@ TEST(hash, lookup_insert) {
 }
 
 TEST(hash, lookup_insert_wrap) {
-    auto chx = compact_hash(4, 16);
+    auto chx = compact_hash_type(4, 16);
     auto ch = shadow_sets_t(chx);
     ch.max_load_factor(1.0);
 
@@ -169,7 +169,7 @@ TEST(hash, lookup_insert_wrap) {
 }
 
 TEST(hash, lookup_insert_move_wrap) {
-    auto chx = compact_hash(8, 16);
+    auto chx = compact_hash_type(8, 16);
     auto ch = shadow_sets_t(chx);
     ch.max_load_factor(1.0);
 
@@ -197,7 +197,7 @@ TEST(hash, lookup_insert_move_wrap) {
 }
 
 TEST(hash, cornercase) {
-    auto chx = compact_hash(8, 16);
+    auto chx = compact_hash_type(8, 16);
     auto ch = shadow_sets_t(chx);
 
     ch.lookup_insert(0);
@@ -215,7 +215,7 @@ TEST(hash, cornercase) {
 TEST(hash, grow) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto chx = compact_hash(0, 10); // check that it grows to minimum 2
+    auto chx = compact_hash_type(0, 10); // check that it grows to minimum 2
     auto ch = shadow_sets_t(chx);
 
     auto add = [&](auto key) {
@@ -241,7 +241,7 @@ TEST(hash, grow) {
 TEST(hash, grow_bits) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto chx = compact_hash(0, 10); // check that it grows to minimum 2
+    auto chx = compact_hash_type(0, 10); // check that it grows to minimum 2
     auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
@@ -271,7 +271,7 @@ TEST(hash, grow_bits) {
 TEST(hash, grow_bits_larger) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto chx = compact_hash(0, 0); // check that it grows to minimum 2
+    auto chx = compact_hash_type(0, 0); // check that it grows to minimum 2
     auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
@@ -296,7 +296,7 @@ TEST(hash, grow_bits_larger) {
 TEST(hash, grow_bits_larger_address) {
     std::vector<uint64_t> lookup_inserted;
 
-    auto chx = compact_hash(0, 0); // check that it grows to minimum 2
+    auto chx = compact_hash_type(0, 0); // check that it grows to minimum 2
     auto ch = shadow_sets_t(chx);
 
     uint8_t bits = 1;
@@ -327,7 +327,7 @@ constexpr size_t load_max = 100000;
 //constexpr size_t load_max = 100;
 
 void load_factor_test(float z) {
-    auto tablex = compact_hash(0, 1);
+    auto tablex = compact_hash_type(0, 1);
     auto table = shadow_sets_t(tablex);
     // TODO DEBUG
     // table.debug_state();
@@ -388,7 +388,7 @@ TEST(hash_load, max_load_100) {
 }
 
 TEST(hash, swap) {
-    auto a = compact_hash(8, 16);
+    auto a = compact_hash_type(8, 16);
     {
         auto& ch = a;
         ch.max_load_factor(1.0);
@@ -400,7 +400,7 @@ TEST(hash, swap) {
         ch.lookup_insert(5 + 24);
         ch.lookup_insert(4);
     }
-    auto b = compact_hash(8, 16);
+    auto b = compact_hash_type(8, 16);
     {
         auto& ch = b;
         ch.max_load_factor(1.0);

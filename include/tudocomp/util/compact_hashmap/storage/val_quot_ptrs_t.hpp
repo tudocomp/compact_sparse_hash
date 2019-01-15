@@ -5,9 +5,10 @@
 #include <utility>
 #include <algorithm>
 
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
 
 /// Represents a pair of pointers to value and quotient inside a bucket.
 template<typename val_t>

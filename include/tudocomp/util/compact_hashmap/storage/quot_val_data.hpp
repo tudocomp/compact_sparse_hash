@@ -7,10 +7,11 @@
 #include <algorithm>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "val_quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
 
 template<typename val_t>
 struct quot_val_data_seq_t {

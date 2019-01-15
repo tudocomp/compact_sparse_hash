@@ -1,13 +1,14 @@
 #pragma once
 
-#include "util.hpp"
-#include "size_manager_t.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
+#include <tudocomp/util/compact_hash/size_manager_t.hpp>
 #include "entry_t.hpp"
 #include "storage/buckets_bv_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
 namespace tdc {namespace compact_sparse_hashset {
+using namespace compact_hash;
 
 template<typename hash_t, typename placement_t>
 class generic_hashset_t {

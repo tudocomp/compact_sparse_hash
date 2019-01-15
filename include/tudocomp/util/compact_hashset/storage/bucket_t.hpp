@@ -6,13 +6,14 @@
 #include <algorithm>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "quot_ptrs_t.hpp"
 #include "quot_data.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
 namespace tdc {namespace compact_sparse_hashset {
+using namespace compact_hash;
 
 /// A bucket of quotient-value pairs in a sparse compact hashtable.
 ///
@@ -56,7 +57,7 @@ public:
     /// `bv` and `quot_width`.
     inline bucket_t(uint64_t bv, quot_width_t width) {
         if (bv != 0) {
-            auto qvd_size = qvd_data_size(popcount(bv), width);
+            auto qvd_size = qvd_data_size(size(bv), width);
 
             m_data = std::make_unique<uint64_t[]>(qvd_size + 1);
             m_data[0] = bv;

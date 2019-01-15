@@ -8,10 +8,11 @@
 #include <tudocomp/util/compact_hashmap/index_structure/displacement_t.hpp>
 #include <tudocomp/util/compact_hashmap/generic_compact_hashmap.hpp>
 #include <tudocomp/util/compact_hashmap/storage/bucket_t.hpp>
-#include <tudocomp/util/compact_hashmap/hash_functions.hpp>
+#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
 using namespace tdc::compact_sparse_hashmap;
+using namespace tdc::compact_hash;
 using namespace tdc;
 
 template<typename val_t>
@@ -363,8 +364,8 @@ TEST(DPTable, place##_##tab##_##tname##_test) { \
 }
 
 using naive_displacement_t = displacement_t<naive_displacement_table_t>;
-using compact_displacement_t = displacement_t<compact_displacement_table_t>;
-using elias_gamma_displacement_t = displacement_t<elias_gamma_displacement_table_t>;
+using compact_displacement_t = displacement_t<compact_displacement_table_t<4>>;
+using elias_gamma_displacement_t = displacement_t<elias_gamma_displacement_table_t<fixed_elias_gamma_bucket_size_t<1024>>>;
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint8_t);
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint64_t);
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, dynamic_t);

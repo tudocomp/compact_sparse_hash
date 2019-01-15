@@ -4,7 +4,9 @@
 
 #include "decomposed_key_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashmap {
+#include <tudocomp/util/serialization.hpp>
+
+namespace tdc {namespace compact_hash {
 
 /// This manages the size of the hashtable, and related calculations.
 class size_manager_t {
@@ -17,6 +19,9 @@ class size_manager_t {
     size_t m_size;
     float m_load_factor = 0.5;
 
+    template<typename T>
+    friend struct ::tdc::serialize;
+
     /// Adjust the user-specified size of the table as needed
     /// by the current implementation.
     ///
@@ -25,6 +30,8 @@ class size_manager_t {
     inline static size_t adjust_size(size_t size) {
         return (size < 2) ? 2 : size;
     }
+
+    size_manager_t() = default;
 
 public:
     /// Create the size manager with an initial table size `capacity`
@@ -126,4 +133,33 @@ public:
     }
 };
 
-}}
+}
+
+template<>
+struct serialize<compact_hash::size_manager_t> {
+    using T = compact_hash::size_manager_t;
+
+    static void write(std::ostream& out, T const& val) {
+        using namespace compact_hash;
+
+        serialize<uint8_t>::write(out, val.m_capacity_log2);
+        serialize<size_t>::write(out, val.m_size);
+        serialize<float>::write(out, val.m_load_factor);
+    }
+    static T read(std::istream& in) {
+        using namespace compact_hash;
+
+        T ret;
+        ret.m_capacity_log2 = serialize<uint8_t>::read(in);
+        ret.m_size = serialize<size_t>::read(in);
+        ret.m_load_factor = serialize<float>::read(in);
+        return ret;
+    }
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(m_capacity_log2)
+        && gen_equal_check(m_size)
+        && gen_equal_check(m_load_factor);
+    }
+};
+
+}

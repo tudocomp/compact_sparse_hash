@@ -7,10 +7,11 @@
 #include <algorithm>
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
 #include "quot_ptrs_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashset {
+using namespace compact_hash;
 
 struct quot_data_seq_t {
     /// Calculates the offsets of the two different arrays inside the allocation.

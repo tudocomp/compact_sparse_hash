@@ -2,13 +2,17 @@
 
 #include <memory>
 
-#include "../util.hpp"
+#include <tudocomp/util/compact_hash/util.hpp>
+#include <tudocomp/util/compact_hash/storage/sparse_pos_t.hpp>
 #include "bucket_t.hpp"
-#include "sparse_pos_t.hpp"
+
+#include <tudocomp/util/serialization.hpp>
 
 // Table for uninitalized elements
 
 namespace tdc {namespace compact_sparse_hashmap {
+using namespace compact_hash;
+
     template<typename val_t>
     struct buckets_bv_t {
         using my_bucket_t = bucket_t<val_t, 8>;
@@ -20,13 +24,16 @@ namespace tdc {namespace compact_sparse_hashmap {
 
         buckets_t m_buckets;
 
+        template<typename T>
+        friend struct ::tdc::serialize;
+
         inline buckets_bv_t() {}
         inline buckets_bv_t(size_t table_size, widths_t widths) {
             size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
             m_buckets = std::make_unique<my_bucket_t[]>(buckets_size);
         }
-        using table_pos_t = sparse_pos_t<my_bucket_t, bucket_layout_t, val_t>;
+        using table_pos_t = sparse_pos_t<my_bucket_t, bucket_layout_t>;
 
         // pseudo-iterator for iterating over bucket elements
         // NB: does not wrap around!
@@ -82,6 +89,7 @@ namespace tdc {namespace compact_sparse_hashmap {
             }
         };
 
+        template<typename buckets_t>
         struct context_t {
             buckets_t& m_buckets;
             size_t const table_size;
@@ -154,9 +162,77 @@ namespace tdc {namespace compact_sparse_hashmap {
         };
         inline auto context(size_t table_size, widths_t const& widths) {
             DCHECK(m_buckets);
-            return context_t {
+            return context_t<buckets_t> {
+                m_buckets, table_size, widths
+            };
+        }
+        inline auto context(size_t table_size, widths_t const& widths) const {
+            DCHECK(m_buckets);
+            return context_t<buckets_t const> {
                 m_buckets, table_size, widths
             };
         }
     };
-}}
+}
+
+template<typename val_t>
+struct serialize<compact_sparse_hashmap::buckets_bv_t<val_t>> {
+    using T = compact_sparse_hashmap::buckets_bv_t<val_t>;
+    using bucket_t = typename T::my_bucket_t;
+    using widths_t = typename T::widths_t;
+    using bucket_layout_t = typename T::bucket_layout_t;
+
+    static void write(std::ostream& out, T const& val, size_t table_size, widths_t const& widths) {
+        using namespace compact_sparse_hashmap;
+
+        auto ctx = val.context(table_size, widths);
+
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+        for(size_t i = 0; i < buckets_size; i++) {
+            auto& bucket = ctx.m_buckets[i];
+            serialize<bucket_t>::write(out, bucket, widths);
+        }
+    }
+    static T read(std::istream& in, size_t table_size, widths_t const& widths) {
+        using namespace compact_sparse_hashmap;
+
+        T val { table_size, widths };
+
+        auto ctx = val.context(table_size, widths);
+
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+        for(size_t i = 0; i < buckets_size; i++) {
+            auto& bucket = ctx.m_buckets[i];
+            bucket = serialize<bucket_t>::read(in, widths);
+        }
+
+        return val;
+    }
+    static bool equal_check(T const& lhs, T const& rhs, size_t table_size, widths_t const& widths) {
+        auto lhsc = lhs.context(table_size, widths);
+        auto rhsc = rhs.context(table_size, widths);
+
+        for (size_t i = 0; i < table_size; i++) {
+            auto lhspos = lhsc.table_pos(i);
+            auto rhspos = rhsc.table_pos(i);
+            if (!gen_equal_diagnostic(lhsc.pos_is_empty(lhspos) == rhsc.pos_is_empty(rhspos))) {
+                return false;
+            }
+            if (!lhsc.pos_is_empty(lhspos)) {
+                auto lhsptrs = lhsc.at(lhspos);
+                auto rhsptrs = rhsc.at(rhspos);
+
+                if (!gen_equal_diagnostic(lhsptrs.get_quotient() == rhsptrs.get_quotient())) {
+                    return false;
+                }
+                if (!gen_equal_diagnostic(*lhsptrs.val_ptr() == *rhsptrs.val_ptr())) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+};
+
+}

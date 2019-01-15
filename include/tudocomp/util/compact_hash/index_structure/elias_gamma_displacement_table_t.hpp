@@ -9,9 +9,10 @@
 #include <tudocomp/util/int_coder.hpp>
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
-// #include "../storage/quot_ptrs_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashset {
+#include <tudocomp/util/serialization.hpp>
+
+namespace tdc {namespace compact_hash {
 
 template<typename base_type>
 struct alloc_callback_ret_t {
@@ -422,13 +423,13 @@ struct elias_gamma_displacement_table_t {
 }
 
 template<typename elias_gamma_bucket_size_t>
-struct serialize<compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>> {
-    using T = compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>> {
+    using T = compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
     static void write(std::ostream& out, T const& val, size_t table_size) {
-        using bucket_t = compact_sparse_hashset::elias_gamma_bucket_t;
+        using bucket_t = compact_hash::elias_gamma_bucket_t;
         using table_t =
-            compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+            compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
         table_t const& table = val;
         DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
@@ -448,9 +449,9 @@ struct serialize<compact_sparse_hashset::elias_gamma_displacement_table_t<elias_
     }
 
     static T read(std::istream& in, size_t table_size) {
-        using bucket_t = compact_sparse_hashset::elias_gamma_bucket_t;
+        using bucket_t = compact_hash::elias_gamma_bucket_t;
         using table_t =
-            compact_sparse_hashset::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+            compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
         table_t table = table_t(table_size);
         DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
