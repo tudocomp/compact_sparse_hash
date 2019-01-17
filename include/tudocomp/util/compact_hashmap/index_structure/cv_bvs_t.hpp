@@ -4,7 +4,7 @@
 
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
-#include "../storage/val_quot_ptrs_t.hpp"
+#include "../satellite_data_config_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
@@ -40,8 +40,10 @@ public:
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
-        using widths_t = typename storage_t::widths_t;
         using val_t = typename storage_t::val_t_export;
+        using satellite_t = typename storage_t::satellite_t_export;
+
+        using widths_t = typename storage_t::widths_t;
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using table_pos_t = typename storage_t::table_pos_t;
         using pointer_type = ValPtr<val_t>;

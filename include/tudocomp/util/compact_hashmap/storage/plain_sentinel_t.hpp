@@ -3,7 +3,7 @@
 #include <memory>
 
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "quot_val_data.hpp"
+#include "../satellite_data_config_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
@@ -14,10 +14,13 @@ using namespace compact_hash;
 
     template<typename val_t>
     struct plain_sentinel_t {
+        using val_t_export = val_t;
+        using satellite_t = satellite_data_t<val_t>;
+        using satellite_t_export = satellite_t;
+
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using qvd_t = quot_val_data_seq_t<val_t>;
-        using widths_t = typename qvd_t::QVWidths;
-        using val_t_export = val_t;
+        using widths_t = typename satellite_t::entry_bit_width_t;
 
         template<typename T>
         friend struct ::tdc::serialize;

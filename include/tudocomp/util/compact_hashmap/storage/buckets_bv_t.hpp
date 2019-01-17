@@ -5,6 +5,7 @@
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/storage/sparse_pos_t.hpp>
 #include "bucket_t.hpp"
+#include "../satellite_data_config_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
@@ -15,12 +16,17 @@ using namespace compact_hash;
 
     template<typename val_t>
     struct buckets_bv_t {
+        using val_t_export = val_t;
+        using satellite_t = satellite_data_t<val_t>;
+        using satellite_t_export = satellite_t;
+        using entry_ptr_t = typename satellite_t::entry_ptr_t;
+        using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
+
         using my_bucket_t = bucket_t<val_t, 8>;
         using bucket_layout_t = typename my_bucket_t::bucket_layout_t;
         using buckets_t = std::unique_ptr<my_bucket_t[]>;
         using qvd_t = quot_val_data_seq_t<val_t>;
-        using widths_t = typename qvd_t::QVWidths;
-        using val_t_export = val_t;
+        using widths_t = typename satellite_t::entry_bit_width_t;
 
         buckets_t m_buckets;
 
@@ -28,7 +34,7 @@ using namespace compact_hash;
         friend struct ::tdc::serialize;
 
         inline buckets_bv_t() {}
-        inline buckets_bv_t(size_t table_size, widths_t widths) {
+        inline buckets_bv_t(size_t table_size, entry_bit_width_t widths) {
             size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
             m_buckets = std::make_unique<my_bucket_t[]>(buckets_size);
@@ -41,7 +47,7 @@ using namespace compact_hash;
             my_bucket_t const*        m_bucket;
             val_quot_ptrs_t<val_t>    m_b_start;
             val_quot_ptrs_t<val_t>    m_b_end;
-            widths_t                  m_widths;
+            entry_bit_width_t         m_widths;
 
             inline void set_bucket_elem_range(size_t end_offset) {
                 size_t start_offset = 0;
@@ -54,7 +60,7 @@ using namespace compact_hash;
             inline iter_t(my_bucket_t const* buckets,
                           size_t buckets_size,
                           table_pos_t const& pos,
-                          widths_t const& widths):
+                          entry_bit_width_t const& widths):
                 m_widths(widths)
             {
                 // NB: Using pointer arithmetic here, because
@@ -93,7 +99,7 @@ using namespace compact_hash;
         struct context_t {
             buckets_t& m_buckets;
             size_t const table_size;
-            widths_t widths;
+            entry_bit_width_t widths;
 
             /// Run the destructors of the elements of the `i`-th bucket,
             /// and drop it from the hashtable, replacing it with an empty one.
@@ -160,13 +166,13 @@ using namespace compact_hash;
                 }
             }
         };
-        inline auto context(size_t table_size, widths_t const& widths) {
+        inline auto context(size_t table_size, entry_bit_width_t const& widths) {
             DCHECK(m_buckets);
             return context_t<buckets_t> {
                 m_buckets, table_size, widths
             };
         }
-        inline auto context(size_t table_size, widths_t const& widths) const {
+        inline auto context(size_t table_size, entry_bit_width_t const& widths) const {
             DCHECK(m_buckets);
             return context_t<buckets_t const> {
                 m_buckets, table_size, widths
@@ -179,10 +185,10 @@ template<typename val_t>
 struct serialize<compact_sparse_hashmap::buckets_bv_t<val_t>> {
     using T = compact_sparse_hashmap::buckets_bv_t<val_t>;
     using bucket_t = typename T::my_bucket_t;
-    using widths_t = typename T::widths_t;
+    using entry_bit_width_t = typename T::entry_bit_width_t;
     using bucket_layout_t = typename T::bucket_layout_t;
 
-    static void write(std::ostream& out, T const& val, size_t table_size, widths_t const& widths) {
+    static void write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashmap;
 
         auto ctx = val.context(table_size, widths);
@@ -193,7 +199,7 @@ struct serialize<compact_sparse_hashmap::buckets_bv_t<val_t>> {
             serialize<bucket_t>::write(out, bucket, widths);
         }
     }
-    static T read(std::istream& in, size_t table_size, widths_t const& widths) {
+    static T read(std::istream& in, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashmap;
 
         T val { table_size, widths };
@@ -208,7 +214,7 @@ struct serialize<compact_sparse_hashmap::buckets_bv_t<val_t>> {
 
         return val;
     }
-    static bool equal_check(T const& lhs, T const& rhs, size_t table_size, widths_t const& widths) {
+    static bool equal_check(T const& lhs, T const& rhs, size_t table_size, entry_bit_width_t const& widths) {
         auto lhsc = lhs.context(table_size, widths);
         auto rhsc = rhs.context(table_size, widths);
 
