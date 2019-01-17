@@ -29,6 +29,8 @@ class bucket_t {
     friend struct ::tdc::serialize;
 
     using qvd_t = quot_data_seq_t;
+    using entry_ptr_t = typename satellite_t::entry_ptr_t;
+    using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
 public:
     /// Maps hashtable position to position of the corresponding bucket,
     /// and the position inside of it.
@@ -48,13 +50,13 @@ public:
             return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
         }
     };
-    using quot_width_t = uint8_t;
+    using quot_width_t = entry_bit_width_t;
 
     inline bucket_t(): m_data() {}
 
     /// Construct a bucket, reserving space according to the bitvector
     /// `bv` and `quot_width`.
-    inline bucket_t(uint64_t bv, quot_width_t width) {
+    inline bucket_t(uint64_t bv, entry_bit_width_t width) {
         if (bv != 0) {
             auto qvd_size = qvd_data_size(size(bv), width);
 
@@ -87,7 +89,7 @@ public:
 
     /// Returns a `quot_ptrs_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
-    inline quot_ptrs_t at(size_t pos, quot_width_t width) const {
+    inline entry_ptr_t at(size_t pos, entry_bit_width_t width) const {
         return qvd_t::at(get_qv(), size(), pos, width);
     }
 
@@ -99,7 +101,7 @@ public:
         return !bool(m_data);
     }
 
-    inline size_t stat_allocation_size_in_bytes(quot_width_t width) const {
+    inline size_t stat_allocation_size_in_bytes(entry_bit_width_t width) const {
         if (!is_empty()) {
             return (qvd_data_size(size(), width) + 1) * sizeof(uint64_t);
         } else {
@@ -108,10 +110,10 @@ public:
     }
 
     /// Insert a new element into the bucket, growing it as needed
-    inline quot_ptrs_t insert_at(
+    inline entry_ptr_t insert_at(
         size_t new_elem_bucket_pos,
         uint64_t new_elem_bv_bit,
-        quot_width_t width)
+        entry_bit_width_t width)
     {
         // Just a sanity check that can not live inside or outside `bucket_t` itself.
         static_assert(sizeof(bucket_t<N, satellite_t>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
@@ -128,7 +130,7 @@ public:
         auto const new_iter_midpoint = new_bucket.at(new_elem_bucket_pos, width);
         auto const new_iter_end = new_bucket.at(new_bucket.size(), width);
 
-        quot_ptrs_t ret;
+        entry_ptr_t ret;
 
         // move all elements before the new element's location from old bucket into new bucket
         while(new_iter != new_iter_midpoint) {
@@ -164,13 +166,13 @@ private:
         return static_cast<uint64_t*>(m_data.get()) + 1;
     }
 
-    inline static size_t qvd_data_size(size_t size, quot_width_t width) {
+    inline static size_t qvd_data_size(size_t size, entry_bit_width_t width) {
         return qvd_t::calc_sizes(size, width).overall_qword_size;
     }
 
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
-    inline QuotPtr ptr(quot_width_t width) const {
+    inline QuotPtr ptr(entry_bit_width_t width) const {
         return qvd_t::ptr(get_qv(), size(), width);
     }
 };
@@ -180,9 +182,9 @@ private:
 template<size_t N, typename satellite_t>
 struct serialize<compact_sparse_hashset::bucket_t<N, satellite_t>> {
     using T = compact_sparse_hashset::bucket_t<N, satellite_t>;
-    using quot_width_t = typename T::quot_width_t;
+    using entry_bit_width_t = typename T::entry_bit_width_t;
 
-    static void write(std::ostream& out, T const& val, quot_width_t const& widths) {
+    static void write(std::ostream& out, T const& val, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashset;
 
         serialize<uint64_t>::write(out, val.bv());
@@ -195,7 +197,7 @@ struct serialize<compact_sparse_hashset::bucket_t<N, satellite_t>> {
             }
         }
     }
-    static T read(std::istream& in, quot_width_t const& widths) {
+    static T read(std::istream& in, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashset;
 
         T ret;

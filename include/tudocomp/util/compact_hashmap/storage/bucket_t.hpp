@@ -39,6 +39,8 @@ class bucket_t {
     friend struct ::tdc::serialize;
 
     using qvd_t = quot_val_data_seq_t<val_t>;
+    using entry_ptr_t = typename satellite_t::entry_ptr_t;
+    using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
 public:
     /// Maps hashtable position to position of the corresponding bucket,
     /// and the position inside of it.
@@ -58,21 +60,21 @@ public:
             return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
         }
     };
-    using widths_t = typename qvd_t::QVWidths;
+    using widths_t = entry_bit_width_t;
 
     inline bucket_t(): m_data() {}
 
     /// Construct a bucket, reserving space according to the bitvector
     /// `bv` and `quot_width`.
-    inline bucket_t(uint64_t bv, widths_t widths) {
+    inline bucket_t(uint64_t bv, entry_bit_width_t width) {
         if (bv != 0) {
-            auto qvd_size = qvd_data_size(size(bv), widths);
+            auto qvd_size = qvd_data_size(size(bv), width);
 
             m_data = std::make_unique<uint64_t[]>(qvd_size + 1);
             m_data[0] = bv;
 
             // NB: We call this for its alignment asserts
-            ptrs(widths);
+            ptrs(width);
         } else {
             m_data.reset();
         }
@@ -96,7 +98,7 @@ public:
     }
 
     // Run destructors of each element in the bucket.
-    inline void destroy_vals(widths_t widths) {
+    inline void destroy_vals(entry_bit_width_t widths) {
         if (is_allocated()) {
             qvd_t::destroy_vals(get_qv(), size(), widths);
         }
@@ -104,8 +106,8 @@ public:
 
     /// Returns a `val_quot_ptrs_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
-    inline val_quot_ptrs_t<val_t> at(size_t pos, widths_t widths) const {
-        return qvd_t::at(get_qv(), size(), pos, widths);
+    inline entry_ptr_t at(size_t pos, entry_bit_width_t width) const {
+        return qvd_t::at(get_qv(), size(), pos, width);
     }
 
     inline bool is_allocated() const {
@@ -116,19 +118,19 @@ public:
         return !bool(m_data);
     }
 
-    inline size_t stat_allocation_size_in_bytes(widths_t widths) const {
+    inline size_t stat_allocation_size_in_bytes(entry_bit_width_t width) const {
         if (!is_empty()) {
-            return (qvd_data_size(size(), widths) + 1) * sizeof(uint64_t);
+            return (qvd_data_size(size(), width) + 1) * sizeof(uint64_t);
         } else {
             return 0;
         }
     }
 
     /// Insert a new element into the bucket, growing it as needed
-    inline val_quot_ptrs_t<val_t> insert_at(
+    inline entry_ptr_t insert_at(
         size_t new_elem_bucket_pos,
         uint64_t new_elem_bv_bit,
-        widths_t widths)
+        entry_bit_width_t width)
     {
         // Just a sanity check that can not live inside or outside `bucket_t` itself.
         static_assert(sizeof(bucket_t<val_t, N, satellite_t>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
@@ -137,15 +139,15 @@ public:
         // eg, the known sparse_hash repo uses overallocation for small buckets
 
         // create a new bucket with enough size for the new element
-        auto new_bucket = bucket_t<val_t, N, satellite_t>(bv() | new_elem_bv_bit, widths);
+        auto new_bucket = bucket_t<val_t, N, satellite_t>(bv() | new_elem_bv_bit, width);
 
-        auto new_iter = new_bucket.at(0, widths);
-        auto old_iter = at(0, widths);
+        auto new_iter = new_bucket.at(0, width);
+        auto old_iter = at(0, width);
 
-        auto const new_iter_midpoint = new_bucket.at(new_elem_bucket_pos, widths);
-        auto const new_iter_end = new_bucket.at(new_bucket.size(), widths);
+        auto const new_iter_midpoint = new_bucket.at(new_elem_bucket_pos, width);
+        auto const new_iter_end = new_bucket.at(new_bucket.size(), width);
 
-        val_quot_ptrs_t<val_t> ret;
+        entry_ptr_t ret;
 
         // move all elements before the new element's location from old bucket into new bucket
         while(new_iter != new_iter_midpoint) {
@@ -170,7 +172,7 @@ public:
         }
 
         // destroy old empty elements, and overwrite with new bucket
-        destroy_vals(widths);
+        destroy_vals(width);
         *this = std::move(new_bucket);
 
         return ret;
@@ -184,15 +186,15 @@ private:
         return static_cast<uint64_t*>(m_data.get()) + 1;
     }
 
-    inline static size_t qvd_data_size(size_t size, widths_t widths) {
-        return qvd_t::calc_sizes(size, widths).overall_qword_size;
+    inline static size_t qvd_data_size(size_t size, entry_bit_width_t width) {
+        return qvd_t::calc_sizes(size, width).overall_qword_size;
     }
 
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
     using Ptrs = typename qvd_t::Ptrs;
-    inline Ptrs ptrs(widths_t widths) const {
-        return qvd_t::ptrs(get_qv(), size(), widths);
+    inline Ptrs ptrs(entry_bit_width_t width) const {
+        return qvd_t::ptrs(get_qv(), size(), width);
     }
 };
 
@@ -201,9 +203,9 @@ private:
 template<typename val_t, size_t N, typename satellite_t>
 struct serialize<compact_sparse_hashmap::bucket_t<val_t, N, satellite_t>> {
     using T = compact_sparse_hashmap::bucket_t<val_t, N, satellite_t>;
-    using widths_t = typename T::widths_t;
+    using entry_bit_width_t = typename T::entry_bit_width_t;
 
-    static void write(std::ostream& out, T const& val, widths_t const& widths) {
+    static void write(std::ostream& out, T const& val, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashmap;
 
         serialize<uint64_t>::write(out, val.bv());
@@ -216,7 +218,7 @@ struct serialize<compact_sparse_hashmap::bucket_t<val_t, N, satellite_t>> {
             }
         }
     }
-    static T read(std::istream& in, widths_t const& widths) {
+    static T read(std::istream& in, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashmap;
 
         T ret;
