@@ -51,7 +51,6 @@ public:
             return (size + BVS_WIDTH_MASK) >> BVS_WIDTH_SHIFT;
         }
     };
-    using quot_width_t = entry_bit_width_t;
 
     inline bucket_t(): m_data() {}
 
