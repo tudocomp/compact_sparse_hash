@@ -22,7 +22,7 @@ using namespace compact_hash;
         using entry_ptr_t = typename satellite_t::entry_ptr_t;
         using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
 
-        using my_bucket_t = bucket_t<val_t, 8, satellite_t>;
+        using my_bucket_t = bucket_t<8, satellite_t>;
         using bucket_layout_t = typename my_bucket_t::bucket_layout_t;
         using buckets_t = std::unique_ptr<my_bucket_t[]>;
         using qvd_t = quot_val_data_seq_t<val_t>;

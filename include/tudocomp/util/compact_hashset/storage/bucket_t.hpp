@@ -18,7 +18,8 @@ using namespace compact_hash;
 ///
 /// It consists of a pointer to a single heap allocation, that contains:
 /// - A 64-bit bitvector of currently stored elements.
-/// - A dynamic-width bitvector of quotients.
+/// - A dynamic-width array of quotients.
+/// - A potentially dynamic-width array of satellite values.
 ///
 /// An empty bucket does not allocate any memory.
 template<size_t N, typename satellite_t>
@@ -87,7 +88,7 @@ public:
         return size(bv());
     }
 
-    /// Returns a `quot_ptrs_t` to position `pos`,
+    /// Returns a `entry_ptr_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
     inline entry_ptr_t at(size_t pos, entry_bit_width_t width) const {
         return qvd_t::at(get_qv(), size(), pos, width);

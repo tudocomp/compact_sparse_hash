@@ -16,7 +16,7 @@ using namespace tdc::compact_hash;
 using namespace tdc;
 
 template<typename val_t>
-using map_bucket_t = bucket_t<val_t, 8, satellite_data_t<val_t>>;
+using map_bucket_t = bucket_t<8, satellite_data_t<val_t>>;
 
 template<typename val_t>
 void BucketTest() {

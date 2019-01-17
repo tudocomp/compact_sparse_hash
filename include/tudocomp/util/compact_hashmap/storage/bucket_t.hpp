@@ -18,8 +18,8 @@ using namespace compact_hash;
 ///
 /// It consists of a pointer to a single heap allocation, that contains:
 /// - A 64-bit bitvector of currently stored elements.
-/// - An array of `val_t` values.
-/// - A dynamic-width bitvector of quotients.
+/// - A dynamic-width array of quotients.
+/// - A potentially dynamic-width array of satellite values.
 ///
 /// An empty bucket does not allocate any memory.
 ///
@@ -31,13 +31,14 @@ using namespace compact_hash;
 /// the values correctly.
 // TODO: Investigate changing this semantic to automatic initialization
 // and destruction.
-template<typename val_t, size_t N, typename satellite_t>
+template<size_t N, typename satellite_t>
 class bucket_t {
     std::unique_ptr<uint64_t[]> m_data;
 
     template<typename T>
     friend struct ::tdc::serialize;
 
+    using val_t = typename satellite_t::tmp_val_t;
     using qvd_t = quot_val_data_seq_t<val_t>;
     using entry_ptr_t = typename satellite_t::entry_ptr_t;
     using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
@@ -74,7 +75,7 @@ public:
             m_data[0] = bv;
 
             // NB: We call this for its alignment asserts
-            ptrs(width);
+            ptr(width);
         } else {
             m_data.reset();
         }
@@ -104,7 +105,7 @@ public:
         }
     }
 
-    /// Returns a `val_quot_ptrs_t` to position `pos`,
+    /// Returns a `entry_ptr_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
     inline entry_ptr_t at(size_t pos, entry_bit_width_t width) const {
         return qvd_t::at(get_qv(), size(), pos, width);
@@ -133,13 +134,13 @@ public:
         entry_bit_width_t width)
     {
         // Just a sanity check that can not live inside or outside `bucket_t` itself.
-        static_assert(sizeof(bucket_t<val_t, N, satellite_t>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
+        static_assert(sizeof(bucket_t<N, satellite_t>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
 
         // TODO: check out different sizing strategies
         // eg, the known sparse_hash repo uses overallocation for small buckets
 
         // create a new bucket with enough size for the new element
-        auto new_bucket = bucket_t<val_t, N, satellite_t>(bv() | new_elem_bv_bit, width);
+        auto new_bucket = bucket_t<N, satellite_t>(bv() | new_elem_bv_bit, width);
 
         auto new_iter = new_bucket.at(0, width);
         auto old_iter = at(0, width);
@@ -193,16 +194,16 @@ private:
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
     using Ptrs = typename qvd_t::Ptrs;
-    inline Ptrs ptrs(entry_bit_width_t width) const {
+    inline Ptrs ptr(entry_bit_width_t width) const {
         return qvd_t::ptrs(get_qv(), size(), width);
     }
 };
 
 }
 
-template<typename val_t, size_t N, typename satellite_t>
-struct serialize<compact_sparse_hashmap::bucket_t<val_t, N, satellite_t>> {
-    using T = compact_sparse_hashmap::bucket_t<val_t, N, satellite_t>;
+template<size_t N, typename satellite_t>
+struct serialize<compact_sparse_hashmap::bucket_t<N, satellite_t>> {
+    using T = compact_sparse_hashmap::bucket_t<N, satellite_t>;
     using entry_bit_width_t = typename T::entry_bit_width_t;
 
     static void write(std::ostream& out, T const& val, entry_bit_width_t const& widths) {
