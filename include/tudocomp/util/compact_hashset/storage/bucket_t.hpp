@@ -22,6 +22,15 @@ using namespace compact_hash;
 /// - A potentially dynamic-width array of satellite values.
 ///
 /// An empty bucket does not allocate any memory.
+///
+/// WARNING:
+/// To prevent the overhead of unnecessary default-constructions,
+/// the bucket does not initialize or destroy the value and quotient parts
+/// of the allocation in its constructor/destructor.
+/// Instead, it relies on the surrounding container to initialize and destroy
+/// the values correctly.
+// TODO: Investigate changing this semantic to automatic initialization
+// and destruction.
 template<size_t N, typename satellite_t>
 class bucket_t {
     std::unique_ptr<uint64_t[]> m_data;
@@ -29,7 +38,7 @@ class bucket_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
-    using qvd_t = quot_data_seq_t;
+    using qvd_t = typename satellite_t::bucket_data_layout_t;
     using entry_ptr_t = typename satellite_t::entry_ptr_t;
     using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
 public:
