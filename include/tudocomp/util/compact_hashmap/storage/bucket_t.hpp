@@ -7,8 +7,7 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "val_quot_ptrs_t.hpp"
-#include "quot_val_data.hpp"
+#include "../satellite_data_config_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
@@ -32,7 +31,7 @@ using namespace compact_hash;
 /// the values correctly.
 // TODO: Investigate changing this semantic to automatic initialization
 // and destruction.
-template<typename val_t, size_t N>
+template<typename val_t, size_t N, typename satellite_t>
 class bucket_t {
     std::unique_ptr<uint64_t[]> m_data;
 
@@ -132,13 +131,13 @@ public:
         widths_t widths)
     {
         // Just a sanity check that can not live inside or outside `bucket_t` itself.
-        static_assert(sizeof(bucket_t<val_t, N>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
+        static_assert(sizeof(bucket_t<val_t, N, satellite_t>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
 
         // TODO: check out different sizing strategies
         // eg, the known sparse_hash repo uses overallocation for small buckets
 
         // create a new bucket with enough size for the new element
-        auto new_bucket = bucket_t<val_t, N>(bv() | new_elem_bv_bit, widths);
+        auto new_bucket = bucket_t<val_t, N, satellite_t>(bv() | new_elem_bv_bit, widths);
 
         auto new_iter = new_bucket.at(0, widths);
         auto old_iter = at(0, widths);
@@ -199,9 +198,9 @@ private:
 
 }
 
-template<typename val_t, size_t N>
-struct serialize<compact_sparse_hashmap::bucket_t<val_t, N>> {
-    using T = compact_sparse_hashmap::bucket_t<val_t, N>;
+template<typename val_t, size_t N, typename satellite_t>
+struct serialize<compact_sparse_hashmap::bucket_t<val_t, N, satellite_t>> {
+    using T = compact_sparse_hashmap::bucket_t<val_t, N, satellite_t>;
     using widths_t = typename T::widths_t;
 
     static void write(std::ostream& out, T const& val, widths_t const& widths) {

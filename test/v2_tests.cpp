@@ -16,13 +16,16 @@ using namespace tdc::compact_hash;
 using namespace tdc;
 
 template<typename val_t>
-void BucketTest() {
-    using widths_t = typename bucket_t<val_t, 8>::widths_t;
+using map_bucket_t = bucket_t<val_t, 8, satellite_data_t<val_t>>;
 
-    auto b = bucket_t<val_t, 8>();
+template<typename val_t>
+void BucketTest() {
+    using widths_t = typename map_bucket_t<val_t>::widths_t;
+
+    auto b = map_bucket_t<val_t>();
 
     widths_t ws { 5, 7 };
-    b = bucket_t<val_t, 8>(0b10, ws);
+    b = map_bucket_t<val_t>(0b10, ws);
 
     ASSERT_EQ(b.bv(), 2);
     ASSERT_EQ(b.size(), 1);
@@ -55,7 +58,7 @@ MakeBucketTest(uint_t40);
 template<template<typename> typename table_t, typename val_t>
 void TableTest() {
     using tab_t = table_t<val_t>;
-    using widths_t = typename bucket_t<val_t, 8>::widths_t;
+    using widths_t = typename map_bucket_t<val_t>::widths_t;
 
     {
         auto t = tab_t();
@@ -129,7 +132,7 @@ MakeTableTest(buckets_bv_t,     uint_t40);
 template<typename placement_t, template<typename> typename table_t, typename val_t>
 void CVTableTest() {
     using tab_t = table_t<val_t>;
-    using widths_t = typename bucket_t<val_t, 8>::widths_t;
+    using widths_t = typename map_bucket_t<val_t>::widths_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
     struct TestSizeMgr {
@@ -252,7 +255,7 @@ MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint_t40);
 template<typename placement_t, template<typename> typename table_t, typename val_t>
 void DPTableTest() {
     using tab_t = table_t<val_t>;
-    using widths_t = typename bucket_t<val_t, 8>::widths_t;
+    using widths_t = typename map_bucket_t<val_t>::widths_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
     struct TestSizeMgr {

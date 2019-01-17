@@ -7,8 +7,7 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "quot_ptrs_t.hpp"
-#include "quot_data.hpp"
+#include "../satellite_data_config_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
@@ -22,7 +21,7 @@ using namespace compact_hash;
 /// - A dynamic-width bitvector of quotients.
 ///
 /// An empty bucket does not allocate any memory.
-template<size_t N>
+template<size_t N, typename satellite_t>
 class bucket_t {
     std::unique_ptr<uint64_t[]> m_data;
 
@@ -115,13 +114,13 @@ public:
         quot_width_t width)
     {
         // Just a sanity check that can not live inside or outside `bucket_t` itself.
-        static_assert(sizeof(bucket_t<N>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
+        static_assert(sizeof(bucket_t<N, satellite_t>) == sizeof(void*), "unique_ptr is more than 1 ptr large!");
 
         // TODO: check out different sizing strategies
         // eg, the known sparse_hash repo uses overallocation for small buckets
 
         // create a new bucket with enough size for the new element
-        auto new_bucket = bucket_t<N>(bv() | new_elem_bv_bit, width);
+        auto new_bucket = bucket_t<N, satellite_t>(bv() | new_elem_bv_bit, width);
 
         auto new_iter = new_bucket.at(0, width);
         auto old_iter = at(0, width);
@@ -178,9 +177,9 @@ private:
 
 }
 
-template<size_t N>
-struct serialize<compact_sparse_hashset::bucket_t<N>> {
-    using T = compact_sparse_hashset::bucket_t<N>;
+template<size_t N, typename satellite_t>
+struct serialize<compact_sparse_hashset::bucket_t<N, satellite_t>> {
+    using T = compact_sparse_hashset::bucket_t<N, satellite_t>;
     using quot_width_t = typename T::quot_width_t;
 
     static void write(std::ostream& out, T const& val, quot_width_t const& widths) {
