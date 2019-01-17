@@ -17,6 +17,8 @@ using namespace compact_hash;
         using val_t_export = val_t;
         using satellite_t = satellite_data_t<val_t>;
         using satellite_t_export = satellite_t;
+        using entry_ptr_t = typename satellite_t::entry_ptr_t;
+        using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
 
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using qvd_t = quot_val_data_seq_t<val_t>;

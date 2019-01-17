@@ -43,8 +43,8 @@ using namespace compact_hash;
         // NB: does not wrap around!
         struct iter_t {
             my_bucket_t const*        m_bucket;
-            quot_ptrs_t               m_b_start;
-            quot_ptrs_t               m_b_end;
+            entry_ptr_t               m_b_start;
+            entry_ptr_t               m_b_end;
             entry_bit_width_t         m_widths;
 
             inline void set_bucket_elem_range(size_t end_offset) {
@@ -69,11 +69,11 @@ using namespace compact_hash;
                 if(pos.idx_of_bucket < buckets_size) {
                     set_bucket_elem_range(pos.offset_in_bucket());
                 } else {
-                    // use default constructed nullptr quot_ptrs_ts
+                    // use default constructed nullptr entry_ptr_t
                 }
             }
 
-            inline quot_ptrs_t get() {
+            inline entry_ptr_t get() {
                 return m_b_end;
             }
 
@@ -109,7 +109,7 @@ using namespace compact_hash;
             inline table_pos_t table_pos(size_t pos) {
                 return table_pos_t { pos, m_buckets.get() };
             }
-            inline quot_ptrs_t allocate_pos(table_pos_t pos) {
+            inline entry_ptr_t allocate_pos(table_pos_t pos) {
                 DCHECK(!pos.exists_in_bucket());
 
                 auto& bucket = pos.bucket();
@@ -118,7 +118,7 @@ using namespace compact_hash;
 
                 return bucket.insert_at(offset_in_bucket, new_bucket_bv, widths);
             }
-            inline quot_ptrs_t at(table_pos_t pos) {
+            inline entry_ptr_t at(table_pos_t pos) {
                 DCHECK(pos.exists_in_bucket());
 
                 auto& bucket = pos.bucket();
