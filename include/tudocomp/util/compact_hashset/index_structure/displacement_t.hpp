@@ -13,7 +13,7 @@
 #include <tudocomp/util/compact_hash/index_structure/compact_displacement_table_t.hpp>
 #include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
 
-#include "../storage/quot_ptrs_t.hpp"
+#include "../storage/entry_ptr_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 

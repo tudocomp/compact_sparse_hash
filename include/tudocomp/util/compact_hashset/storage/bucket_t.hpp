@@ -96,6 +96,13 @@ public:
         return size(bv());
     }
 
+    // Run destructors of each element in the bucket.
+    inline void destroy_vals(entry_bit_width_t widths) {
+        if (is_allocated()) {
+            qvd_t::destroy_vals(get_qv(), size(), widths);
+        }
+    }
+
     /// Returns a `entry_ptr_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
     inline entry_ptr_t at(size_t pos, entry_bit_width_t width) const {

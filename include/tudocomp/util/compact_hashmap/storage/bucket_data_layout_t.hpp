@@ -8,7 +8,7 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "val_quot_ptrs_t.hpp"
+#include "entry_ptr_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;

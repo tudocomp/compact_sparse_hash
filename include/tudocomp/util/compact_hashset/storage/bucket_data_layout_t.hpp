@@ -8,7 +8,7 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "quot_ptrs_t.hpp"
+#include "entry_ptr_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashset {
 using namespace compact_hash;
@@ -43,6 +43,11 @@ struct quot_data_seq_t {
         auto layout = calc_sizes(size, quot_width);
 
         return layout.quots_layout.ptr_relative_to(alloc);
+    }
+
+    // Run destructors of each element in the bucket.
+    inline static void destroy_vals(uint64_t*, size_t, uint8_t) {
+        // NB: this does not contain values
     }
 
     /// Returns a `val_quot_ptrs_t` to position `pos`,

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "storage/val_quot_ptrs_t.hpp"
-#include "storage/quot_val_data.hpp"
+#include "storage/entry_ptr_t.hpp"
+#include "storage/bucket_data_layout_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashmap {
 
