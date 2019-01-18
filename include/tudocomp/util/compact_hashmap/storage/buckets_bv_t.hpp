@@ -26,7 +26,6 @@ using namespace compact_hash;
         using bucket_layout_t = typename my_bucket_t::bucket_layout_t;
         using buckets_t = std::unique_ptr<my_bucket_t[]>;
         using qvd_t = typename satellite_t::bucket_data_layout_t;
-        using widths_t = typename satellite_t::entry_bit_width_t;
 
         buckets_t m_buckets;
 
