@@ -36,13 +36,12 @@ class bucket_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
-    using qvd_t = typename satellite_t::bucket_data_layout_t;
     using entry_ptr_t = typename satellite_t::entry_ptr_t;
     using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
 public:
     /// Maps hashtable position to position of the corresponding bucket,
     /// and the position inside of it.
-    struct bucket_layout_t {
+    struct bucket_layout_t: satellite_t::bucket_data_layout_t {
         static constexpr size_t BVS_WIDTH_SHIFT = 6;
         static constexpr size_t BVS_WIDTH_MASK = 0b111111;
 
@@ -97,14 +96,14 @@ public:
     // Run destructors of each element in the bucket.
     inline void destroy_vals(entry_bit_width_t widths) {
         if (is_allocated()) {
-            qvd_t::destroy_vals(get_qv(), size(), widths);
+            bucket_layout_t::destroy_vals(get_qv(), size(), widths);
         }
     }
 
     /// Returns a `entry_ptr_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer.
     inline entry_ptr_t at(size_t pos, entry_bit_width_t width) const {
-        return qvd_t::at(get_qv(), size(), pos, width);
+        return bucket_layout_t::at(get_qv(), size(), pos, width);
     }
 
     inline bool is_allocated() const {
@@ -148,7 +147,7 @@ public:
 
         // move all elements before the new element's location from old bucket into new bucket
         while(new_iter != new_iter_midpoint) {
-            qvd_t::move_to_ptr_from_ptr(new_iter, old_iter);
+            bucket_layout_t::move_to_ptr_from_ptr(new_iter, old_iter);
             new_iter.increment_ptr();
             old_iter.increment_ptr();
         }
@@ -161,7 +160,7 @@ public:
 
         // move all elements after the new element's location from old bucket into new bucket
         while(new_iter != new_iter_end) {
-            qvd_t::move_to_ptr_from_ptr(new_iter, old_iter);
+            bucket_layout_t::move_to_ptr_from_ptr(new_iter, old_iter);
             new_iter.increment_ptr();
             old_iter.increment_ptr();
         }
@@ -182,13 +181,13 @@ private:
     }
 
     inline static size_t qvd_data_size(size_t size, entry_bit_width_t width) {
-        return qvd_t::calc_sizes(size, width).overall_qword_size;
+        return bucket_layout_t::calc_sizes(size, width).overall_qword_size;
     }
 
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
     inline entry_ptr_t ptr(entry_bit_width_t width) const {
-        return qvd_t::ptr(get_qv(), size(), width);
+        return bucket_layout_t::ptr(get_qv(), size(), width);
     }
 };
 

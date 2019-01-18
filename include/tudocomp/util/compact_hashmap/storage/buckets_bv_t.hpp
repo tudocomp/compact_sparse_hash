@@ -25,7 +25,7 @@ using namespace compact_hash;
         using my_bucket_t = bucket_t<8, satellite_t>;
         using bucket_layout_t = typename my_bucket_t::bucket_layout_t;
         using buckets_t = std::unique_ptr<my_bucket_t[]>;
-        using qvd_t = quot_val_data_seq_t<val_t>;
+        using qvd_t = typename satellite_t::bucket_data_layout_t;
         using widths_t = typename satellite_t::entry_bit_width_t;
 
         buckets_t m_buckets;
@@ -228,10 +228,7 @@ struct serialize<compact_sparse_hashmap::buckets_bv_t<val_t>> {
                 auto lhsptrs = lhsc.at(lhspos);
                 auto rhsptrs = rhsc.at(rhspos);
 
-                if (!gen_equal_diagnostic(lhsptrs.get_quotient() == rhsptrs.get_quotient())) {
-                    return false;
-                }
-                if (!gen_equal_diagnostic(*lhsptrs.val_ptr() == *rhsptrs.val_ptr())) {
+                if (!gen_equal_diagnostic(bucket_layout_t::compare_eq(lhsptrs, rhsptrs))) {
                     return false;
                 }
             }

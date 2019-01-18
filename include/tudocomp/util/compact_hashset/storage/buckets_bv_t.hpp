@@ -23,7 +23,7 @@ using namespace compact_hash;
         using my_bucket_t = bucket_t<8, satellite_t>;
         using bucket_layout_t = typename my_bucket_t::bucket_layout_t;
         using buckets_t = std::unique_ptr<my_bucket_t[]>;
-        using qvd_t = quot_data_seq_t;
+        using qvd_t = typename satellite_t::bucket_data_layout_t;
         using quot_width_t = typename satellite_t::entry_bit_width_t;
 
         buckets_t m_buckets;
@@ -103,9 +103,17 @@ using namespace compact_hash;
             /// and drop it from the hashtable, replacing it with an empty one.
             inline void drop_bucket(size_t i) {
                 DCHECK_LT(i, bucket_layout_t::table_size_to_bucket_size(table_size));
+                m_buckets[i].destroy_vals(widths);
                 m_buckets[i] = my_bucket_t();
             }
 
+            inline void destroy_vals() {
+                size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+
+                for(size_t i = 0; i < buckets_size; i++) {
+                    m_buckets[i].destroy_vals(widths);
+                }
+            }
             inline table_pos_t table_pos(size_t pos) {
                 return table_pos_t { pos, m_buckets.get() };
             }
@@ -218,7 +226,7 @@ struct serialize<compact_sparse_hashset::buckets_bv_t> {
                 auto lhsptrs = lhsc.at(lhspos);
                 auto rhsptrs = rhsc.at(rhspos);
 
-                if (!gen_equal_diagnostic(lhsptrs.get_quotient() == rhsptrs.get_quotient())) {
+                if (!gen_equal_diagnostic(bucket_layout_t::compare_eq(lhsptrs, rhsptrs))) {
                     return false;
                 }
             }
