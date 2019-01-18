@@ -43,7 +43,7 @@ public:
         using val_t = typename storage_t::val_t_export;
         using satellite_t = typename storage_t::satellite_t_export;
 
-        using widths_t = typename storage_t::widths_t;
+        using widths_t = typename satellite_t::entry_bit_width_t;
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using table_pos_t = typename storage_t::table_pos_t;
         using pointer_type = ValPtr<val_t>;
@@ -432,7 +432,7 @@ public:
     template<typename storage_t, typename size_mgr_t>
     inline auto context(storage_t& storage,
                         size_t table_size,
-                        typename storage_t::widths_t const& widths,
+                        typename storage_t::satellite_t_export::entry_bit_width_t const& widths,
                         size_mgr_t const& size_mgr) {
         return context_t<storage_t, size_mgr_t> {
             m_cv, table_size, widths, size_mgr, storage

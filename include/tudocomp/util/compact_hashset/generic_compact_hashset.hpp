@@ -12,9 +12,9 @@ using namespace compact_hash;
 
 template<typename hash_t, typename placement_t>
 class generic_hashset_t {
-public:
     using storage_t = buckets_bv_t;
-
+    using satellite_t = typename storage_t::satellite_t_export;
+public:
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
@@ -162,7 +162,7 @@ public:
     }
 
 private:
-    using quot_width_t = typename storage_t::quot_width_t;
+    using quot_width_t = typename satellite_t::entry_bit_width_t;
 
     /// Size of table, and width of the stored keys and values
     size_manager_t m_sizing;

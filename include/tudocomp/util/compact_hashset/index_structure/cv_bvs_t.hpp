@@ -42,7 +42,7 @@ public:
     struct context_t {
         using satellite_t = typename storage_t::satellite_t_export;
 
-        using quot_width_t = typename storage_t::quot_width_t;
+        using quot_width_t = typename satellite_t::entry_bit_width_t;
         using table_pos_t = typename storage_t::table_pos_t;
 
         IntVector<uint_t<2>>& m_cv;
@@ -454,7 +454,7 @@ public:
     template<typename storage_t, typename size_mgr_t>
     inline auto context(storage_t& storage,
                         size_t table_size,
-                        typename storage_t::quot_width_t const& widths,
+                        typename storage_t::satellite_t_export::entry_bit_width_t const& widths,
                         size_mgr_t const& size_mgr) {
         return context_t<storage_t, size_mgr_t> {
             m_cv, table_size, widths, size_mgr, storage

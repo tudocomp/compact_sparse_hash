@@ -11,6 +11,7 @@ using namespace compact_hash;
 template<typename hash_t, typename storage_t, typename placement_t>
 class generic_hashmap_t {
     using val_t = typename storage_t::val_t_export;
+    using satellite_t = typename storage_t::satellite_t_export;
 public:
     /// By-value representation of a value
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
@@ -247,7 +248,7 @@ public:
     }
 
 private:
-    using widths_t = typename storage_t::widths_t;
+    using widths_t = typename satellite_t::entry_bit_width_t;
 
     /// Size of table, and width of the stored keys and values
     size_manager_t m_sizing;
