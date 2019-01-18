@@ -151,7 +151,6 @@ public:
         // move all elements before the new element's location from old bucket into new bucket
         while(new_iter != new_iter_midpoint) {
             qvd_t::move_to_ptr_from_ptr(new_iter, old_iter);
-
             new_iter.increment_ptr();
             old_iter.increment_ptr();
         }
@@ -164,12 +163,13 @@ public:
 
         // move all elements after the new element's location from old bucket into new bucket
         while(new_iter != new_iter_end) {
-            new_iter.set_quotient(old_iter.get_quotient());
+            qvd_t::move_to_ptr_from_ptr(new_iter, old_iter);
             new_iter.increment_ptr();
             old_iter.increment_ptr();
         }
 
         // destroy old empty elements, and overwrite with new bucket
+        destroy_vals(width);
         *this = std::move(new_bucket);
 
         return ret;

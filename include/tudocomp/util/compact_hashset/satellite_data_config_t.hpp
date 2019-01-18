@@ -14,7 +14,7 @@ public:
     using entry_ptr_t = quot_ptrs_t;
     using entry_bit_width_t = quot_width_t;
 
-    using bucket_data_layout_t = quot_data_seq_t;
+    using bucket_data_layout_t = qvd_t;
 
 };
 

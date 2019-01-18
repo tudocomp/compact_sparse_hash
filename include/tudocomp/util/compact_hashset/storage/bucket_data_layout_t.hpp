@@ -61,7 +61,7 @@ struct quot_data_seq_t {
         }
     }
 
-    inline static void move_to_ptr_from_ptr(QuotPtr to, QuotPtr from) {
+    inline static void move_to_ptr_from_ptr(quot_ptrs_t to, quot_ptrs_t from) {
         to.set_quotient(from.get_quotient());
     }
 };
