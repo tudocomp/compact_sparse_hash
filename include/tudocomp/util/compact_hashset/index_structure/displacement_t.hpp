@@ -35,15 +35,14 @@ public:
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
-        using quot_width_t = typename storage_t::satellite_t_export::entry_bit_width_t;
+        using entry_width_t = typename storage_t::satellite_t_export::entry_bit_width_t;
         using table_pos_t = typename storage_t::table_pos_t;
 
         displacement_table_t& m_displace;
         size_t const table_size;
-        quot_width_t widths;
+        entry_width_t widths;
         size_mgr_t const& size_mgr;
         storage_t& storage;
-
         entry_t lookup_insert(uint64_t initial_address,
                               uint64_t stored_quotient)
         {
