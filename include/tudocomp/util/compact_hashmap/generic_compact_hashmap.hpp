@@ -6,6 +6,8 @@
 
 #include <tudocomp/util/compact_hashmap/satellite_data_config_t.hpp>
 
+#include <tudocomp/util/serialization.hpp>
+
 namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;
 

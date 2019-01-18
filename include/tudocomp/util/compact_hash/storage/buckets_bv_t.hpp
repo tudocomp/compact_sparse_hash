@@ -5,15 +5,12 @@
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/storage/sparse_pos_t.hpp>
 #include <tudocomp/util/compact_hash/storage/bucket_t.hpp>
-#include "../satellite_data_config_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
 // Table for uninitalized elements
 
-namespace tdc {namespace compact_sparse_hashset {
-using namespace compact_hash;
-
+namespace tdc {namespace compact_hash {
     template<typename satellite_t>
     struct buckets_bv_t {
         using val_t_export = typename satellite_t::tmp_val_t;
@@ -180,14 +177,14 @@ using namespace compact_hash;
 }
 
 template<typename satellite_t>
-struct serialize<compact_sparse_hashset::buckets_bv_t<satellite_t>> {
-    using T = compact_sparse_hashset::buckets_bv_t<satellite_t>;
+struct serialize<compact_hash::buckets_bv_t<satellite_t>> {
+    using T = compact_hash::buckets_bv_t<satellite_t>;
     using bucket_t = typename T::my_bucket_t;
     using entry_bit_width_t = typename T::entry_bit_width_t;
     using bucket_layout_t = typename T::bucket_layout_t;
 
     static void write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash;
 
         auto ctx = val.context(table_size, widths);
 
@@ -198,7 +195,7 @@ struct serialize<compact_sparse_hashset::buckets_bv_t<satellite_t>> {
         }
     }
     static T read(std::istream& in, size_t table_size, entry_bit_width_t const& widths) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash;
 
         T val { table_size, widths };
 
