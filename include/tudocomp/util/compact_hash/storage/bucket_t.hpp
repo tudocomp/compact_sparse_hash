@@ -7,11 +7,9 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "../satellite_data_config_t.hpp"
-
 #include <tudocomp/util/serialization.hpp>
 
-namespace tdc {namespace compact_sparse_hashmap {
+namespace tdc {namespace compact_hash {
 using namespace compact_hash;
 
 /// A bucket of quotient-value pairs in a sparse compact hashtable.
@@ -197,12 +195,12 @@ private:
 }
 
 template<size_t N, typename satellite_t>
-struct serialize<compact_sparse_hashmap::bucket_t<N, satellite_t>> {
-    using T = compact_sparse_hashmap::bucket_t<N, satellite_t>;
+struct serialize<compact_hash::bucket_t<N, satellite_t>> {
+    using T = compact_hash::bucket_t<N, satellite_t>;
     using entry_bit_width_t = typename T::entry_bit_width_t;
 
     static void write(std::ostream& out, T const& val, entry_bit_width_t const& widths) {
-        using namespace compact_sparse_hashmap;
+        using namespace compact_hash;
 
         serialize<uint64_t>::write(out, val.bv());
         size_t size = val.size();
@@ -215,7 +213,7 @@ struct serialize<compact_sparse_hashmap::bucket_t<N, satellite_t>> {
         }
     }
     static T read(std::istream& in, entry_bit_width_t const& widths) {
-        using namespace compact_sparse_hashmap;
+        using namespace compact_hash;
 
         T ret;
 

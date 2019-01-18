@@ -4,7 +4,7 @@
 
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/storage/sparse_pos_t.hpp>
-#include "bucket_t.hpp"
+#include <tudocomp/util/compact_hash/storage/bucket_t.hpp>
 #include "../satellite_data_config_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
