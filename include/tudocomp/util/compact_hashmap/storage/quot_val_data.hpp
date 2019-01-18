@@ -54,7 +54,7 @@ struct quot_val_data_seq_t {
         ValPtr<val_t> vals_ptr;
         QuotPtr quots_ptr;
     };
-    inline static Ptrs ptrs(uint64_t* alloc, size_t size, QVWidths widths) {
+    inline static Ptrs ptr(uint64_t* alloc, size_t size, QVWidths widths) {
         DCHECK(size != 0);
         auto layout = calc_sizes(size, widths);
 
@@ -67,7 +67,7 @@ struct quot_val_data_seq_t {
     // Run destructors of each element in the bucket.
     inline static void destroy_vals(uint64_t* alloc, size_t size, QVWidths widths) {
         if (size != 0) {
-            auto start = ptrs(alloc, size, widths).vals_ptr;
+            auto start = ptr(alloc, size, widths).vals_ptr;
             auto end = start + size;
 
             for(; start != end; start++) {
@@ -80,7 +80,7 @@ struct quot_val_data_seq_t {
     /// or a sentinel value that acts as a one-pass-the-end pointer for the empty case.
     inline static val_quot_ptrs_t<val_t> at(uint64_t* alloc, size_t size, size_t pos, QVWidths widths) {
         if(size != 0) {
-            auto ps = ptrs(alloc, size, widths);
+            auto ps = ptr(alloc, size, widths);
             return val_quot_ptrs_t<val_t>(ps.vals_ptr + pos, ps.quots_ptr + pos);
         } else {
             DCHECK_EQ(pos, 0);

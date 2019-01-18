@@ -194,7 +194,7 @@ private:
     /// the allocation.
     using Ptrs = typename qvd_t::Ptrs;
     inline Ptrs ptr(entry_bit_width_t width) const {
-        return qvd_t::ptrs(get_qv(), size(), width);
+        return qvd_t::ptr(get_qv(), size(), width);
     }
 };
 
