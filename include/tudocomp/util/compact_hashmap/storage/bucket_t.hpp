@@ -151,8 +151,8 @@ public:
 
         // move all elements before the new element's location from old bucket into new bucket
         while(new_iter != new_iter_midpoint) {
-            new_iter.set_quotient(old_iter.get_quotient());
-            cbp::cbp_repr_t<val_t>::construct_val_from_ptr(new_iter.val_ptr(), old_iter.val_ptr());
+            qvd_t::move_to_ptr_from_ptr(new_iter, old_iter);
+
             new_iter.increment_ptr();
             old_iter.increment_ptr();
         }

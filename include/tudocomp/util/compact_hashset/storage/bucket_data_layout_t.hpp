@@ -60,6 +60,10 @@ struct quot_data_seq_t {
             return QuotPtr();
         }
     }
+
+    inline static void move_to_ptr_from_ptr(QuotPtr to, QuotPtr from) {
+        to.set_quotient(from.get_quotient());
+    }
 };
 
 }}
