@@ -12,7 +12,7 @@ using namespace compact_hash;
 
 template<typename hash_t, typename placement_t>
 class generic_hashset_t {
-    using storage_t = buckets_bv_t;
+    using storage_t = buckets_bv_t<no_satellite_data_t>;
     using satellite_t = typename storage_t::satellite_t_export;
 public:
     /// Default value of the `key_width` parameter of the constructor.

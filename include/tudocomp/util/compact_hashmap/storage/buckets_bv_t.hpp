@@ -14,10 +14,9 @@
 namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;
 
-    template<typename val_t>
+    template<typename satellite_t>
     struct buckets_bv_t {
-        using val_t_export = val_t;
-        using satellite_t = satellite_data_t<val_t>;
+        using val_t_export = typename satellite_t::tmp_val_t;
         using satellite_t_export = satellite_t;
         using entry_ptr_t = typename satellite_t::entry_ptr_t;
         using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
@@ -180,9 +179,9 @@ using namespace compact_hash;
     };
 }
 
-template<typename val_t>
-struct serialize<compact_sparse_hashmap::buckets_bv_t<val_t>> {
-    using T = compact_sparse_hashmap::buckets_bv_t<val_t>;
+template<typename satellite_t>
+struct serialize<compact_sparse_hashmap::buckets_bv_t<satellite_t>> {
+    using T = compact_sparse_hashmap::buckets_bv_t<satellite_t>;
     using bucket_t = typename T::my_bucket_t;
     using entry_bit_width_t = typename T::entry_bit_width_t;
     using bucket_layout_t = typename T::bucket_layout_t;

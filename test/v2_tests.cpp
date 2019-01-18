@@ -57,7 +57,7 @@ MakeBucketTest(uint_t40);
 
 template<template<typename> typename table_t, typename val_t>
 void TableTest() {
-    using tab_t = table_t<val_t>;
+    using tab_t = table_t<satellite_data_t<val_t>>;
     using widths_t = typename satellite_data_t<val_t>::entry_bit_width_t;
 
     {
@@ -131,7 +131,7 @@ MakeTableTest(buckets_bv_t,     uint_t40);
 
 template<typename placement_t, template<typename> typename table_t, typename val_t>
 void CVTableTest() {
-    using tab_t = table_t<val_t>;
+    using tab_t = table_t<satellite_data_t<val_t>>;
     using widths_t = typename satellite_data_t<val_t>::entry_bit_width_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
@@ -254,7 +254,7 @@ MakeCVTableTest(cv_bvs_t, buckets_bv_t,     uint_t40);
 
 template<typename placement_t, template<typename> typename table_t, typename val_t>
 void DPTableTest() {
-    using tab_t = table_t<val_t>;
+    using tab_t = table_t<satellite_data_t<val_t>>;
     using widths_t = typename satellite_data_t<val_t>::entry_bit_width_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
@@ -448,14 +448,14 @@ TEST(FullTable, tab##_##tname##_test) { \
 }
 
 template<typename val_t>
-using csh_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<val_t>, cv_bvs_t>;
+using csh_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<satellite_data_t<val_t>>, cv_bvs_t>;
 template<typename val_t>
-using ch_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<val_t>, cv_bvs_t>;
+using ch_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<satellite_data_t<val_t>>, cv_bvs_t>;
 
 template<typename val_t>
-using csh_disp_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<val_t>, naive_displacement_t>;
+using csh_disp_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<satellite_data_t<val_t>>, naive_displacement_t>;
 template<typename val_t>
-using ch_disp_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<val_t>, naive_displacement_t>;
+using ch_disp_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<satellite_data_t<val_t>>, naive_displacement_t>;
 
 MakeFullTableTest(csh_test_t, uint16_t)
 MakeFullTableTest(csh_test_t, uint64_t)

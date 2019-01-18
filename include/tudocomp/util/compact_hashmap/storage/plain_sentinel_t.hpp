@@ -12,10 +12,11 @@
 namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;
 
-    template<typename val_t>
+    template<typename satellite_t>
     struct plain_sentinel_t {
-        using val_t_export = val_t;
-        using satellite_t = satellite_data_t<val_t>;
+        using val_t_export = typename satellite_t::tmp_val_t;
+        using val_t = typename satellite_t::tmp_val_t;
+
         using satellite_t_export = satellite_t;
         using entry_ptr_t = typename satellite_t::entry_ptr_t;
         using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
@@ -141,9 +142,9 @@ using namespace compact_hash;
     };
 }
 
-template<typename val_t>
-struct serialize<compact_sparse_hashmap::plain_sentinel_t<val_t>> {
-    using T = compact_sparse_hashmap::plain_sentinel_t<val_t>;
+template<typename satellite_t>
+struct serialize<compact_sparse_hashmap::plain_sentinel_t<satellite_t>> {
+    using T = compact_sparse_hashmap::plain_sentinel_t<satellite_t>;
     using widths_t = typename T::widths_t;
     using value_type = typename T::value_type;
     using qvd_t = typename T::qvd_t;
