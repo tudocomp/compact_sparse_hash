@@ -38,7 +38,7 @@ struct quot_data_seq_t {
 
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
-    inline static QuotPtr ptr(uint64_t* alloc, size_t size, uint8_t quot_width) {
+    inline static quot_ptrs_t ptr(uint64_t* alloc, size_t size, uint8_t quot_width) {
         DCHECK(size != 0);
         auto layout = calc_sizes(size, quot_width);
 
@@ -52,12 +52,13 @@ struct quot_data_seq_t {
 
     /// Returns a `val_quot_ptrs_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer for the empty case.
-    inline static QuotPtr at(uint64_t* alloc, size_t size, size_t pos, uint8_t quot_width) {
+    inline static quot_ptrs_t at(uint64_t* alloc, size_t size, size_t pos, uint8_t quot_width) {
         if(size != 0) {
-            return ptr(alloc, size, quot_width) + pos;
+            auto ps = ptr(alloc, size, quot_width);
+            return quot_ptrs_t(ps.quot_ptr() + pos);
         } else {
             DCHECK_EQ(pos, 0);
-            return QuotPtr();
+            return quot_ptrs_t();
         }
     }
 

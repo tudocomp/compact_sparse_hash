@@ -50,15 +50,11 @@ struct quot_val_data_seq_t {
 
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
-    struct Ptrs {
-        ValPtr<val_t> vals_ptr;
-        QuotPtr quots_ptr;
-    };
-    inline static Ptrs ptr(uint64_t* alloc, size_t size, QVWidths widths) {
+    inline static val_quot_ptrs_t<val_t> ptr(uint64_t* alloc, size_t size, QVWidths widths) {
         DCHECK(size != 0);
         auto layout = calc_sizes(size, widths);
 
-        return Ptrs {
+        return val_quot_ptrs_t<val_t> {
             layout.vals_layout.ptr_relative_to(alloc),
             layout.quots_layout.ptr_relative_to(alloc),
         };
@@ -67,7 +63,7 @@ struct quot_val_data_seq_t {
     // Run destructors of each element in the bucket.
     inline static void destroy_vals(uint64_t* alloc, size_t size, QVWidths widths) {
         if (size != 0) {
-            auto start = ptr(alloc, size, widths).vals_ptr;
+            auto start = ptr(alloc, size, widths).val_ptr();
             auto end = start + size;
 
             for(; start != end; start++) {
@@ -81,7 +77,7 @@ struct quot_val_data_seq_t {
     inline static val_quot_ptrs_t<val_t> at(uint64_t* alloc, size_t size, size_t pos, QVWidths widths) {
         if(size != 0) {
             auto ps = ptr(alloc, size, widths);
-            return val_quot_ptrs_t<val_t>(ps.vals_ptr + pos, ps.quots_ptr + pos);
+            return val_quot_ptrs_t<val_t>(ps.val_ptr() + pos, ps.quot_ptr() + pos);
         } else {
             DCHECK_EQ(pos, 0);
             return val_quot_ptrs_t<val_t>();

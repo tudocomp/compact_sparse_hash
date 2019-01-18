@@ -190,8 +190,7 @@ private:
 
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
-    using Ptrs = typename qvd_t::Ptrs;
-    inline Ptrs ptr(entry_bit_width_t width) const {
+    inline entry_ptr_t ptr(entry_bit_width_t width) const {
         return qvd_t::ptr(get_qv(), size(), width);
     }
 };
