@@ -38,7 +38,6 @@ class bucket_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
-    using val_t = typename satellite_t::tmp_val_t;
     using qvd_t = typename satellite_t::bucket_data_layout_t;
     using entry_ptr_t = typename satellite_t::entry_ptr_t;
     using entry_bit_width_t = typename satellite_t::entry_bit_width_t;

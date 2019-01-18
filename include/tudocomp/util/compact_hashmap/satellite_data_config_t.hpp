@@ -16,8 +16,6 @@ public:
     using entry_bit_width_t = widths_t;
 
     using bucket_data_layout_t = qvd_t;
-
-    using tmp_val_t = val_t;
 };
 
 }}
