@@ -2,16 +2,16 @@
 
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/size_manager_t.hpp>
-
 #include <tudocomp/util/serialization.hpp>
+
+#include <tudocomp/util/compact_hashmap/satellite_data_config_t.hpp>
 
 namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;
 
-template<typename hash_t, typename storage_t, typename placement_t>
+template<typename val_t, typename hash_t, template<typename> typename storage_t, typename placement_t>
 class generic_hashmap_t {
-    using val_t = typename storage_t::val_t_export;
-    using satellite_t = typename storage_t::satellite_t_export;
+    using satellite_t = typename storage_t<satellite_data_t<val_t>>::satellite_t_export;
 public:
     /// By-value representation of a value
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
@@ -256,7 +256,7 @@ private:
     uint8_t m_val_width;
 
     /// Storage of the table elements
-    storage_t m_storage;
+    storage_t<satellite_data_t<val_t>> m_storage;
 
     /// Placement management structures
     placement_t m_placement;
@@ -387,7 +387,7 @@ private:
             while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
                 new_capacity = m_sizing.grown_capacity(new_capacity);
             }
-            auto new_table = generic_hashmap_t<hash_t, storage_t, placement_t>(
+            auto new_table = generic_hashmap_t<val_t, hash_t, storage_t, placement_t>(
                 new_capacity, new_key_width, new_value_width);
             new_table.max_load_factor(this->max_load_factor());
 
@@ -417,9 +417,9 @@ private:
 
 }
 
-template<typename hash_t, typename storage_t, typename placement_t>
-struct serialize<compact_sparse_hashmap::generic_hashmap_t<hash_t, storage_t, placement_t>> {
-    using T = compact_sparse_hashmap::generic_hashmap_t<hash_t, storage_t, placement_t>;
+template<typename val_t, typename hash_t, template<typename> typename storage_t, typename placement_t>
+struct serialize<compact_sparse_hashmap::generic_hashmap_t<val_t, hash_t, storage_t, placement_t>> {
+    using T = compact_sparse_hashmap::generic_hashmap_t<val_t, hash_t, storage_t, placement_t>;
 
     static void write(std::ostream& out, T const& val) {
         using namespace compact_sparse_hashmap;
@@ -429,7 +429,7 @@ struct serialize<compact_sparse_hashmap::generic_hashmap_t<hash_t, storage_t, pl
         serialize<uint8_t>::write(out, val.m_val_width);
         serialize<hash_t>::write(out, val.m_hash);
 
-        serialize<storage_t>::write(out, val.m_storage, val.table_size(), val.storage_widths());
+        serialize<storage_t<satellite_data_t<val_t>>>::write(out, val.m_storage, val.table_size(), val.storage_widths());
         serialize<placement_t>::write(out, val.m_placement, val.table_size());
         serialize<uint8_t>::write(out, val.m_is_empty);
     }
@@ -447,7 +447,7 @@ struct serialize<compact_sparse_hashmap::generic_hashmap_t<hash_t, storage_t, pl
         ret.m_val_width = std::move(val_width);
         ret.m_hash = std::move(hash);
 
-        auto storage = serialize<storage_t>::read(in, ret.table_size(), ret.storage_widths());
+        auto storage = serialize<storage_t<satellite_data_t<val_t>>>::read(in, ret.table_size(), ret.storage_widths());
         auto placement = serialize<placement_t>::read(in, ret.table_size());
 
         ret.m_storage = std::move(storage);

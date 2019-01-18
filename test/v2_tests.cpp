@@ -448,14 +448,14 @@ TEST(FullTable, tab##_##tname##_test) { \
 }
 
 template<typename val_t>
-using csh_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<satellite_data_t<val_t>>, cv_bvs_t>;
+using csh_test_t = generic_hashmap_t<val_t, poplar_xorshift_t, buckets_bv_t, cv_bvs_t>;
 template<typename val_t>
-using ch_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<satellite_data_t<val_t>>, cv_bvs_t>;
+using ch_test_t = generic_hashmap_t<val_t, poplar_xorshift_t, plain_sentinel_t, cv_bvs_t>;
 
 template<typename val_t>
-using csh_disp_test_t = generic_hashmap_t<poplar_xorshift_t, buckets_bv_t<satellite_data_t<val_t>>, naive_displacement_t>;
+using csh_disp_test_t = generic_hashmap_t<val_t, poplar_xorshift_t, buckets_bv_t, naive_displacement_t>;
 template<typename val_t>
-using ch_disp_test_t = generic_hashmap_t<poplar_xorshift_t, plain_sentinel_t<satellite_data_t<val_t>>, naive_displacement_t>;
+using ch_disp_test_t = generic_hashmap_t<val_t, poplar_xorshift_t, plain_sentinel_t, naive_displacement_t>;
 
 MakeFullTableTest(csh_test_t, uint16_t)
 MakeFullTableTest(csh_test_t, uint64_t)

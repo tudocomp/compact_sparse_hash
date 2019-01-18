@@ -5,6 +5,8 @@
 #include "entry_t.hpp"
 #include "storage/buckets_bv_t.hpp"
 
+#include <tudocomp/util/compact_hashmap/satellite_data_config_t.hpp>
+
 #include <tudocomp/util/serialization.hpp>
 
 namespace tdc {namespace compact_sparse_hashset {

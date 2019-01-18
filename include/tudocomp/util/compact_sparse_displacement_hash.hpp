@@ -10,14 +10,14 @@ namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-using compact_sparse_displacement_hashmap_t = generic_hashmap_t<hash_t,
-    buckets_bv_t<satellite_data_t<val_t>>,
+using compact_sparse_displacement_hashmap_t = generic_hashmap_t<
+    val_t, hash_t, buckets_bv_t,
     displacement_t<compact_displacement_table_t<4>>
 >;
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-using compact_sparse_elias_displacement_hashmap_t = generic_hashmap_t<hash_t,
-    buckets_bv_t<satellite_data_t<val_t>>,
+using compact_sparse_elias_displacement_hashmap_t = generic_hashmap_t<
+    val_t, hash_t, buckets_bv_t,
     displacement_t<elias_gamma_displacement_table_t<fixed_elias_gamma_bucket_size_t<1024>>>
 >;
 

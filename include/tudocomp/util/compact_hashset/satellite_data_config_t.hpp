@@ -16,6 +16,7 @@ public:
 
     using bucket_data_layout_t = qvd_t;
 
+    using tmp_val_t = void;
 };
 
 }}

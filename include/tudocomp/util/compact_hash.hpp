@@ -10,9 +10,8 @@ namespace tdc {namespace compact_sparse_hashmap {
 using namespace compact_hash;
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>
-using compact_hashmap_t = generic_hashmap_t<hash_t,
-    plain_sentinel_t<satellite_data_t<val_t>>,
-    cv_bvs_t
+using compact_hashmap_t = generic_hashmap_t<
+    val_t, hash_t, plain_sentinel_t, cv_bvs_t
 >;
 
 }}
