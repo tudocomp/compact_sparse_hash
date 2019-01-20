@@ -14,6 +14,7 @@
 #include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
 
 #include "../storage/entry_ptr_t.hpp"
+#include "../entry_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
@@ -35,7 +36,10 @@ public:
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
-        using entry_width_t = typename storage_t::satellite_t_export::entry_bit_width_t;
+        using satellite_t = typename storage_t::satellite_t_export;
+        using entry_width_t = typename satellite_t::entry_bit_width_t;
+        using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
+
         using val_t = typename storage_t::val_t_export;
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using table_pos_t = typename storage_t::table_pos_t;

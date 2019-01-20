@@ -14,6 +14,7 @@
 #include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
 
 #include "../storage/entry_ptr_t.hpp"
+#include "../entry_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
@@ -35,7 +36,10 @@ public:
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
-        using entry_width_t = typename storage_t::satellite_t_export::entry_bit_width_t;
+        using satellite_t = typename storage_t::satellite_t_export;
+        using entry_width_t = typename satellite_t::entry_bit_width_t;
+        using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
+
         using table_pos_t = typename storage_t::table_pos_t;
 
         displacement_table_t& m_displace;
@@ -56,13 +60,13 @@ public:
                     auto ptrs = sctx.allocate_pos(pos);
                     m_displace.set(cursor, size_mgr.mod_sub(cursor, initial_address));
                     ptrs.set_quotient(stored_quotient);
-                    return entry_t::found_new(cursor);
+                    return entry_t::found_new(cursor, ptrs);
                 }
 
                 if(m_displace.get(cursor) == size_mgr.mod_sub(cursor, initial_address)) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {
-                        return entry_t::found_exist(cursor);
+                        return entry_t::found_exist(cursor, ptrs);
                     }
                 }
 
@@ -148,7 +152,7 @@ public:
                 if(m_displace.get(cursor) == size_mgr.mod_sub(cursor, initial_address)) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {
-                        return entry_t::found_exist(cursor);
+                        return entry_t::found_exist(cursor, ptrs);
                     }
                 }
 

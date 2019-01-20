@@ -42,6 +42,8 @@ public:
     struct context_t {
         using val_t = typename storage_t::val_t_export;
         using satellite_t = typename storage_t::satellite_t_export;
+        using entry_width_t = typename satellite_t::entry_bit_width_t;
+        using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
 
         using widths_t = typename satellite_t::entry_bit_width_t;
         using value_type = typename cbp::cbp_repr_t<val_t>::value_type;

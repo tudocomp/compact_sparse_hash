@@ -105,6 +105,8 @@ public:
         inline void on_reinsert(uint64_t key, uint64_t id) {}
     };
 
+    using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
+
     /// Looks up the key `key` in the set, inserting it if
     /// it doesn't already exist.
     ///
