@@ -223,7 +223,7 @@ struct serialize<compact_hash::buckets_bv_t<satellite_t>> {
                 auto lhsptrs = lhsc.at(lhspos);
                 auto rhsptrs = rhsc.at(rhspos);
 
-                if (!gen_equal_diagnostic(bucket_layout_t::compare_eq(lhsptrs, rhsptrs))) {
+                if (!gen_equal_diagnostic(lhsptrs.contents_eq(rhsptrs))) {
                     return false;
                 }
             }

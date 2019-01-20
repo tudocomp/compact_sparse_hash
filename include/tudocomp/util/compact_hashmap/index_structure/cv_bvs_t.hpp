@@ -275,6 +275,12 @@ public:
             return from_loc;
         }
 
+        inline uint64_t local_id_to_global_id(uint64_t initial_address, uint64_t local_id) {
+            local_id <<= size_mgr.capacity_log2();
+            local_id |= initial_address;
+            return local_id;
+        }
+
         lookup_result_t<val_t> lookup_insert(uint64_t initial_address,
                                              uint64_t stored_quotient)
         {

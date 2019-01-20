@@ -83,15 +83,6 @@ struct quot_val_data_seq_t {
             return val_quot_ptrs_t<val_t>();
         }
     }
-
-    inline static void move_to_ptr_from_ptr(val_quot_ptrs_t<val_t> to, val_quot_ptrs_t<val_t> from) {
-        to.set_quotient(from.get_quotient());
-        cbp::cbp_repr_t<val_t>::construct_val_from_ptr(to.val_ptr(), from.val_ptr());
-    }
-
-    inline static bool compare_eq(val_quot_ptrs_t<val_t> lhs, val_quot_ptrs_t<val_t> rhs) {
-        return (lhs.get_quotient() == rhs.get_quotient()) && (*lhs.val_ptr() == *rhs.val_ptr());
-    }
 };
 
 }}

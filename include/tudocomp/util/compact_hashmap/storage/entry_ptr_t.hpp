@@ -113,6 +113,10 @@ public:
     inline void uninitialize() {
         cbp::cbp_repr_t<val_t>::call_destructor(val_ptr());
     }
+
+    inline bool contents_eq(val_quot_ptrs_t rhs) const {
+        return (get_quotient() == rhs.get_quotient()) && (*val_ptr() == *rhs.val_ptr());
+    }
 };
 
 template<typename val_t>

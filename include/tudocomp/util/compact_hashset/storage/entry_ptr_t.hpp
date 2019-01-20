@@ -85,6 +85,10 @@ public:
 
     inline void uninitialize() {
     }
+
+    inline bool contents_eq(quot_ptrs_t rhs) const {
+        return get_quotient() == rhs.get_quotient();
+    }
 };
 
 struct lookup_result_t {

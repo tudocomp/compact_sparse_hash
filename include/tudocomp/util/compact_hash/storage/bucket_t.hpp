@@ -135,6 +135,7 @@ public:
         // eg, the known sparse_hash repo uses overallocation for small buckets
 
         // create a new bucket with enough size for the new element
+        // NB: The elements in it are uninitialized
         auto new_bucket = bucket_t<N, satellite_t>(bv() | new_elem_bv_bit, width);
 
         auto new_iter = new_bucket.at(0, width);
@@ -147,7 +148,7 @@ public:
 
         // move all elements before the new element's location from old bucket into new bucket
         while(new_iter != new_iter_midpoint) {
-            bucket_layout_t::move_to_ptr_from_ptr(new_iter, old_iter);
+            new_iter.init_from(old_iter);
             new_iter.increment_ptr();
             old_iter.increment_ptr();
         }
@@ -160,7 +161,7 @@ public:
 
         // move all elements after the new element's location from old bucket into new bucket
         while(new_iter != new_iter_end) {
-            bucket_layout_t::move_to_ptr_from_ptr(new_iter, old_iter);
+            new_iter.init_from(old_iter);
             new_iter.increment_ptr();
             old_iter.increment_ptr();
         }
