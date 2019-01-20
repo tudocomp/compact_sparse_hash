@@ -46,10 +46,6 @@ public:
         using entry_t = generic_entry_t<entry_ptr_t>;
         using table_pos_t = typename storage_t::table_pos_t;
 
-        using val_t = typename storage_t::val_t_export;
-        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
-        using pointer_type = ValPtr<val_t>;
-
         IntVector<uint_t<2>>& m_cv;
         size_t const table_size;
         entry_width_t widths;

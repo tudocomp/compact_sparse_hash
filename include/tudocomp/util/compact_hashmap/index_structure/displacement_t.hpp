@@ -41,10 +41,6 @@ public:
         using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
         using table_pos_t = typename storage_t::table_pos_t;
 
-        using val_t = typename storage_t::val_t_export;
-        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
-        using pointer_type = ValPtr<val_t>;
-
         displacement_table_t& m_displace;
         size_t const table_size;
         entry_width_t widths;

@@ -105,9 +105,4 @@ public:
     }
 };
 
-struct lookup_result_t {
-    quot_ptrs_t entry;
-    bool is_empty;
-};
-
 }}
