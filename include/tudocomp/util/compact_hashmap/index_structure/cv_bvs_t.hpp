@@ -40,19 +40,18 @@ public:
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
-        using val_t = typename storage_t::val_t_export;
         using satellite_t = typename storage_t::satellite_t_export;
         using entry_width_t = typename satellite_t::entry_bit_width_t;
         using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
-
-        using widths_t = typename satellite_t::entry_bit_width_t;
-        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using table_pos_t = typename storage_t::table_pos_t;
+
+        using val_t = typename storage_t::val_t_export;
+        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
         using pointer_type = ValPtr<val_t>;
 
         IntVector<uint_t<2>>& m_cv;
         size_t const table_size;
-        widths_t widths;
+        entry_width_t widths;
         size_mgr_t const& size_mgr;
         storage_t& storage;
 
