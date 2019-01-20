@@ -42,7 +42,8 @@ public:
     struct context_t {
         using satellite_t = typename storage_t::satellite_t_export;
         using entry_width_t = typename satellite_t::entry_bit_width_t;
-        using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
+        using entry_ptr_t = typename satellite_t::entry_ptr_t;
+        using entry_t = generic_entry_t<entry_ptr_t>;
         using table_pos_t = typename storage_t::table_pos_t;
 
         IntVector<uint_t<2>>& m_cv;
@@ -138,7 +139,7 @@ public:
 
         /// Inserts a new key-value pair after an existing
         /// group, shifting all following entries one to the right as needed.
-        inline quot_ptrs_t insert_value_after_group(
+        inline entry_ptr_t insert_value_after_group(
             Group const& group, uint64_t stored_quotient)
         {
             auto sctx = storage.context(table_size, widths);
@@ -159,7 +160,7 @@ public:
         /// at the now-empty location `from`.
         ///
         /// The position `to` needs to be empty.
-        inline quot_ptrs_t shift_groups_and_insert(
+        inline entry_ptr_t shift_groups_and_insert(
             size_t from, size_t to, uint64_t stored_quotient)
         {
             DCHECK_NE(from, to);
@@ -181,7 +182,7 @@ public:
         /// at the now-empty location `from`.
         ///
         /// The position `to` needs to be empty.
-        inline quot_ptrs_t shift_elements_and_insert(
+        inline entry_ptr_t shift_elements_and_insert(
             size_t from, size_t to)
         {
             auto sctx = storage.context(table_size, widths);
@@ -248,7 +249,7 @@ public:
 
             // move the element at the last position to a temporary position
             auto tmp_p = sctx.at(last);
-            uint64_t tmp_quot = tmp_p.get_quotient();
+            auto tmp = tmp_p.move_out();
 
             // move all elements one to the right
             // TODO: Could be optimized
@@ -268,7 +269,7 @@ public:
 
             // move last element to the front
             auto from_p = sctx.at(from_loc);
-            from_p.set(tmp_quot);
+            from_p.set(std::move(tmp));
             return from_loc;
         }
 
@@ -314,7 +315,7 @@ public:
 
                     if (r.found()) {
                         // There is a value for this key already.
-                        // DCHECK_EQ(p.get_quotient(), stored_quotient);
+                        DCHECK_EQ(r.ptr().get_quotient(), stored_quotient);
 
                         uint64_t global_id = local_id_to_global_id(
                             initial_address, r.id());

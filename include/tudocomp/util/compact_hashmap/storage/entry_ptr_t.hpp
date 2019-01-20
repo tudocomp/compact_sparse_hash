@@ -19,6 +19,11 @@ class val_quot_ptrs_t {
 public:
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
+    struct my_value_type {
+        uint64_t quot;
+        value_type val;
+    };
+
     inline val_quot_ptrs_t(ValPtr<val_t> val_ptr,
                       QuotPtr quot_ptr):
         m_val_ptr(val_ptr),
@@ -116,6 +121,18 @@ public:
 
     inline bool contents_eq(val_quot_ptrs_t rhs) const {
         return (get_quotient() == rhs.get_quotient()) && (*val_ptr() == *rhs.val_ptr());
+    }
+
+    inline my_value_type move_out() const {
+        return my_value_type {
+            get_quotient(),
+            std::move(*val_ptr()),
+        };
+    }
+
+    inline void set(my_value_type&& val) {
+        set_quotient(val.quot);
+        *val_ptr() = std::move(val.val);
     }
 };
 

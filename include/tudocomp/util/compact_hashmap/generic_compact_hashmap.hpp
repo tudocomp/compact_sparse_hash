@@ -145,10 +145,10 @@ public:
 
         auto result = grow_and_insert(key, raw_key_width, raw_val_width);
 
-        if (result.is_empty) {
-            result.entry.set_val_no_drop(std::move(value));
+        if (!result.key_already_exist()) {
+            result.ptr().set_val_no_drop(std::move(value));
         } else {
-            result.entry.set_val(std::move(value));
+            result.ptr().set_val(std::move(value));
         }
     }
 
@@ -180,11 +180,11 @@ public:
 
         auto result = grow_and_insert(key, raw_key_width, raw_val_width);
 
-        if (result.is_empty) {
-            result.entry.set_val_no_drop(value_type());
+        if (!result.key_already_exist()) {
+            result.ptr().set_val_no_drop(value_type());
         }
 
-        pointer_type addr = result.entry.val_ptr();
+        pointer_type addr = result.ptr().val_ptr();
         DCHECK(addr != pointer_type());
         return *addr;
     }
@@ -223,7 +223,12 @@ public:
     inline pointer_type search(uint64_t key) {
         auto dkey = decompose_key(key);
         auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
-        return pctx.search(dkey.initial_address, dkey.stored_quotient);
+        auto r = pctx.search(dkey.initial_address, dkey.stored_quotient);
+        if (r.found()) {
+            return r.ptr().val_ptr();
+        } else {
+            return pointer_type();
+        }
     }
 
     inline std::string debug_print_storage() {
@@ -353,7 +358,7 @@ private:
 
         auto result = pctx.lookup_insert(dkey.initial_address, dkey.stored_quotient);
 
-        if (result.is_empty) {
+        if (!result.key_already_exist()) {
             m_sizing.set_size(m_sizing.size() + 1);
         }
 

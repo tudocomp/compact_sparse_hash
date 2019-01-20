@@ -42,7 +42,8 @@ public:
     struct context_t {
         using satellite_t = typename storage_t::satellite_t_export;
         using entry_width_t = typename satellite_t::entry_bit_width_t;
-        using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
+        using entry_ptr_t = typename satellite_t::entry_ptr_t;
+        using entry_t = generic_entry_t<entry_ptr_t>;
         using table_pos_t = typename storage_t::table_pos_t;
 
         using val_t = typename storage_t::val_t_export;
@@ -126,22 +127,23 @@ public:
         ///
         /// This returns a pointer to the value if its found, or null
         /// otherwise.
-        inline val_quot_ptrs_t<val_t> search_in_group(Group const& group,
-                                                      uint64_t stored_quotient) {
+        inline entry_t search_in_group(Group const& group,
+                                       uint64_t stored_quotient) {
             auto sctx = storage.context(table_size, widths);
             for(size_t i = group.group_start; i != group.group_end; i = size_mgr.mod_add(i)) {
                 auto sparse_entry = sctx.at(sctx.table_pos(i));
 
                 if (sparse_entry.get_quotient() == stored_quotient) {
-                    return sparse_entry;
+                    uint64_t in_group_offset = size_mgr.mod_sub(i, group.group_start);
+                    return entry_t::found_exist(in_group_offset, sparse_entry);
                 }
             }
-            return val_quot_ptrs_t<val_t>();
+            return entry_t::not_found();
         }
 
         /// Inserts a new key-value pair after an existing
         /// group, shifting all following entries one to the right as needed.
-        inline val_quot_ptrs_t<val_t> insert_value_after_group(
+        inline entry_ptr_t insert_value_after_group(
             Group const& group, uint64_t stored_quotient)
         {
             auto sctx = storage.context(table_size, widths);
@@ -162,7 +164,7 @@ public:
         /// at the now-empty location `from`.
         ///
         /// The position `to` needs to be empty.
-        inline val_quot_ptrs_t<val_t> shift_groups_and_insert(
+        inline entry_ptr_t shift_groups_and_insert(
             size_t from, size_t to, uint64_t stored_quotient)
         {
             DCHECK_NE(from, to);
@@ -184,7 +186,7 @@ public:
         /// at the now-empty location `from`.
         ///
         /// The position `to` needs to be empty.
-        inline val_quot_ptrs_t<val_t> shift_elements_and_insert(
+        inline entry_ptr_t shift_elements_and_insert(
             size_t from, size_t to)
         {
             auto sctx = storage.context(table_size, widths);
@@ -251,8 +253,7 @@ public:
 
             // move the element at the last position to a temporary position
             auto tmp_p = sctx.at(last);
-            value_type tmp_val = std::move(*tmp_p.val_ptr());
-            uint64_t tmp_quot = tmp_p.get_quotient();
+            auto tmp = tmp_p.move_out();
 
             // move all elements one to the right
             // TODO: Could be optimized
@@ -272,7 +273,7 @@ public:
 
             // move last element to the front
             auto from_p = sctx.at(from_loc);
-            from_p.set(std::move(tmp_val), tmp_quot);
+            from_p.set(std::move(tmp));
             return from_loc;
         }
 
@@ -282,8 +283,8 @@ public:
             return local_id;
         }
 
-        lookup_result_t<val_t> lookup_insert(uint64_t initial_address,
-                                             uint64_t stored_quotient)
+        entry_t lookup_insert(uint64_t initial_address,
+                              uint64_t stored_quotient)
         {
             auto sctx = storage.context(table_size, widths);
             auto ia_pos = sctx.table_pos(initial_address);
@@ -304,7 +305,8 @@ public:
                 // we created a new group, so update the bitflags
                 set_cv(initial_address, 0b11);
 
-                return { location, true };
+                uint64_t global_id = local_id_to_global_id(initial_address, 0);
+                return entry_t::found_new(global_id, location);
             } else {
                 // check if there already is a group for this key
                 bool const group_exists = get_v(initial_address);
@@ -313,16 +315,25 @@ public:
                     auto const group = search_existing_group(initial_address);
 
                     // check if element already exists
-                    auto p = search_in_group(group, stored_quotient);
-                    if (p != val_quot_ptrs_t<val_t>()) {
+                    auto r = search_in_group(group, stored_quotient);
+
+                    if (r.found()) {
                         // There is a value for this key already.
-                        DCHECK_EQ(p.get_quotient(), stored_quotient);
-                        return { p, false };
+                        DCHECK_EQ(r.ptr().get_quotient(), stored_quotient);
+
+                        uint64_t global_id = local_id_to_global_id(
+                            initial_address, r.id());
+                        return entry_t::found_exist(global_id, r.ptr());
                     } else {
                         // Insert a new value
-                        p = insert_value_after_group(group, stored_quotient);
+                        auto p = insert_value_after_group(group, stored_quotient);
                         p.set_quotient(stored_quotient);
-                        return { p, true };
+
+                        uint64_t in_group_offset = size_mgr.mod_sub(
+                            group.group_end, group.group_start);
+                        uint64_t global_id = local_id_to_global_id(
+                            initial_address, in_group_offset);
+                        return entry_t::found_new(global_id, p);
                     }
                 } else {
                     // insert a new group
@@ -341,7 +352,9 @@ public:
                     // thus fixing-up the v <-> c mapping
                     set_c(group.group_end, true);
 
-                    return { p, true };
+                    uint64_t global_id = local_id_to_global_id(
+                        initial_address, 0);
+                    return entry_t::found_new(global_id, p);
                 }
             }
         }
@@ -427,13 +440,20 @@ public:
             });
         }
 
-        inline pointer_type search(uint64_t initial_address, uint64_t stored_quotient) {
+        inline entry_t search(uint64_t initial_address, uint64_t stored_quotient) {
             //std::cout << "search on cv(ia="<<initial_address<<", sq="<<stored_quotient<<")\n";
             if (get_v(initial_address)) {
                 auto grp = search_existing_group(initial_address);
-                return search_in_group(grp, stored_quotient).val_ptr();
+                auto r = search_in_group(grp, stored_quotient);
+                if (!r.found()) {
+                    return r;
+                } else {
+                    uint64_t global_id = local_id_to_global_id(
+                        initial_address, r.id());
+                    return entry_t::found_exist(global_id, r.ptr());
+                }
             }
-            return pointer_type();
+            return entry_t::not_found();
         }
     };
     template<typename storage_t, typename size_mgr_t>

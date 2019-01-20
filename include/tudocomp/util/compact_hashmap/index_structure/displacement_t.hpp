@@ -50,8 +50,8 @@ public:
         entry_width_t widths;
         size_mgr_t const& size_mgr;
         storage_t& storage;
-        lookup_result_t<val_t> lookup_insert(uint64_t initial_address,
-                                             uint64_t stored_quotient)
+        entry_t lookup_insert(uint64_t initial_address,
+                              uint64_t stored_quotient)
         {
             auto sctx = storage.context(table_size, widths);
 
@@ -63,13 +63,13 @@ public:
                     auto ptrs = sctx.allocate_pos(pos);
                     m_displace.set(cursor, size_mgr.mod_sub(cursor, initial_address));
                     ptrs.set_quotient(stored_quotient);
-                    return { ptrs, true };
+                    return entry_t::found_new(cursor, ptrs);
                 }
 
                 if(m_displace.get(cursor) == size_mgr.mod_sub(cursor, initial_address)) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {
-                        return { ptrs, false };
+                        return entry_t::found_exist(cursor, ptrs);
                     }
                 }
 
@@ -78,7 +78,7 @@ public:
             }
 
             DCHECK(false) << "unreachable";
-            return {};
+            return entry_t::not_found();
         }
 
         template<typename F>
@@ -141,21 +141,21 @@ public:
             });
         }
 
-        inline pointer_type search(uint64_t const initial_address,
-                                   uint64_t stored_quotient) {
+        inline entry_t search(uint64_t const initial_address,
+                              uint64_t stored_quotient) {
             auto sctx = storage.context(table_size, widths);
             auto cursor = initial_address;
             while(true) {
                 auto pos = sctx.table_pos(cursor);
 
                 if (sctx.pos_is_empty(pos)) {
-                    return pointer_type();
+                    return entry_t::not_found();
                 }
 
                 if(m_displace.get(cursor) == size_mgr.mod_sub(cursor, initial_address)) {
                     auto ptrs = sctx.at(pos);
                     if (ptrs.get_quotient() == stored_quotient) {
-                        return ptrs.val_ptr();
+                        return entry_t::found_exist(cursor, ptrs);
                     }
                 }
 
@@ -163,7 +163,8 @@ public:
                 DCHECK_NE(cursor, initial_address);
             }
 
-            return pointer_type();
+            DCHECK(false) << "unreachable";
+            return entry_t::not_found();
         }
     };
     template<typename storage_t, typename size_mgr_t>

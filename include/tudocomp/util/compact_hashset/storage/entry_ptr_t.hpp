@@ -16,6 +16,10 @@ class quot_ptrs_t {
     mutable QuotPtr m_quot_ptr;
 
 public:
+    struct my_value_type {
+        uint64_t quot;
+    };
+
     inline quot_ptrs_t(QuotPtr quot_ptr):
         m_quot_ptr(quot_ptr)
     {
@@ -88,6 +92,16 @@ public:
 
     inline bool contents_eq(quot_ptrs_t rhs) const {
         return get_quotient() == rhs.get_quotient();
+    }
+
+    inline my_value_type move_out() const {
+        return my_value_type {
+            get_quotient(),
+        };
+    }
+
+    inline void set(my_value_type&& val) {
+        set_quotient(val.quot);
     }
 };
 
