@@ -135,33 +135,24 @@ void CVTableTest() {
     using widths_t = typename satellite_data_t<val_t>::entry_bit_width_t;
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 
-    struct TestSizeMgr {
-        size_t table_size;
-        inline size_t mod_add(size_t i, size_t delta = 1) const {
-            return (i + delta) % table_size;
-        }
-        inline size_t mod_sub(size_t i, size_t delta = 1) const {
-            return (i + table_size - delta) % table_size;
-        }
-    };
-
     widths_t ws { 5, 7 };
-    auto size_mgr = TestSizeMgr { 128 };
-    auto t = tab_t(size_mgr.table_size, ws);
-    auto p = placement_t(size_mgr.table_size);
+    auto size_mgr = size_manager_t(128);
 
-    auto tctx = t.context(size_mgr.table_size, ws);
-    auto pctx = p.context(t, size_mgr.table_size, ws, size_mgr);
+    auto t = tab_t(size_mgr.capacity(), ws);
+    auto p = placement_t(size_mgr.capacity());
+
+    auto tctx = t.context(size_mgr.capacity(), ws);
+    auto pctx = p.context(t, size_mgr.capacity(), ws, size_mgr);
 
     auto check_insert = [&](auto ia, auto value, auto sq, bool should_exists) {
         auto res = pctx.lookup_insert(ia, sq);
-        ASSERT_EQ(!res.is_empty, should_exists);
-        ASSERT_EQ(res.entry.get_quotient(), sq);
-        *res.entry.val_ptr() = value;
+        ASSERT_EQ(res.key_already_exist(), should_exists);
+        ASSERT_EQ(res.ptr().get_quotient(), sq);
+        *res.ptr().val_ptr() = value;
     };
     auto table_state = [&](std::vector<std::array<uint64_t, 3>> const& should) {
         std::vector<std::array<uint64_t, 3>> r;
-        for (size_t i = 0; i < size_mgr.table_size; i++) {
+        for (size_t i = 0; i < size_mgr.capacity(); i++) {
             auto tpos = tctx.table_pos(i);
             if (!tctx.pos_is_empty(tpos)) {
                 // TODO: Replace with search()
@@ -278,9 +269,9 @@ void DPTableTest() {
 
     auto check_insert = [&](auto ia, auto value, auto sq, bool should_exists) {
         auto res = pctx.lookup_insert(ia, sq);
-        ASSERT_EQ(!res.is_empty, should_exists);
-        ASSERT_EQ(res.entry.get_quotient(), sq);
-        *res.entry.val_ptr() = value;
+        ASSERT_EQ(res.key_already_exist(), should_exists);
+        ASSERT_EQ(res.ptr().get_quotient(), sq);
+        *res.ptr().val_ptr() = value;
     };
     auto table_state = [&](std::vector<std::array<uint64_t, 3>> const& should) {
         std::vector<std::array<uint64_t, 3>> r;
