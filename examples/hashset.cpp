@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <tudocomp/util/compact_hashset/generic_compact_hashset.hpp>
 #include <tudocomp/util/compact_hash/hash_functions.hpp>
-#include <tudocomp/util/compact_hashset/index_structure/cv_bvs_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/cv_bvs_t.hpp>
 #include <algorithm>
 #include <tudocomp/util/serialization.hpp>
 

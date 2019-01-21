@@ -6,7 +6,7 @@
 #include <algorithm>
 
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "../entry_t.hpp"
+#include <tudocomp/util/compact_hash/entry_t.hpp>
 
 namespace tdc {namespace compact_sparse_hashset {
 using namespace compact_hash;

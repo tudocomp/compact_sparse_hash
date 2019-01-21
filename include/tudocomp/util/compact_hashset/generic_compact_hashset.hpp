@@ -3,12 +3,11 @@
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/size_manager_t.hpp>
 #include <tudocomp/util/compact_hash/storage/buckets_bv_t.hpp>
+#include <tudocomp/util/compact_hash/entry_t.hpp>
 
 #include <tudocomp/util/compact_hashset/satellite_data_config_t.hpp>
 
 #include <tudocomp/util/serialization.hpp>
-
-#include "entry_t.hpp"
 
 namespace tdc {namespace compact_sparse_hashset {
 using namespace compact_hash;
