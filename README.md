@@ -20,10 +20,10 @@ A minimal example is
 #include <tudocomp/util/compact_sparse_hash.hpp>
 ...
 // creates a hash table with zero entries, set the bit-width of the keys to four
-auto map = tdc::compact_sparse_hashmap::compact_sparse_hashmap_t<int>(0, 4);
+auto map = tdc::compact_hash::map::compact_sparse_hashmap_t<int>(0, 4);
 for(int i = 0; i <= 15; ++i) { // interval [0..15] can be represented by four bits
-	map.insert(i, std::move(i*i)); // insert key i, value i*i
-	std::cout << i << " -> " << map[i] << std::endl; // map[i] returns value i*i with key i
+    map.insert(i, i*i); // insert key i, value i*i
+    std::cout << i << " -> " << map[i] << std::endl; // map[i] returns value i*i with key i
 }
 ```
 
@@ -66,8 +66,8 @@ Currently, we have set the bucket size `B` to 64.
 
 # API
 We have a `set` and a `map` interface to the (sparse) compact hash table:
- - `tdc::compact_sparse_hashset::generic_hashset_t`
- - `tdc::compact_sparse_hashmap::generic_hashmap_t`
+ - `tdc::compact_hash::set::hashset_t`
+ - `tdc::compact_hash::map::hashmap_t`
 Each of these hash table classes is templated by the following parameters:
  - the hash function
  - how the storage of the hash table is represented (e.g., sparse)
@@ -78,7 +78,7 @@ Each of these hash table classes is templated by the following parameters:
      - `elias_gamma_displacement_table_t`: the gamma m-Bonsai approach of [3]
      - `naive_displacement_table_t`: stores the displacement array as a plain array with `size_t` integers (for debug purposes)
 
-The `generic_hashset_t` has the following helpful methods:
+The `hashset_t` has the following helpful methods:
  - `lookup(key)` looks up a key and returns an `entry_t`,
  - `lookup_insert(key)` additionally inserts `key` if not present,
  - `lookup_insert_key_width(key, key_width)` works like above, but additionally increases the bit widths of the keys to `key_width`,
@@ -93,7 +93,7 @@ This _id_ is computed based on the displacement setting:
 
 It is possible to let the hash table call an event handler before it rehashes its contents.
 For that, methods that can cause a rehashing provide a template parameter `on_resize_t` that can be set to an event handler.
-See the class `default_on_resize_t` in `generic_compact_hashset` for an example.
+See the class `default_on_resize_t` in `hashset_t` for an example.
 
 # Constraints
 
@@ -119,7 +119,7 @@ We offer a serialization API for the `set` interface:
 #include <tudocomp/util/serialization.hpp>
 
 using tdc::serialize;
-using table_t = tdc::compact_sparse_hashset::generic_hashset_t<...>;
+using table_t = tdc::compact_hash::set::hashset_t<...>;
 
 table_t a = table_t(...);
 
