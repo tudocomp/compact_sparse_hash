@@ -1,6 +1,6 @@
 #pragma once
 
-namespace tdc {namespace compact_sparse_hashset {
+namespace tdc {namespace compact_hash {
 
 template<typename entry_ptr>
 class generic_entry_t {

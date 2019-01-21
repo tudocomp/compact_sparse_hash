@@ -4,7 +4,7 @@
 
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
-#include "../satellite_data_config_t.hpp"
+#include "../entry_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
 
