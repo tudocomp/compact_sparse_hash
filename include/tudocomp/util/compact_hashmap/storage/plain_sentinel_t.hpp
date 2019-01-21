@@ -14,16 +14,11 @@ using namespace compact_hash;
 
     template<typename satellite_t>
     struct plain_sentinel_t {
-        using val_t_export = typename satellite_t::tmp_val_t;
-        using val_t = typename satellite_t::tmp_val_t;
-
         using satellite_t_export = satellite_t;
         using entry_ptr_t = typename satellite_t::entry_ptr_t;
         using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
-
-        using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
-        using qvd_t = quot_val_data_seq_t<val_t>;
-        using widths_t = typename satellite_t::entry_bit_width_t;
+        using qvd_t = typename satellite_t::bucket_data_layout_t;
+        using value_type = typename satellite_t::sentinel_value_type;
 
         template<typename T>
         friend struct ::tdc::serialize;
@@ -33,7 +28,7 @@ using namespace compact_hash;
 
         inline plain_sentinel_t() {}
         inline plain_sentinel_t(size_t table_size,
-                                widths_t widths,
+                                entry_bit_width_t widths,
                                 value_type const& empty_value = value_type()):
             m_empty_value(empty_value)
         {
@@ -59,17 +54,17 @@ using namespace compact_hash;
         // pseudo-iterator for iterating over bucket elements
         // NB: does not wrap around!
         struct iter_t {
-            val_quot_ptrs_t<val_t>    m_end;
-            value_type const&         m_empty_value;
+            entry_ptr_t       m_end;
+            value_type const& m_empty_value;
 
-            inline iter_t(val_quot_ptrs_t<val_t> endpos,
+            inline iter_t(entry_ptr_t endpos,
                           value_type const& empty_value):
                 m_end(endpos),
                 m_empty_value(empty_value)
             {
             }
 
-            inline val_quot_ptrs_t<val_t> get() {
+            inline entry_ptr_t get() {
                 return m_end;
             }
 
@@ -89,7 +84,7 @@ using namespace compact_hash;
             alloc_type& m_alloc;
             value_type const& m_empty_value;
             size_t const table_size;
-            widths_t widths;
+            entry_bit_width_t widths;
 
             inline void destroy_vals() {
                 qvd_t::destroy_vals(m_alloc.get(), table_size, widths);
@@ -98,7 +93,7 @@ using namespace compact_hash;
             inline table_pos_t table_pos(size_t pos) {
                 return table_pos_t { pos };
             }
-            inline val_quot_ptrs_t<val_t> allocate_pos(table_pos_t pos) {
+            inline entry_ptr_t allocate_pos(table_pos_t pos) {
                 DCHECK_LT(pos.offset, table_size);
                 auto tmp = at(pos);
 
@@ -109,7 +104,7 @@ using namespace compact_hash;
 
                 return tmp;
             }
-            inline val_quot_ptrs_t<val_t> at(table_pos_t pos) {
+            inline entry_ptr_t at(table_pos_t pos) {
                 DCHECK_LT(pos.offset, table_size);
                 return qvd_t::at(m_alloc.get(), table_size, pos.offset, widths);
             }
@@ -129,12 +124,12 @@ using namespace compact_hash;
                 // Nothing to be done
             }
         };
-        inline auto context(size_t table_size, widths_t const& widths) {
+        inline auto context(size_t table_size, entry_bit_width_t const& widths) {
             return context_t<std::unique_ptr<uint64_t[]>> {
                 m_alloc, m_empty_value, table_size, widths,
             };
         }
-        inline auto context(size_t table_size, widths_t const& widths) const {
+        inline auto context(size_t table_size, entry_bit_width_t const& widths) const {
             return context_t<std::unique_ptr<uint64_t[]> const> {
                 m_alloc, m_empty_value, table_size, widths,
             };
@@ -145,11 +140,11 @@ using namespace compact_hash;
 template<typename satellite_t>
 struct serialize<compact_sparse_hashmap::plain_sentinel_t<satellite_t>> {
     using T = compact_sparse_hashmap::plain_sentinel_t<satellite_t>;
-    using widths_t = typename T::widths_t;
+    using entry_bit_width_t = typename T::entry_bit_width_t;
     using value_type = typename T::value_type;
     using qvd_t = typename T::qvd_t;
 
-    static void write(std::ostream& out, T const& val, size_t table_size, widths_t const& widths) {
+    static void write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashmap;
 
         auto alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
@@ -159,7 +154,7 @@ struct serialize<compact_sparse_hashmap::plain_sentinel_t<satellite_t>> {
             serialize<uint64_t>::write(out, val.m_alloc[i]);
         }
     }
-    static T read(std::istream& in, size_t table_size, widths_t const& widths) {
+    static T read(std::istream& in, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_sparse_hashmap;
 
         auto alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
@@ -174,7 +169,7 @@ struct serialize<compact_sparse_hashmap::plain_sentinel_t<satellite_t>> {
 
         return ret;
     }
-    static bool equal_check(T const& lhs, T const& rhs, size_t table_size, widths_t const& widths) {
+    static bool equal_check(T const& lhs, T const& rhs, size_t table_size, entry_bit_width_t const& widths) {
         auto lhsc = lhs.context(table_size, widths);
         auto rhsc = rhs.context(table_size, widths);
 

@@ -18,7 +18,7 @@ public:
 
     using bucket_data_layout_t = qvd_t;
 
-    using tmp_val_t = val_t;
+    using sentinel_value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 };
 
 }}
