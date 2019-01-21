@@ -3,15 +3,13 @@
 #include <memory>
 
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "../satellite_data_config_t.hpp"
+#include <tudocomp/util/compact_hash/entry_t.hpp>
 
 #include <tudocomp/util/serialization.hpp>
 
 // Table for uninitalized elements
 
-namespace tdc {namespace compact_sparse_hashmap {
-using namespace compact_hash;
-
+namespace tdc {namespace compact_hash {
     template<typename satellite_t>
     struct plain_sentinel_t {
         using satellite_t_export = satellite_t;
@@ -138,14 +136,14 @@ using namespace compact_hash;
 }
 
 template<typename satellite_t>
-struct serialize<compact_sparse_hashmap::plain_sentinel_t<satellite_t>> {
-    using T = compact_sparse_hashmap::plain_sentinel_t<satellite_t>;
+struct serialize<compact_hash::plain_sentinel_t<satellite_t>> {
+    using T = compact_hash::plain_sentinel_t<satellite_t>;
     using entry_bit_width_t = typename T::entry_bit_width_t;
     using value_type = typename T::value_type;
     using qvd_t = typename T::qvd_t;
 
     static void write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
-        using namespace compact_sparse_hashmap;
+        using namespace compact_hash;
 
         auto alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
 
@@ -155,7 +153,7 @@ struct serialize<compact_sparse_hashmap::plain_sentinel_t<satellite_t>> {
         }
     }
     static T read(std::istream& in, size_t table_size, entry_bit_width_t const& widths) {
-        using namespace compact_sparse_hashmap;
+        using namespace compact_hash;
 
         auto alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
 

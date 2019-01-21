@@ -7,13 +7,13 @@
 #include <tudocomp/util/compact_hashset/satellite_data_config_t.hpp>
 
 #include <tudocomp/util/compact_hashmap/generic_compact_hashmap.hpp>
-#include <tudocomp/util/compact_hashmap/storage/plain_sentinel_t.hpp>
 #include <tudocomp/util/compact_hashmap/satellite_data_config_t.hpp>
 
 #include <tudocomp/util/compact_hash/index_structure/displacement_t.hpp>
 #include <tudocomp/util/compact_hash/index_structure/cv_bvs_t.hpp>
 #include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/compact_hash/storage/buckets_bv_t.hpp>
+#include <tudocomp/util/compact_hash/storage/plain_sentinel_t.hpp>
 #include <tudocomp/util/serialization.hpp>
 
 template<typename table_t, typename build_func>
