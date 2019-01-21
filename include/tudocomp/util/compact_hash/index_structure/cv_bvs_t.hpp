@@ -8,7 +8,7 @@
 
 #include <tudocomp/util/serialization.hpp>
 
-namespace tdc {namespace compact_sparse_hashmap {
+namespace tdc {namespace compact_hash {
 
 class cv_bvs_t {
     template<typename T>
@@ -466,8 +466,8 @@ public:
 }
 
 template<>
-struct serialize<compact_sparse_hashmap::cv_bvs_t> {
-    using T = compact_sparse_hashmap::cv_bvs_t;
+struct serialize<compact_hash::cv_bvs_t> {
+    using T = compact_hash::cv_bvs_t;
 
     static void write(std::ostream& out, T const& val,
                       size_t table_size) {

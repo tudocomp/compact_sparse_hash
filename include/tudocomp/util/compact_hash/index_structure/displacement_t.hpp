@@ -18,7 +18,7 @@
 
 #include <tudocomp/util/serialization.hpp>
 
-namespace tdc {namespace compact_sparse_hashmap {
+namespace tdc {namespace compact_hash {
 
 template<typename displacement_table_t>
 class displacement_t {
@@ -177,8 +177,8 @@ public:
 }
 
 template<typename displacement_table_t>
-struct serialize<compact_sparse_hashmap::displacement_t<displacement_table_t>> {
-    using T = compact_sparse_hashmap::displacement_t<displacement_table_t>;
+struct serialize<compact_hash::displacement_t<displacement_table_t>> {
+    using T = compact_hash::displacement_t<displacement_table_t>;
 
     static void write(std::ostream& out, T const& val, size_t table_size) {
         serialize<displacement_table_t>::write(out, val.m_displace, table_size);
