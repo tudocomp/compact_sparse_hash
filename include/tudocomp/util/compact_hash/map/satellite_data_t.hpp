@@ -1,15 +1,16 @@
 #pragma once
 
 #include <tudocomp/util/compact_hash/entry_t.hpp>
-#include "storage/entry_ptr_t.hpp"
-#include "storage/bucket_data_layout_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashmap {
+#include "val_quot_ptrs_t.hpp"
+#include "val_quot_bucket_layout_t.hpp"
+
+namespace tdc {namespace compact_hash{namespace map {
 
 template<typename val_t>
 struct satellite_data_t {
 private:
-    using qvd_t = quot_val_data_seq_t<val_t>;
+    using qvd_t = val_quot_bucket_layout_t<val_t>;
     using widths_t = typename qvd_t::QVWidths;
 public:
     static constexpr bool has_sentinel = true;
@@ -21,4 +22,4 @@ public:
     using sentinel_value_type = typename cbp::cbp_repr_t<val_t>::value_type;
 };
 
-}}
+}}}

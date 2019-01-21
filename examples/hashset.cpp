@@ -2,18 +2,15 @@
 #include <vector>
 
 #include <cstdint>
-#include <tudocomp/util/compact_hashset/generic_compact_hashset.hpp>
+#include <tudocomp/util/compact_hash/set/hashset_t.hpp>
 #include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/compact_hash/index_structure/cv_bvs_t.hpp>
 #include <algorithm>
 #include <tudocomp/util/serialization.hpp>
 
-
-
-
-using set_type = tdc::compact_sparse_hashset::generic_hashset_t<
-    tdc::compact_sparse_hashset::poplar_xorshift_t,
-    tdc::compact_sparse_hashset::cv_bvs_t
+using set_type = tdc::compact_hash::set::hashset_t<
+    tdc::compact_hash::poplar_xorshift_t,
+    tdc::compact_hash::cv_bvs_t
     >;
 
 int main() {
@@ -35,4 +32,3 @@ int main() {
     std::cout << ss.str() << std::endl;
 
 }
-

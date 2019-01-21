@@ -8,13 +8,12 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "entry_ptr_t.hpp"
+#include "val_quot_ptrs_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashmap {
-using namespace compact_hash;
+namespace tdc {namespace compact_hash{namespace map {
 
 template<typename val_t>
-struct quot_val_data_seq_t {
+struct val_quot_bucket_layout_t {
     struct QVWidths {
         uint8_t quot_width;
         uint8_t val_width;
@@ -85,4 +84,4 @@ struct quot_val_data_seq_t {
     }
 };
 
-}}
+}}}

@@ -8,11 +8,10 @@
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/entry_t.hpp>
 
-namespace tdc {namespace compact_sparse_hashset {
-using namespace compact_hash;
+namespace tdc {namespace compact_hash {namespace set {
 
 /// Represents a pair of pointers to value and quotient inside a bucket.
-class quot_ptrs_t {
+class quot_ptr_t {
     mutable QuotPtr m_quot_ptr;
 
 public:
@@ -20,12 +19,12 @@ public:
         uint64_t quot;
     };
 
-    inline quot_ptrs_t(QuotPtr quot_ptr):
+    inline quot_ptr_t(QuotPtr quot_ptr):
         m_quot_ptr(quot_ptr)
     {
     }
 
-    inline quot_ptrs_t():
+    inline quot_ptr_t():
         m_quot_ptr() {}
 
     inline uint64_t get_quotient() const {
@@ -53,14 +52,14 @@ public:
         m_quot_ptr--;
     }
 
-    inline friend bool operator==(quot_ptrs_t const& lhs,
-                                  quot_ptrs_t const& rhs)
+    inline friend bool operator==(quot_ptr_t const& lhs,
+                                  quot_ptr_t const& rhs)
     {
         return lhs.m_quot_ptr == rhs.m_quot_ptr;
     }
 
-    inline friend bool operator!=(quot_ptrs_t const& lhs,
-                                  quot_ptrs_t const& rhs)
+    inline friend bool operator!=(quot_ptr_t const& lhs,
+                                  quot_ptr_t const& rhs)
     {
         return lhs.m_quot_ptr != rhs.m_quot_ptr;
     }
@@ -73,15 +72,15 @@ public:
         set_quotient(quot);
     }
 
-    inline void move_from(quot_ptrs_t other) {
+    inline void move_from(quot_ptr_t other) {
         set_quotient(other.get_quotient());
     }
 
-    inline void init_from(quot_ptrs_t other) {
+    inline void init_from(quot_ptr_t other) {
         set_quotient(other.get_quotient());
     }
 
-    inline void swap_with(quot_ptrs_t other) {
+    inline void swap_with(quot_ptr_t other) {
         uint64_t tmp_quot = get_quotient();
         move_from(other);
         other.set(tmp_quot);
@@ -90,7 +89,7 @@ public:
     inline void uninitialize() {
     }
 
-    inline bool contents_eq(quot_ptrs_t rhs) const {
+    inline bool contents_eq(quot_ptr_t rhs) const {
         return get_quotient() == rhs.get_quotient();
     }
 
@@ -105,4 +104,4 @@ public:
     }
 };
 
-}}
+}}}

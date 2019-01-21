@@ -5,7 +5,8 @@
 #include <unordered_set>
 
 using namespace tdc;
-using namespace tdc::compact_sparse_hashset;
+using namespace tdc::compact_hash;
+using namespace tdc::compact_hash::set;
 
 using compact_hash_type = COMPACT_TABLE;
 

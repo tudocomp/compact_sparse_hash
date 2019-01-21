@@ -4,15 +4,14 @@
 #include <tudocomp/util/compact_hash/size_manager_t.hpp>
 #include <tudocomp/util/serialization.hpp>
 
-#include <tudocomp/util/compact_hashmap/satellite_data_config_t.hpp>
+#include <tudocomp/util/compact_hash/map/satellite_data_t.hpp>
 
 #include <tudocomp/util/serialization.hpp>
 
-namespace tdc {namespace compact_sparse_hashmap {
-using namespace compact_hash;
+namespace tdc {namespace compact_hash{namespace map {
 
 template<typename val_t, typename hash_t, template<typename> typename storage_t, typename placement_t>
-class generic_hashmap_t {
+class hashmap_t {
     using satellite_t = typename storage_t<satellite_data_t<val_t>>::satellite_t_export;
 public:
     /// By-value representation of a value
@@ -27,7 +26,7 @@ public:
     static constexpr size_t DEFAULT_VALUE_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
-    inline generic_hashmap_t(generic_hashmap_t&& other):
+    inline hashmap_t(hashmap_t&& other):
         m_sizing(std::move(other.m_sizing)),
         m_key_width(std::move(other.m_key_width)),
         m_val_width(std::move(other.m_val_width)),
@@ -38,7 +37,7 @@ public:
     {
         other.m_is_empty = true;
     }
-    inline generic_hashmap_t& operator=(generic_hashmap_t&& other) {
+    inline hashmap_t& operator=(hashmap_t&& other) {
         // NB: overwriting the storage does not automatically destroy the values in them.
         destroy_vals();
 
@@ -55,12 +54,12 @@ public:
         return *this;
     }
     // NB: These just exist to catch bugs, and could be removed
-    inline generic_hashmap_t(generic_hashmap_t const& other) = delete;
-    inline generic_hashmap_t& operator=(generic_hashmap_t  const& other) = delete;
+    inline hashmap_t(hashmap_t const& other) = delete;
+    inline hashmap_t& operator=(hashmap_t  const& other) = delete;
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
-    inline generic_hashmap_t(size_t size = DEFAULT_TABLE_SIZE,
+    inline hashmap_t(size_t size = DEFAULT_TABLE_SIZE,
                                size_t key_width = DEFAULT_KEY_WIDTH,
                                size_t value_width = DEFAULT_VALUE_WIDTH):
         m_sizing(size),
@@ -72,7 +71,7 @@ public:
     {
     }
 
-    inline ~generic_hashmap_t() {
+    inline ~hashmap_t() {
         if (!m_is_empty) {
             // NB: overwriting the storage does not automatically destroy the values in them.
             destroy_vals();
@@ -394,7 +393,7 @@ private:
             while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
                 new_capacity = m_sizing.grown_capacity(new_capacity);
             }
-            auto new_table = generic_hashmap_t<val_t, hash_t, storage_t, placement_t>(
+            auto new_table = hashmap_t<val_t, hash_t, storage_t, placement_t>(
                 new_capacity, new_key_width, new_value_width);
             new_table.max_load_factor(this->max_load_factor());
 
@@ -422,14 +421,15 @@ private:
     }
 };
 
-}
+}}
 
 template<typename val_t, typename hash_t, template<typename> typename storage_t, typename placement_t>
-struct serialize<compact_sparse_hashmap::generic_hashmap_t<val_t, hash_t, storage_t, placement_t>> {
-    using T = compact_sparse_hashmap::generic_hashmap_t<val_t, hash_t, storage_t, placement_t>;
+struct serialize<compact_hash::map::hashmap_t<val_t, hash_t, storage_t, placement_t>> {
+    using T = compact_hash::map::hashmap_t<val_t, hash_t, storage_t, placement_t>;
 
     static void write(std::ostream& out, T const& val) {
-        using namespace compact_sparse_hashmap;
+        using namespace compact_hash::map;
+        using namespace compact_hash;
 
         serialize<size_manager_t>::write(out, val.m_sizing);
         serialize<uint8_t>::write(out, val.m_key_width);
@@ -441,7 +441,8 @@ struct serialize<compact_sparse_hashmap::generic_hashmap_t<val_t, hash_t, storag
         serialize<uint8_t>::write(out, val.m_is_empty);
     }
     static T read(std::istream& in) {
-        using namespace compact_sparse_hashmap;
+        using namespace compact_hash::map;
+        using namespace compact_hash;
 
         T ret;
 

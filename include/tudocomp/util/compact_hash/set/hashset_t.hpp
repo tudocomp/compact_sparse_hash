@@ -5,15 +5,14 @@
 #include <tudocomp/util/compact_hash/storage/buckets_bv_t.hpp>
 #include <tudocomp/util/compact_hash/entry_t.hpp>
 
-#include <tudocomp/util/compact_hashset/satellite_data_config_t.hpp>
+#include <tudocomp/util/compact_hash/set/no_satellite_data_t.hpp>
 
 #include <tudocomp/util/serialization.hpp>
 
-namespace tdc {namespace compact_sparse_hashset {
-using namespace compact_hash;
+namespace tdc {namespace compact_hash {namespace set {
 
 template<typename hash_t, typename placement_t>
-class generic_hashset_t {
+class hashset_t {
     using storage_t = buckets_bv_t<no_satellite_data_t>;
     using satellite_t = typename storage_t::satellite_t_export;
 public:
@@ -21,7 +20,7 @@ public:
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;
 
-    inline generic_hashset_t(generic_hashset_t&& other):
+    inline hashset_t(hashset_t&& other):
         m_sizing(std::move(other.m_sizing)),
         m_key_width(std::move(other.m_key_width)),
         m_storage(std::move(other.m_storage)),
@@ -29,7 +28,7 @@ public:
         m_hash(std::move(other.m_hash))
     {
     }
-    inline generic_hashset_t& operator=(generic_hashset_t&& other) {
+    inline hashset_t& operator=(hashset_t&& other) {
         m_sizing = std::move(other.m_sizing);
         m_key_width = std::move(other.m_key_width);
         m_storage = std::move(other.m_storage);
@@ -39,12 +38,12 @@ public:
         return *this;
     }
     // NB: These just exist to catch bugs, and could be removed
-    inline generic_hashset_t(generic_hashset_t const& other) = delete;
-    inline generic_hashset_t& operator=(generic_hashset_t  const& other) = delete;
+    inline hashset_t(hashset_t const& other) = delete;
+    inline hashset_t& operator=(hashset_t  const& other) = delete;
 
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
-    inline generic_hashset_t(size_t size = DEFAULT_TABLE_SIZE,
+    inline hashset_t(size_t size = DEFAULT_TABLE_SIZE,
                                size_t key_width = DEFAULT_KEY_WIDTH):
         m_sizing(size),
         m_key_width(key_width),
@@ -161,7 +160,7 @@ public:
     }
 
     /// Swap this instance of the data structure with another one.
-    inline void swap(generic_hashset_t& other) {
+    inline void swap(hashset_t& other) {
         std::swap(*this, other);
     }
 
@@ -287,7 +286,7 @@ private:
             while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
                 new_capacity = m_sizing.grown_capacity(new_capacity);
             }
-            auto new_table = generic_hashset_t<hash_t, placement_t>(
+            auto new_table = hashset_t<hash_t, placement_t>(
                 new_capacity, new_key_width);
             new_table.max_load_factor(this->max_load_factor());
 
@@ -320,15 +319,16 @@ private:
     }
 };
 
-}
+}}
 
 template<typename hash_t, typename placement_t>
-struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>> {
-    using T = compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>;
+struct serialize<compact_hash::set::hashset_t<hash_t, placement_t>> {
+    using T = compact_hash::set::hashset_t<hash_t, placement_t>;
     using storage_t = typename T::storage_t;
 
     static void write(std::ostream& out, T const& val) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash::set;
+        using namespace compact_hash;
 
         serialize<size_manager_t>::write(out, val.m_sizing);
         serialize<uint8_t>::write(out, val.m_key_width);
@@ -338,7 +338,8 @@ struct serialize<compact_sparse_hashset::generic_hashset_t<hash_t, placement_t>>
         serialize<placement_t>::write(out, val.m_placement, val.table_size());
     }
     static T read(std::istream& in) {
-        using namespace compact_sparse_hashset;
+        using namespace compact_hash::set;
+        using namespace compact_hash;
 
         T ret;
 

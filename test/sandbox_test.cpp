@@ -7,11 +7,12 @@
 
 
 using namespace tdc;
-using namespace tdc::compact_sparse_hashmap;
+using namespace tdc::compact_hash::map;
+using namespace tdc::compact_hash;
 using namespace std;
 
 TEST(Sandbox, example) {
-   auto map = tdc::compact_sparse_hashmap::compact_sparse_hashmap_t<int>(0, 4); // creates a hash table with zero entries, set the bit-width of the keys to three
+   auto map = compact_sparse_hashmap_t<int>(0, 4); // creates a hash table with zero entries, set the bit-width of the keys to three
    std::cout << "Key Width: " << map.key_width() << std::endl;
 std::cout << "Add i -> i*i from i = 0 up to 15" << std::endl;
    for(int i = 0; i <= 15; ++i) { // interval [0..15] can be represented by 4-bits

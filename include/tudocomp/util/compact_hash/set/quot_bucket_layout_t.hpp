@@ -8,12 +8,11 @@
 
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 #include <tudocomp/util/compact_hash/util.hpp>
-#include "entry_ptr_t.hpp"
+#include "quot_ptr_t.hpp"
 
-namespace tdc {namespace compact_sparse_hashset {
-using namespace compact_hash;
+namespace tdc {namespace compact_hash {namespace set {
 
-struct quot_data_seq_t {
+struct quot_bucket_layout_t {
     /// Calculates the offsets of the two different arrays inside the allocation.
     struct Layout {
         cbp::cbp_layout_element_t<dynamic_t> quots_layout;
@@ -38,7 +37,7 @@ struct quot_data_seq_t {
 
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
-    inline static quot_ptrs_t ptr(uint64_t* alloc, size_t size, uint8_t quot_width) {
+    inline static quot_ptr_t ptr(uint64_t* alloc, size_t size, uint8_t quot_width) {
         DCHECK(size != 0);
         auto layout = calc_sizes(size, quot_width);
 
@@ -50,17 +49,17 @@ struct quot_data_seq_t {
         // NB: this does not contain values
     }
 
-    /// Returns a `val_quot_ptrs_t` to position `pos`,
+    /// Returns a `val_quot_ptr_t` to position `pos`,
     /// or a sentinel value that acts as a one-pass-the-end pointer for the empty case.
-    inline static quot_ptrs_t at(uint64_t* alloc, size_t size, size_t pos, uint8_t quot_width) {
+    inline static quot_ptr_t at(uint64_t* alloc, size_t size, size_t pos, uint8_t quot_width) {
         if(size != 0) {
             auto ps = ptr(alloc, size, quot_width);
-            return quot_ptrs_t(ps.quot_ptr() + pos);
+            return quot_ptr_t(ps.quot_ptr() + pos);
         } else {
             DCHECK_EQ(pos, 0);
-            return quot_ptrs_t();
+            return quot_ptr_t();
         }
     }
 };
 
-}}
+}}}

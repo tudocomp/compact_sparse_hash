@@ -8,8 +8,7 @@
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/entry_t.hpp>
 
-namespace tdc {namespace compact_sparse_hashmap {
-using namespace compact_hash;
+namespace tdc {namespace compact_hash{namespace map {
 
 /// Represents a pair of pointers to value and quotient inside a bucket.
 template<typename val_t>
@@ -137,4 +136,4 @@ public:
     }
 };
 
-}}
+}}}
