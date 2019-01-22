@@ -10,7 +10,7 @@ namespace tdc {namespace compact_hash {namespace map {
 template<typename val_t, typename hash_t = poplar_xorshift_t>
 using compact_displacement_hashmap_t = hashmap_t<
     val_t, hash_t, plain_sentinel_t,
-    displacement_t<compact_displacement_table_t<4>>
+    displacement_t<layered_displacement_table_t<4>>
 >;
 
 template<typename val_t, typename hash_t = poplar_xorshift_t>

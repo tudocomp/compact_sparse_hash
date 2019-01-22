@@ -123,7 +123,7 @@ gen_test_set(set_poplar_displacement_compact_4,
     hashset_t<
         poplar_xorshift_t,
         displacement_t<
-            compact_displacement_table_t<4>
+            layered_displacement_table_t<4>
         >
     >
 )
@@ -251,7 +251,7 @@ gen_test_map(map_poplar_bbv_displacement_compact_4,
         poplar_xorshift_t,
         buckets_bv_t,
         displacement_t<
-            compact_displacement_table_t<4>
+            layered_displacement_table_t<4>
         >
     >
 )
@@ -297,7 +297,7 @@ gen_test_map(map_poplar_ps_displacement_compact_4,
         poplar_xorshift_t,
         plain_sentinel_t,
         displacement_t<
-            compact_displacement_table_t<4>
+            layered_displacement_table_t<4>
         >
     >
 )

@@ -59,8 +59,8 @@ public:
 }
 
 template<size_t N>
-struct serialize<compact_hash::compact_displacement_table_t<N>> {
-    using T = compact_hash::compact_displacement_table_t<N>;
+struct serialize<compact_hash::layered_displacement_table_t<N>> {
+    using T = compact_hash::layered_displacement_table_t<N>;
 
     static void write(std::ostream& out, T const& val, size_t table_size) {
         DCHECK_EQ(val.m_displace.size(), table_size);

@@ -14,7 +14,7 @@ template<typename hash_t = poplar_xorshift_t>
 using compact_sparse_displacement_hashset_t = hashset_t<
     hash_t,
     displacement_t<
-        compact_displacement_table_t<4>
+        layered_displacement_table_t<4>
     >
 >;
 
