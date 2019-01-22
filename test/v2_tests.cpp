@@ -5,10 +5,13 @@
 #include <tudocomp/util/compact_hash/map/hashmap_t.hpp>
 #include <tudocomp/util/compact_hash/index_structure/cv_bvs_t.hpp>
 #include <tudocomp/util/compact_hash/index_structure/displacement_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/elias_gamma_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/layered_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
 #include <tudocomp/util/compact_hash/storage/bucket_t.hpp>
-#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/compact_hash/storage/buckets_bv_t.hpp>
 #include <tudocomp/util/compact_hash/storage/plain_sentinel_t.hpp>
+#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
 using namespace tdc::compact_hash::map;
@@ -358,7 +361,7 @@ TEST(DPTable, place##_##tab##_##tname##_test) { \
 }
 
 using naive_displacement_t = displacement_t<naive_displacement_table_t>;
-using compact_displacement_t = displacement_t<compact_displacement_table_t<4>>;
+using layered_displacement_t = displacement_t<layered_displacement_table_t<4>>;
 using elias_gamma_displacement_t = displacement_t<elias_gamma_displacement_table_t<fixed_elias_gamma_bucket_size_t<1024>>>;
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint8_t);
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint64_t);
@@ -369,14 +372,14 @@ MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint64_t);
 MakeDPTableTest(naive_displacement_t, buckets_bv_t,     dynamic_t);
 MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint_t40);
 
-MakeDPTableTest(compact_displacement_t, plain_sentinel_t, uint8_t);
-MakeDPTableTest(compact_displacement_t, plain_sentinel_t, uint64_t);
-MakeDPTableTest(compact_displacement_t, plain_sentinel_t, dynamic_t);
-MakeDPTableTest(compact_displacement_t, plain_sentinel_t, uint_t40);
-MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint8_t);
-MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint64_t);
-MakeDPTableTest(compact_displacement_t, buckets_bv_t,     dynamic_t);
-MakeDPTableTest(compact_displacement_t, buckets_bv_t,     uint_t40);
+MakeDPTableTest(layered_displacement_t, plain_sentinel_t, uint8_t);
+MakeDPTableTest(layered_displacement_t, plain_sentinel_t, uint64_t);
+MakeDPTableTest(layered_displacement_t, plain_sentinel_t, dynamic_t);
+MakeDPTableTest(layered_displacement_t, plain_sentinel_t, uint_t40);
+MakeDPTableTest(layered_displacement_t, buckets_bv_t,     uint8_t);
+MakeDPTableTest(layered_displacement_t, buckets_bv_t,     uint64_t);
+MakeDPTableTest(layered_displacement_t, buckets_bv_t,     dynamic_t);
+MakeDPTableTest(layered_displacement_t, buckets_bv_t,     uint_t40);
 
 MakeDPTableTest(elias_gamma_displacement_t, plain_sentinel_t, uint8_t);
 MakeDPTableTest(elias_gamma_displacement_t, plain_sentinel_t, uint64_t);

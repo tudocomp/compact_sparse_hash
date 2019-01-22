@@ -7,6 +7,9 @@
 #include <tudocomp/util/compact_hash/map/hashmap_t.hpp>
 
 #include <tudocomp/util/compact_hash/index_structure/displacement_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/elias_gamma_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/layered_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
 #include <tudocomp/util/compact_hash/index_structure/cv_bvs_t.hpp>
 #include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/compact_hash/storage/buckets_bv_t.hpp>
@@ -123,7 +126,7 @@ gen_test_set(set_poplar_displacement_compact_4,
     hashset_t<
         poplar_xorshift_t,
         displacement_t<
-            compact_displacement_table_t<4>
+            layered_displacement_table_t<4>
         >
     >
 )
@@ -251,7 +254,7 @@ gen_test_map(map_poplar_bbv_displacement_compact_4,
         poplar_xorshift_t,
         buckets_bv_t,
         displacement_t<
-            compact_displacement_table_t<4>
+            layered_displacement_table_t<4>
         >
     >
 )
@@ -297,7 +300,7 @@ gen_test_map(map_poplar_ps_displacement_compact_4,
         poplar_xorshift_t,
         plain_sentinel_t,
         displacement_t<
-            compact_displacement_table_t<4>
+            layered_displacement_table_t<4>
         >
     >
 )

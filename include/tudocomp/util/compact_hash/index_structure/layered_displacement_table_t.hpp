@@ -18,7 +18,7 @@ namespace tdc {namespace compact_hash {
 /// `displace_size` Bits. Displacement value larger than that
 /// will be spilled into a `std::unordered_map<size_t, size_t>`.
 template<size_t displace_size>
-class compact_displacement_table_t {
+class layered_displacement_table_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
@@ -27,12 +27,12 @@ class compact_displacement_table_t {
     IntVector<elem_t> m_displace;
     std::unordered_map<size_t, size_t> m_spill;
 
-    compact_displacement_table_t(IntVector<elem_t>&& displace,
+    layered_displacement_table_t(IntVector<elem_t>&& displace,
                                  std::unordered_map<size_t, size_t>&& spill):
         m_displace(std::move(displace)), m_spill(std::move(spill)) {}
 public:
 
-    inline compact_displacement_table_t(size_t table_size) {
+    inline layered_displacement_table_t(size_t table_size) {
         m_displace.reserve(table_size);
         m_displace.resize(table_size);
     }
@@ -59,8 +59,8 @@ public:
 }
 
 template<size_t N>
-struct serialize<compact_hash::compact_displacement_table_t<N>> {
-    using T = compact_hash::compact_displacement_table_t<N>;
+struct serialize<compact_hash::layered_displacement_table_t<N>> {
+    using T = compact_hash::layered_displacement_table_t<N>;
 
     static void write(std::ostream& out, T const& val, size_t table_size) {
         DCHECK_EQ(val.m_displace.size(), table_size);
