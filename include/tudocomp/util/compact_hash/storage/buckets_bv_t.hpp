@@ -176,22 +176,51 @@ namespace tdc {namespace compact_hash {
 }
 
 template<typename satellite_t>
-struct serialize<compact_hash::buckets_bv_t<satellite_t>> {
+struct heap_size<compact_hash::buckets_bv_t<satellite_t>> {
     using T = compact_hash::buckets_bv_t<satellite_t>;
     using bucket_t = typename T::my_bucket_t;
     using entry_bit_width_t = typename T::entry_bit_width_t;
     using bucket_layout_t = typename T::bucket_layout_t;
 
-    static void write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
+    static object_size_t compute(T const& val, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+        bytes += object_size_t::exact(sizeof(decltype(val.m_buckets)));
 
         auto ctx = val.context(table_size, widths);
 
         size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
         for(size_t i = 0; i < buckets_size; i++) {
             auto& bucket = ctx.m_buckets[i];
-            serialize<bucket_t>::write(out, bucket, widths);
+            bytes += heap_size<bucket_t>::compute(bucket, widths);
         }
+
+        return bytes;
+    }
+};
+
+template<typename satellite_t>
+struct serialize<compact_hash::buckets_bv_t<satellite_t>> {
+    using T = compact_hash::buckets_bv_t<satellite_t>;
+    using bucket_t = typename T::my_bucket_t;
+    using entry_bit_width_t = typename T::entry_bit_width_t;
+    using bucket_layout_t = typename T::bucket_layout_t;
+
+    static object_size_t write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
+        using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+
+        auto ctx = val.context(table_size, widths);
+
+        size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
+        for(size_t i = 0; i < buckets_size; i++) {
+            auto& bucket = ctx.m_buckets[i];
+            bytes += serialize<bucket_t>::write(out, bucket, widths);
+        }
+
+        return bytes;
     }
     static T read(std::istream& in, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_hash;

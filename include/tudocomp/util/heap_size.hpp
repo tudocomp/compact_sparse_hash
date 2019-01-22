@@ -3,6 +3,7 @@
 #include <iostream>
 #include <typeinfo>
 #include <tuple>
+#include <memory>
 
 namespace tdc {
     class object_size_t {
@@ -28,6 +29,11 @@ namespace tdc {
                 m_bytes + other.m_bytes,
                 m_has_unknown_parts || other.m_has_unknown_parts);
         }
+        inline object_size_t& operator+=(object_size_t const& other) {
+            m_bytes += other.m_bytes;
+            m_has_unknown_parts |= other.m_has_unknown_parts;
+            return *this;
+        }
 
         inline size_t size_in_bytes() const {
             return m_bytes;
@@ -43,6 +49,15 @@ namespace tdc {
 
         inline bool is_exact() const {
             return !m_has_unknown_parts;
+        }
+
+        inline friend std::ostream& operator<<(std::ostream& out, object_size_t const& v) {
+            if (!v.is_exact()) {
+                out << ">=";
+            }
+            out << v.size_in_kibibytes();
+            out << " KiB";
+            return out;
         }
     };
 
@@ -75,4 +90,17 @@ namespace tdc {
     gen_heap_size_without_indirection(signed long long int)
     gen_heap_size_without_indirection(float)
     gen_heap_size_without_indirection(double)
+
+    template<typename T>
+    struct heap_size<std::unique_ptr<T[]>> {
+        static object_size_t compute(std::unique_ptr<T[]> const& val, size_t size) {
+            auto bytes = object_size_t::exact(sizeof(val));
+
+            for (size_t i = 0; i < size; i++) {
+                bytes += heap_size<T>::compute(val[i]);
+            }
+
+            return bytes;
+        }
+    };
 }

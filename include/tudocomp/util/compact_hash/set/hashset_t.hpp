@@ -183,6 +183,9 @@ private:
     template<typename T>
     friend struct ::tdc::serialize;
 
+    template<typename T>
+    friend struct ::tdc::heap_size;
+
     /// The actual amount of bits currently usable for
     /// storing a key in the hashtable.
     ///

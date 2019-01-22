@@ -20,6 +20,9 @@ class displacement_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
+    template<typename T>
+    friend struct ::tdc::heap_size;
+
     displacement_table_t m_displace;
 
     displacement_t(displacement_table_t&& table):
@@ -172,11 +175,20 @@ public:
 }
 
 template<typename displacement_table_t>
+struct heap_size<compact_hash::displacement_t<displacement_table_t>> {
+    using T = compact_hash::displacement_t<displacement_table_t>;
+
+    static object_size_t compute(T const& val, size_t table_size) {
+        return heap_size<displacement_table_t>::compute(val.m_displace, table_size);
+    }
+};
+
+template<typename displacement_table_t>
 struct serialize<compact_hash::displacement_t<displacement_table_t>> {
     using T = compact_hash::displacement_t<displacement_table_t>;
 
-    static void write(std::ostream& out, T const& val, size_t table_size) {
-        serialize<displacement_table_t>::write(out, val.m_displace, table_size);
+    static object_size_t write(std::ostream& out, T const& val, size_t table_size) {
+        return serialize<displacement_table_t>::write(out, val.m_displace, table_size);
     }
 
     static T read(std::istream& in, size_t table_size) {

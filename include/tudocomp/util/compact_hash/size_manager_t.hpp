@@ -22,6 +22,9 @@ class size_manager_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
+    template<typename T>
+    friend struct ::tdc::heap_size;
+
     /// Adjust the user-specified size of the table as needed
     /// by the current implementation.
     ///
@@ -136,15 +139,36 @@ public:
 }
 
 template<>
+struct heap_size<compact_hash::size_manager_t> {
+    using T = compact_hash::size_manager_t;
+
+    static object_size_t compute(T const& val) {
+        using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+
+        bytes += heap_size<uint8_t>::compute(val.m_capacity_log2);
+        bytes += heap_size<size_t>::compute(val.m_size);
+        bytes += heap_size<float>::compute(val.m_load_factor);
+
+        return bytes;
+    }
+};
+
+template<>
 struct serialize<compact_hash::size_manager_t> {
     using T = compact_hash::size_manager_t;
 
-    static void write(std::ostream& out, T const& val) {
+    static object_size_t write(std::ostream& out, T const& val) {
         using namespace compact_hash;
 
-        serialize<uint8_t>::write(out, val.m_capacity_log2);
-        serialize<size_t>::write(out, val.m_size);
-        serialize<float>::write(out, val.m_load_factor);
+        auto bytes = object_size_t::empty();
+
+        bytes += serialize<uint8_t>::write(out, val.m_capacity_log2);
+        bytes += serialize<size_t>::write(out, val.m_size);
+        bytes += serialize<float>::write(out, val.m_load_factor);
+
+        return bytes;
     }
     static T read(std::istream& in) {
         using namespace compact_hash;

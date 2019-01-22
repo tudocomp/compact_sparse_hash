@@ -22,6 +22,9 @@ class layered_displacement_table_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
+    template<typename T>
+    friend struct ::tdc::heap_size;
+
     using elem_t = uint_t<displace_size>;
 
     IntVector<elem_t> m_displace;
@@ -59,27 +62,55 @@ public:
 }
 
 template<size_t N>
+struct heap_size<compact_hash::layered_displacement_table_t<N>> {
+    using T = compact_hash::layered_displacement_table_t<N>;
+
+    static object_size_t compute(T const& val, size_t table_size) {
+        auto bytes = object_size_t::empty();
+
+        DCHECK_EQ(val.m_displace.size(), table_size);
+        auto size = val.m_displace.stat_allocation_size_in_bytes();
+        bytes += object_size_t::exact(size);
+
+        size_t unordered_map_size_guess
+            = sizeof(decltype(val.m_spill))
+            + val.m_spill.size() * sizeof(size_t) * 2;
+
+        bytes += object_size_t::unknown_extra_data(unordered_map_size_guess);
+
+        return bytes;
+    }
+};
+
+template<size_t N>
 struct serialize<compact_hash::layered_displacement_table_t<N>> {
     using T = compact_hash::layered_displacement_table_t<N>;
 
-    static void write(std::ostream& out, T const& val, size_t table_size) {
+    static object_size_t write(std::ostream& out, T const& val, size_t table_size) {
+        auto bytes = object_size_t::empty();
+
         DCHECK_EQ(val.m_displace.size(), table_size);
         auto data = (char const*) val.m_displace.data();
         auto size = val.m_displace.stat_allocation_size_in_bytes();
         out.write(data, size);
+        bytes += object_size_t::exact(size);
 
         size_t spill_size = val.m_spill.size();
         out.write((char*) &spill_size, sizeof(size_t));
+        bytes += object_size_t::exact(sizeof(size_t));
 
         for (auto pair : val.m_spill) {
             size_t k = pair.first;
             size_t v = pair.second;
             out.write((char*) &k, sizeof(size_t));
             out.write((char*) &v, sizeof(size_t));
+            bytes += object_size_t::exact(sizeof(size_t) * 2);
             spill_size--;
         }
 
         DCHECK_EQ(spill_size, 0);
+
+        return bytes;
     }
 
     static T read(std::istream& in, size_t table_size) {
