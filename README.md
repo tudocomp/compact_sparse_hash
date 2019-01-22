@@ -17,10 +17,10 @@ For instance, compact hash tables and sparse hash tables are already used for co
 
 A minimal example is
 ```C++
-#include <tudocomp/util/compact_sparse_hash.hpp>
+#include <tudocomp/util/compact_hash/map/typedefs.hpp>
 ...
 // creates a hash table with zero entries, set the bit-width of the keys to four
-auto map = tdc::compact_hash::map::compact_sparse_hashmap_t<int>(0, 4);
+auto map = tdc::compact_hash::map::sparse_cv_hashmap_t<int>(0, 4);
 for(int i = 0; i <= 15; ++i) { // interval [0..15] can be represented by four bits
     map.insert(i, i*i); // insert key i, value i*i
     std::cout << i << " -> " << map[i] << std::endl; // map[i] returns value i*i with key i
@@ -74,7 +74,7 @@ Each of these hash table classes is templated by the following parameters:
  - how to maintain entries that are stored not at their initial address, i.e., how the displacement works
    - `cv_bvs_t` : Approach by Cleary using two bit vectors setting a virgin and change bit
    - `displacement_t<T>`: using a displacement array represented by `T`, which can be
-     - `compact_displacement_table_t<size_t i>`: the recursive m-Bonsai approach of [3], where we implemented the simpler practical approach that uses an integer array with fixed bit-width `i` and an auxiliary `std::unordered_map<size_t,size_t>` for storing displacement values that cannot be represented with `i` bits.
+     - `layered_displacement_table_t<size_t i>`: the recursive m-Bonsai approach of [3], where we implemented the simpler practical approach that uses an integer array with fixed bit-width `i` and an auxiliary `std::unordered_map<size_t,size_t>` for storing displacement values that cannot be represented with `i` bits.
      - `elias_gamma_displacement_table_t`: the gamma m-Bonsai approach of [3]
      - `naive_displacement_table_t`: stores the displacement array as a plain array with `size_t` integers (for debug purposes)
 
