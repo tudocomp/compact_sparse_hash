@@ -5,29 +5,26 @@
 #include <tuple>
 
 namespace tdc {
-    class size_result_t {
+    class object_size_t {
         size_t m_bytes = 0;
         bool m_has_unknown_parts = false;
 
-        size_result_t() = default;
-        size_result_t(size_t bytes, bool has_unknown_parts):
+        object_size_t() = default;
+        object_size_t(size_t bytes, bool has_unknown_parts):
             m_bytes(bytes), m_has_unknown_parts(has_unknown_parts) {}
     public:
-        template<typename T>
-        inline static size_result_t object_without_indirection() {
-            return size_result_t(sizeof(T), false);
+        inline static object_size_t empty() {
+            return object_size_t(0, false);
         }
-        template<typename T>
-        inline static size_result_t object_with_unknown_child_data_size() {
-            return size_result_t(sizeof(T), true);
+        inline static object_size_t exact(size_t size) {
+            return object_size_t(size, false);
         }
-        template<typename T>
-        inline static size_result_t object_with_known_child_data_size() {
-            return size_result_t(sizeof(T), false);
+        inline static object_size_t unknown_extra_data(size_t size) {
+            return object_size_t(size, true);
         }
 
-        inline size_result_t operator+(size_result_t const& other) const {
-            return size_result_t(
+        inline object_size_t operator+(object_size_t const& other) const {
+            return object_size_t(
                 m_bytes + other.m_bytes,
                 m_has_unknown_parts || other.m_has_unknown_parts);
         }
@@ -51,19 +48,20 @@ namespace tdc {
 
     template<typename T>
     struct heap_size {
-        static size_result_t compute(T const& val) {
-            return size_result_t::object_with_unknown_child_data_size<T>();
+        static object_size_t compute(T const& val) {
+            return object_size_t::unknown_extra_data(sizeof(T));
         }
     };
 
 #define gen_heap_size_without_indirection(...) \
     template<>\
     struct heap_size<__VA_ARGS__> {\
-        static size_result_t compute(__VA_ARGS__ const& val) {\
-            return size_result_t::object_without_indirection<__VA_ARGS__>();\
+        static object_size_t compute(__VA_ARGS__ const& val) {\
+            return object_size_t::exact(sizeof(__VA_ARGS__));\
         }\
     };
 
+    gen_heap_size_without_indirection(bool)
     gen_heap_size_without_indirection(unsigned char)
     gen_heap_size_without_indirection(signed char)
     gen_heap_size_without_indirection(char)
