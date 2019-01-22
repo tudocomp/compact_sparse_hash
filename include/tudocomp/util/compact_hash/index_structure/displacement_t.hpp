@@ -9,10 +9,6 @@
 #include <tudocomp/ds/IntVector.hpp>
 #include <tudocomp/ds/IntPtr.hpp>
 
-#include <tudocomp/util/compact_hash/index_structure/elias_gamma_displacement_table_t.hpp>
-#include <tudocomp/util/compact_hash/index_structure/layered_displacement_table_t.hpp>
-#include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
-
 #include "../entry_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
