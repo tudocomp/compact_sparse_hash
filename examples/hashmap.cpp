@@ -2,12 +2,11 @@
 #include <vector>
 
 #include <cstdint>
-#include <tudocomp/util/compact_hash.hpp>
-#include <tudocomp/util/compact_displacement_hash.hpp>
+#include <tudocomp/util/compact_hash/map/typedefs.hpp>
 #include <algorithm>
 
 template<typename val_t>
-using map_type = tdc::compact_hash::map::compact_elias_displacement_hashmap_t<val_t>;
+using map_type = tdc::compact_hash::map::plain_elias_hashmap_t<val_t>;
 
 int main() {
     // creates a hash table with zero entries, set the bit-width of the keys to four

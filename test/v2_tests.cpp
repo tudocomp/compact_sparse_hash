@@ -5,10 +5,13 @@
 #include <tudocomp/util/compact_hash/map/hashmap_t.hpp>
 #include <tudocomp/util/compact_hash/index_structure/cv_bvs_t.hpp>
 #include <tudocomp/util/compact_hash/index_structure/displacement_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/elias_gamma_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/layered_displacement_table_t.hpp>
+#include <tudocomp/util/compact_hash/index_structure/naive_displacement_table_t.hpp>
 #include <tudocomp/util/compact_hash/storage/bucket_t.hpp>
-#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/compact_hash/storage/buckets_bv_t.hpp>
 #include <tudocomp/util/compact_hash/storage/plain_sentinel_t.hpp>
+#include <tudocomp/util/compact_hash/hash_functions.hpp>
 #include <tudocomp/util/bit_packed_layout_t.hpp>
 
 using namespace tdc::compact_hash::map;

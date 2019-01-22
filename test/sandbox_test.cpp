@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <algorithm>
-#include <tudocomp/util/compact_sparse_hash.hpp>
+#include <tudocomp/util/compact_hash/map/typedefs.hpp>
 #include <tudocomp/util/bits.hpp>
 
 
@@ -12,7 +12,7 @@ using namespace tdc::compact_hash;
 using namespace std;
 
 TEST(Sandbox, example) {
-   auto map = compact_sparse_hashmap_t<int>(0, 4); // creates a hash table with zero entries, set the bit-width of the keys to three
+   auto map = sparse_cv_hashmap_t<int>(0, 4); // creates a hash table with zero entries, set the bit-width of the keys to three
    std::cout << "Key Width: " << map.key_width() << std::endl;
 std::cout << "Add i -> i*i from i = 0 up to 15" << std::endl;
    for(int i = 0; i <= 15; ++i) { // interval [0..15] can be represented by 4-bits
