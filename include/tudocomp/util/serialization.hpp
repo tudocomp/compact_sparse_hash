@@ -4,7 +4,7 @@
 #include <typeinfo>
 #include <tuple>
 
-#include <tudocomp/util/heap_size.hpp>
+#include <tudocomp/util/object_size_t.hpp>
 
 namespace tdc {
     inline bool equal_diagnostic(bool v, char const* msg) {

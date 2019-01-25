@@ -28,6 +28,9 @@ void serialize_test_builder(build_func f) {
 
     std::stringstream ss;
     auto bytes = serialize<table_t>::write(ss, a);
+    size_t stream_bytes = ss.tellp();
+    ASSERT_EQ(bytes.size_in_bytes(), stream_bytes);
+
     auto b = serialize<table_t>::read(ss);
 
     ASSERT_TRUE(serialize<table_t>::equal_check(a, b));

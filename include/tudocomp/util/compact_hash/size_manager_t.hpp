@@ -5,6 +5,7 @@
 #include "decomposed_key_t.hpp"
 
 #include <tudocomp/util/serialization.hpp>
+#include <tudocomp/util/heap_size.hpp>
 
 namespace tdc {namespace compact_hash {
 
