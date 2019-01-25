@@ -15,6 +15,11 @@ namespace tdc {
         }
     };
 
+    template<typename T>
+    inline object_size_t heap_size_compute(T const& val) {
+        return heap_size<T>::compute(val);
+    }
+
 #define gen_heap_size_without_indirection(...) \
     template<>\
     struct heap_size<__VA_ARGS__> {\

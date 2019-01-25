@@ -37,6 +37,16 @@ namespace tdc {
         //*/
     };
 
+    template<typename T>
+    inline object_size_t serialize_write(std::ostream& out, T const& val) {
+        return serialize<T>::write(out, val);
+    }
+
+    template<typename T>
+    inline T serialize_read(std::istream& inp) {
+        return serialize<T>::read(inp);
+    }
+
 #define gen_direct_serialization(...) \
     template<>\
     struct serialize<__VA_ARGS__> {\
