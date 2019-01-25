@@ -423,10 +423,18 @@ struct elias_gamma_displacement_table_t {
 }
 
 template<typename elias_gamma_bucket_size_t>
-struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>> {
+struct heap_size<compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>> {
     using T = compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
-    static void write(std::ostream& out, T const& val, size_t table_size) {
+    static object_size_t compute(T const& val, size_t table_size) {
+        auto bytes = object_size_t::empty();
+
+        bytes += heap_size<uint64_t>::compute(val.m_elem_cursor);
+        bytes += heap_size<uint64_t>::compute(val.m_bit_cursor);
+        bytes += heap_size<size_t>::compute(val.m_bucket_cursor);
+        bytes += heap_size<size_t>::compute(val.m_bucket_size);
+        bytes += object_size_t::exact(sizeof(decltype(val.m_buckets)));
+
         using bucket_t = compact_hash::elias_gamma_bucket_t;
         using table_t =
             compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
@@ -439,13 +447,44 @@ struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_buck
         for (size_t i = 0; i < s.buckets; i++) {
             bucket_t const& b = buckets[i];
 
-            serialize<uint64_t>::write(out, b.m_bits);
+            bytes += heap_size<uint64_t>::compute(b.m_bits);
+
+            size_t words = bucket_t::bits2alloc(b.m_bits);
+            bytes += heap_size<decltype(b.m_data)>::compute(b.m_data, words);
+        }
+
+        return bytes;
+    }
+};
+
+template<typename elias_gamma_bucket_size_t>
+struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>> {
+    using T = compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+    static object_size_t write(std::ostream& out, T const& val, size_t table_size) {
+        auto bytes = object_size_t::empty();
+
+        using bucket_t = compact_hash::elias_gamma_bucket_t;
+        using table_t =
+            compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
+
+        table_t const& table = val;
+        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+
+        auto& buckets = table.m_buckets;
+        auto s = T::calc_buckets(table_size);
+        for (size_t i = 0; i < s.buckets; i++) {
+            bucket_t const& b = buckets[i];
+
+            bytes += serialize<uint64_t>::write(out, b.m_bits);
 
             size_t words = bucket_t::bits2alloc(b.m_bits);
             for (size_t j = 0; j < words; j++) {
-                serialize<uint64_t>::write(out, b.m_data[j]);
+                bytes += serialize<uint64_t>::write(out, b.m_data[j]);
             }
         }
+
+        return bytes;
     }
 
     static T read(std::istream& in, size_t table_size) {

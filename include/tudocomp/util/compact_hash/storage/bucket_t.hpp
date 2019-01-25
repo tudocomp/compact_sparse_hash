@@ -36,6 +36,9 @@ class bucket_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
+    template<typename T>
+    friend struct ::tdc::heap_size;
+
     using entry_ptr_t = typename satellite_t::entry_ptr_t;
     using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
 public:
@@ -195,22 +198,47 @@ private:
 }
 
 template<size_t N, typename satellite_t>
+struct heap_size<compact_hash::bucket_t<N, satellite_t>> {
+    using T = compact_hash::bucket_t<N, satellite_t>;
+    using entry_bit_width_t = typename T::entry_bit_width_t;
+
+    static object_size_t compute(T const& val, entry_bit_width_t const& widths) {
+        using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+
+        size_t size = val.size();
+
+        if (size > 0) {
+            size_t raw_size = T::qvd_data_size(size, widths) + 1;
+            bytes += heap_size<std::unique_ptr<uint64_t[]>>::compute(val.m_data, raw_size);
+        }
+
+        return bytes;
+    }
+};
+
+template<size_t N, typename satellite_t>
 struct serialize<compact_hash::bucket_t<N, satellite_t>> {
     using T = compact_hash::bucket_t<N, satellite_t>;
     using entry_bit_width_t = typename T::entry_bit_width_t;
 
-    static void write(std::ostream& out, T const& val, entry_bit_width_t const& widths) {
+    static object_size_t write(std::ostream& out, T const& val, entry_bit_width_t const& widths) {
         using namespace compact_hash;
 
-        serialize<uint64_t>::write(out, val.bv());
+        auto bytes = object_size_t::empty();
+
+        bytes += serialize<uint64_t>::write(out, val.bv());
         size_t size = val.size();
 
         if (size > 0) {
             size_t raw_size = T::qvd_data_size(size, widths) + 1;
             for (size_t i = 1; i < raw_size; i++) {
-                serialize<uint64_t>::write(out, val.m_data[i]);
+                bytes += serialize<uint64_t>::write(out, val.m_data[i]);
             }
         }
+
+        return bytes;
     }
     static T read(std::istream& in, entry_bit_width_t const& widths) {
         using namespace compact_hash;

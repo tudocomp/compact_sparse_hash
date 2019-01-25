@@ -14,6 +14,9 @@ class cv_bvs_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
+    template<typename T>
+    friend struct ::tdc::heap_size;
+
     IntVector<uint_t<2>> m_cv;
     inline cv_bvs_t(IntVector<uint_t<2>>&& cv): m_cv(std::move(cv)) {}
 
@@ -466,16 +469,30 @@ public:
 }
 
 template<>
+struct heap_size<compact_hash::cv_bvs_t> {
+    using T = compact_hash::cv_bvs_t;
+
+    static object_size_t compute(T const& val, size_t table_size) {
+        DCHECK_EQ(val.m_cv.size(), table_size);
+        auto size = val.m_cv.stat_allocation_size_in_bytes();
+
+        return object_size_t::exact(size);
+    }
+};
+
+template<>
 struct serialize<compact_hash::cv_bvs_t> {
     using T = compact_hash::cv_bvs_t;
 
-    static void write(std::ostream& out, T const& val,
-                      size_t table_size) {
+    static object_size_t write(std::ostream& out, T const& val,
+                               size_t table_size) {
         DCHECK_EQ(val.m_cv.size(), table_size);
         auto data = (char const*) val.m_cv.data();
         auto size = val.m_cv.stat_allocation_size_in_bytes();
 
         out.write(data, size);
+
+        return object_size_t::exact(size);
     }
 
     static T read(std::istream& in,

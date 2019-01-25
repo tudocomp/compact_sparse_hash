@@ -183,6 +183,9 @@ private:
     template<typename T>
     friend struct ::tdc::serialize;
 
+    template<typename T>
+    friend struct ::tdc::heap_size;
+
     /// The actual amount of bits currently usable for
     /// storing a key in the hashtable.
     ///
@@ -322,20 +325,48 @@ private:
 }}
 
 template<typename hash_t, typename placement_t>
+struct heap_size<compact_hash::set::hashset_t<hash_t, placement_t>> {
+    using T = compact_hash::set::hashset_t<hash_t, placement_t>;
+    using storage_t = typename T::storage_t;
+
+    static object_size_t compute(T const& val) {
+        using namespace compact_hash::set;
+        using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+
+        bytes += heap_size<size_manager_t>::compute(val.m_sizing);
+        bytes += heap_size<uint8_t>::compute(val.m_key_width);
+        bytes += heap_size<hash_t>::compute(val.m_hash);
+        bytes += heap_size<storage_t>::compute(
+            val.m_storage, val.table_size(), val.storage_widths());
+        bytes += heap_size<placement_t>::compute(
+            val.m_placement, val.table_size());
+
+        return bytes;
+    }
+};
+
+template<typename hash_t, typename placement_t>
 struct serialize<compact_hash::set::hashset_t<hash_t, placement_t>> {
     using T = compact_hash::set::hashset_t<hash_t, placement_t>;
     using storage_t = typename T::storage_t;
 
-    static void write(std::ostream& out, T const& val) {
+    static object_size_t write(std::ostream& out, T const& val) {
         using namespace compact_hash::set;
         using namespace compact_hash;
 
-        serialize<size_manager_t>::write(out, val.m_sizing);
-        serialize<uint8_t>::write(out, val.m_key_width);
-        serialize<hash_t>::write(out, val.m_hash);
+        auto bytes = object_size_t::empty();
 
-        serialize<storage_t>::write(out, val.m_storage, val.table_size(), val.storage_widths());
-        serialize<placement_t>::write(out, val.m_placement, val.table_size());
+        bytes += serialize<size_manager_t>::write(out, val.m_sizing);
+        bytes += serialize<uint8_t>::write(out, val.m_key_width);
+        bytes += serialize<hash_t>::write(out, val.m_hash);
+        bytes += serialize<storage_t>::write(
+            out, val.m_storage, val.table_size(), val.storage_widths());
+        bytes += serialize<placement_t>::write(
+            out, val.m_placement, val.table_size());
+
+        return bytes;
     }
     static T read(std::istream& in) {
         using namespace compact_hash::set;

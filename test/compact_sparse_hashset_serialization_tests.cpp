@@ -23,10 +23,14 @@ using namespace tdc::compact_hash::map;
 template<typename table_t, typename build_func>
 void serialize_test_builder(build_func f) {
     using tdc::serialize;
+    using tdc::heap_size;
     auto a = f();
 
     std::stringstream ss;
-    serialize<table_t>::write(ss, a);
+    auto bytes = serialize<table_t>::write(ss, a);
+    size_t stream_bytes = ss.tellp();
+    ASSERT_EQ(bytes.size_in_bytes(), stream_bytes);
+
     auto b = serialize<table_t>::read(ss);
 
     ASSERT_TRUE(serialize<table_t>::equal_check(a, b));
@@ -35,6 +39,12 @@ void serialize_test_builder(build_func f) {
 
     ASSERT_TRUE(serialize<table_t>::equal_check(a, c));
     ASSERT_TRUE(serialize<table_t>::equal_check(b, c));
+
+    std::cout << "heap size: "
+        << heap_size<table_t>::compute(a)
+        << ", written bytes: "
+        << bytes
+        << "\n";
 }
 
 

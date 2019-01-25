@@ -136,21 +136,46 @@ namespace tdc {namespace compact_hash {
 }
 
 template<typename satellite_t>
+struct heap_size<compact_hash::plain_sentinel_t<satellite_t>> {
+    using T = compact_hash::plain_sentinel_t<satellite_t>;
+    using entry_bit_width_t = typename T::entry_bit_width_t;
+    using value_type = typename T::value_type;
+    using qvd_t = typename T::qvd_t;
+
+    static object_size_t compute(T const& val, size_t table_size, entry_bit_width_t const& widths) {
+        using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+
+        auto alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
+
+        bytes += heap_size<value_type>::compute(val.m_empty_value);
+        bytes += heap_size<std::unique_ptr<uint64_t[]>>::compute(val.m_alloc, alloc_size);
+
+        return bytes;
+    }
+};
+
+template<typename satellite_t>
 struct serialize<compact_hash::plain_sentinel_t<satellite_t>> {
     using T = compact_hash::plain_sentinel_t<satellite_t>;
     using entry_bit_width_t = typename T::entry_bit_width_t;
     using value_type = typename T::value_type;
     using qvd_t = typename T::qvd_t;
 
-    static void write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
+    static object_size_t write(std::ostream& out, T const& val, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
 
         auto alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
 
-        serialize<value_type>::write(out, val.m_empty_value);
+        bytes += serialize<value_type>::write(out, val.m_empty_value);
         for (size_t i = 0; i < alloc_size; i++) {
-            serialize<uint64_t>::write(out, val.m_alloc[i]);
+            bytes += serialize<uint64_t>::write(out, val.m_alloc[i]);
         }
+
+        return bytes;
     }
     static T read(std::istream& in, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_hash;

@@ -138,6 +138,9 @@ private:
   template<typename T>
   friend struct ::tdc::serialize;
 
+  template<typename T>
+  friend struct ::tdc::heap_size;
+
   template <uint32_t N>
   uint64_t hash_(uint64_t x) const {
     x = x ^ (x >> (shift_ + N));
@@ -163,6 +166,9 @@ class xorshift_t {
 
     template<typename T>
     friend struct ::tdc::serialize;
+
+    template<typename T>
+    friend struct ::tdc::heap_size;
 
     xorshift_t() = default;
 public:
@@ -199,14 +205,34 @@ using poplar_xorshift_t = poplar::bijective_hash::Xorshift;
 }
 
 template<>
+struct heap_size<compact_hash::xorshift_t> {
+    using T = compact_hash::xorshift_t;
+
+    static object_size_t compute(T const& val) {
+        using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+
+        bytes += heap_size<uint64_t>::compute(val.m_j);
+        bytes += heap_size<uint64_t>::compute(val.m_w_mask);
+
+        return bytes;
+    }
+};
+
+template<>
 struct serialize<compact_hash::xorshift_t> {
     using T = compact_hash::xorshift_t;
 
-    static void write(std::ostream& out, T const& val) {
+    static object_size_t write(std::ostream& out, T const& val) {
         using namespace compact_hash;
 
-        serialize<uint64_t>::write(out, val.m_j);
-        serialize<uint64_t>::write(out, val.m_w_mask);
+        auto bytes = object_size_t::empty();
+
+        bytes += serialize<uint64_t>::write(out, val.m_j);
+        bytes += serialize<uint64_t>::write(out, val.m_w_mask);
+
+        return bytes;
     }
     static T read(std::istream& in) {
         using namespace compact_hash;
@@ -223,14 +249,34 @@ struct serialize<compact_hash::xorshift_t> {
 };
 
 template<>
+struct heap_size<poplar::bijective_hash::Xorshift> {
+    using T = poplar::bijective_hash::Xorshift;
+
+    static object_size_t compute(T const& val) {
+        using namespace compact_hash;
+
+        auto bytes = object_size_t::empty();
+
+        bytes += heap_size<uint64_t>::compute(val.shift_);
+        bytes += heap_size<uint64_t>::compute(val.univ_size_.bits());
+
+        return bytes;
+    }
+};
+
+template<>
 struct serialize<poplar::bijective_hash::Xorshift> {
     using T = poplar::bijective_hash::Xorshift;
 
-    static void write(std::ostream& out, T const& val) {
+    static object_size_t write(std::ostream& out, T const& val) {
         using namespace compact_hash;
 
-        serialize<uint64_t>::write(out, val.shift_);
-        serialize<uint64_t>::write(out, val.univ_size_.bits());
+        auto bytes = object_size_t::empty();
+
+        bytes += serialize<uint64_t>::write(out, val.shift_);
+        bytes += serialize<uint64_t>::write(out, val.univ_size_.bits());
+
+        return bytes;
     }
     static T read(std::istream& in) {
         using namespace compact_hash;
