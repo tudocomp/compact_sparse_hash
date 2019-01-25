@@ -334,7 +334,8 @@ struct fixed_elias_gamma_bucket_size_t {
     inline static size_t bucket_size(size_t table_size) { return N; }
 };
 
-/// Bucket sizes grow according to the table size.
+/// Bucket sizes grow according to the table size via the formular
+/// `std::pow(std::log2(table_size), 3.0 / 2.0)`.
 struct growing_elias_gamma_bucket_size_t {
     inline static size_t bucket_size(size_t table_size) {
         // TODO: Add reference for the growth formula.
@@ -347,6 +348,10 @@ struct growing_elias_gamma_bucket_size_t {
 /// To prevent large scanning costs, the entries are split up into buckets.
 ///
 /// The size of each buckets is determined by `elias_gamma_bucket_size_t`.
+///
+/// It expects a type with a member
+/// `static size_t bucket_size(size_t table_size);` for calculating the
+/// desired bucket size.
 template<typename elias_gamma_bucket_size_t>
 struct elias_gamma_displacement_table_t {
     mutable uint64_t m_elem_cursor = 0;
