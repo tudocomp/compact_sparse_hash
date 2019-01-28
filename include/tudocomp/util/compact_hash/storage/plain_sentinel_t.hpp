@@ -17,6 +17,10 @@ namespace tdc {namespace compact_hash {
             config_args() = default;
         };
 
+        /// this is called during a resize to copy over internal config values
+        inline void reconstruct_overwrite_config_from(plain_sentinel_t const& other) {
+        }
+
         using satellite_t_export = satellite_t;
         using entry_ptr_t = typename satellite_t::entry_ptr_t;
         using entry_bit_width_t = typename satellite_t::entry_bit_width_t;

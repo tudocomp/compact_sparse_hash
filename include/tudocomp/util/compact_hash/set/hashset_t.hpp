@@ -173,6 +173,14 @@ public:
         std::swap(*this, other);
     }
 
+    /// this is called during a resize to copy over internal config values
+    inline void reconstruct_overwrite_config_from(hashset_t const& other) {
+        max_load_factor(other.max_load_factor());
+        m_hash.reconstruct_overwrite_config_from(other.m_hash);
+        m_storage.reconstruct_overwrite_config_from(other.m_storage);
+        m_placement.reconstruct_overwrite_config_from(other.m_placement);
+    }
+
 private:
     using quot_width_t = typename satellite_t::entry_bit_width_t;
 
@@ -300,7 +308,7 @@ private:
             }
             auto new_table = hashset_t<hash_t, placement_t>(
                 new_capacity, new_key_width);
-            new_table.max_load_factor(this->max_load_factor());
+            new_table.reconstruct_overwrite_config_from(*this);
 
             /*
             std::cout

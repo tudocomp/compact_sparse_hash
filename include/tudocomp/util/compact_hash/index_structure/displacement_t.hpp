@@ -34,6 +34,10 @@ public:
         config_args() = default;
     };
 
+    /// this is called during a resize to copy over internal config values
+    inline void reconstruct_overwrite_config_from(displacement_t const& other) {
+    }
+
     inline displacement_t(size_t table_size):
         m_displace(table_size) {}
 

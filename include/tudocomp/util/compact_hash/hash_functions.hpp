@@ -97,6 +97,10 @@ public:
     config_args() = default;
   };
 
+  /// this is called during a resize to copy over internal config values
+  inline void reconstruct_overwrite_config_from(Xorshift const& other) {
+  }
+
   Xorshift() = default;
 
   explicit Xorshift(uint32_t univ_bits) {
@@ -181,6 +185,10 @@ public:
     struct config_args {
         config_args() = default;
     };
+
+    /// this is called during a resize to copy over internal config values
+    inline void reconstruct_overwrite_config_from(xorshift_t const& other) {
+    }
 
     /// Constructs a hash function for values with a width of `w` bits.
     xorshift_t(uint32_t w):

@@ -26,6 +26,10 @@ public:
         config_args() = default;
     };
 
+    /// this is called during a resize to copy over internal config values
+    inline void reconstruct_overwrite_config_from(cv_bvs_t const& other) {
+    }
+
     inline cv_bvs_t(size_t table_size) {
         m_cv.reserve(table_size);
         m_cv.resize(table_size);
