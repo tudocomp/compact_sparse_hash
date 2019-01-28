@@ -16,6 +16,15 @@ class hashset_t {
     using storage_t = buckets_bv_t<no_satellite_data_t>;
     using satellite_t = typename storage_t::satellite_t_export;
 public:
+    /// runtime initilization arguments for the template config parameters
+    struct config_args {
+        config_args() = default;
+
+        typename hash_t::config_args hash_config;
+        typename storage_t::config_args storage_config;
+        typename placement_t::config_args displacement_config;
+    };
+
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
     static constexpr size_t DEFAULT_TABLE_SIZE = 0;

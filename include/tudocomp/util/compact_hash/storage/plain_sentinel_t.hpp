@@ -12,6 +12,11 @@
 namespace tdc {namespace compact_hash {
     template<typename satellite_t>
     struct plain_sentinel_t {
+        /// runtime initilization arguments, if any
+        struct config_args {
+            config_args() = default;
+        };
+
         using satellite_t_export = satellite_t;
         using entry_ptr_t = typename satellite_t::entry_ptr_t;
         using entry_bit_width_t = typename satellite_t::entry_bit_width_t;

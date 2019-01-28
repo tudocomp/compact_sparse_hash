@@ -29,6 +29,11 @@ class displacement_t {
         m_displace(std::move(table)) {}
 
 public:
+    /// runtime initilization arguments, if any
+    struct config_args {
+        config_args() = default;
+    };
+
     inline displacement_t(size_t table_size):
         m_displace(table_size) {}
 

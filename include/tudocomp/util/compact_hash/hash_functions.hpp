@@ -92,6 +92,11 @@ constexpr uint64_t PRIME_TABLE[][2][3] = {
 
 class Xorshift {
 public:
+  /// runtime initilization arguments, if any
+  struct config_args {
+    config_args() = default;
+  };
+
   Xorshift() = default;
 
   explicit Xorshift(uint32_t univ_bits) {
@@ -172,6 +177,11 @@ class xorshift_t {
 
     xorshift_t() = default;
 public:
+    /// runtime initilization arguments, if any
+    struct config_args {
+        config_args() = default;
+    };
+
     /// Constructs a hash function for values with a width of `w` bits.
     xorshift_t(uint32_t w):
         m_j((w / 2ull) + 1)

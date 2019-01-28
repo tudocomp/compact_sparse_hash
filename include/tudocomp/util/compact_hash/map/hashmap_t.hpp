@@ -12,8 +12,18 @@ namespace tdc {namespace compact_hash{namespace map {
 
 template<typename val_t, typename hash_t, template<typename> typename storage_t, typename placement_t>
 class hashmap_t {
-    using satellite_t = typename storage_t<satellite_data_t<val_t>>::satellite_t_export;
+    using storage_app_t = storage_t<satellite_data_t<val_t>>;
+    using satellite_t = typename storage_app_t::satellite_t_export;
 public:
+    /// runtime initilization arguments for the template config parameters
+    struct config_args {
+        config_args() = default;
+
+        typename hash_t::config_args hash_config;
+        typename storage_app_t::config_args storage_config;
+        typename placement_t::config_args displacement_config;
+    };
+
     /// By-value representation of a value
     using value_type = typename cbp::cbp_repr_t<val_t>::value_type;
     /// Reference to a value
@@ -61,7 +71,8 @@ public:
     /// and a initial key bit-width `key_width`.
     inline hashmap_t(size_t size = DEFAULT_TABLE_SIZE,
                      size_t key_width = DEFAULT_KEY_WIDTH,
-                     size_t value_width = DEFAULT_VALUE_WIDTH):
+                     size_t value_width = DEFAULT_VALUE_WIDTH,
+                     config_args config = config_args()):
         m_sizing(size),
         m_key_width(key_width),
         m_val_width(value_width),
@@ -262,7 +273,7 @@ private:
     uint8_t m_val_width;
 
     /// Storage of the table elements
-    storage_t<satellite_data_t<val_t>> m_storage;
+    storage_app_t m_storage;
 
     /// Placement management structures
     placement_t m_placement;
@@ -440,7 +451,7 @@ struct heap_size<compact_hash::map::hashmap_t<val_t, hash_t, storage_t, placemen
         bytes += heap_size<uint8_t>::compute(val.m_key_width);
         bytes += heap_size<uint8_t>::compute(val.m_val_width);
         bytes += heap_size<hash_t>::compute(val.m_hash);
-        bytes += heap_size<storage_t<satellite_data_t<val_t>>>::compute(
+        bytes += heap_size<typename T::storage_app_t>::compute(
             val.m_storage, val.table_size(), val.storage_widths());
         bytes += heap_size<placement_t>::compute(val.m_placement, val.table_size());
         bytes += heap_size<uint8_t>::compute(val.m_is_empty);
@@ -463,7 +474,7 @@ struct serialize<compact_hash::map::hashmap_t<val_t, hash_t, storage_t, placemen
         bytes += serialize<uint8_t>::write(out, val.m_key_width);
         bytes += serialize<uint8_t>::write(out, val.m_val_width);
         bytes += serialize<hash_t>::write(out, val.m_hash);
-        bytes += serialize<storage_t<satellite_data_t<val_t>>>::write(
+        bytes += serialize<typename T::storage_app_t>::write(
             out, val.m_storage, val.table_size(), val.storage_widths());
         bytes += serialize<placement_t>::write(out, val.m_placement, val.table_size());
         bytes += serialize<uint8_t>::write(out, val.m_is_empty);
@@ -485,7 +496,7 @@ struct serialize<compact_hash::map::hashmap_t<val_t, hash_t, storage_t, placemen
         ret.m_val_width = std::move(val_width);
         ret.m_hash = std::move(hash);
 
-        auto storage = serialize<storage_t<satellite_data_t<val_t>>>::read(in, ret.table_size(), ret.storage_widths());
+        auto storage = serialize<typename T::storage_app_t>::read(in, ret.table_size(), ret.storage_widths());
         auto placement = serialize<placement_t>::read(in, ret.table_size());
 
         ret.m_storage = std::move(storage);

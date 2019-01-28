@@ -21,6 +21,11 @@ class cv_bvs_t {
     inline cv_bvs_t(IntVector<uint_t<2>>&& cv): m_cv(std::move(cv)) {}
 
 public:
+    /// runtime initilization arguments, if any
+    struct config_args {
+        config_args() = default;
+    };
+
     inline cv_bvs_t(size_t table_size) {
         m_cv.reserve(table_size);
         m_cv.resize(table_size);
