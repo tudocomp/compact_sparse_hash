@@ -20,30 +20,30 @@ template<typename val_t, typename hash_t = poplar_xorshift_t>
 using sparse_cv_hashmap_t
     = hashmap_t<val_t, hash_t, buckets_bv_t, cv_bvs_t>;
 
-template<typename val_t, typename hash_t = poplar_xorshift_t>
+template<typename val_t, typename hash_t = poplar_xorshift_t, size_t layered_bit_width = 4>
 using plain_layered_hashmap_t
     = hashmap_t<
         val_t, hash_t, plain_sentinel_t,
-        displacement_t<layered_displacement_table_t<4>>>;
+        displacement_t<layered_displacement_table_t<layered_bit_width>>>;
 
-template<typename val_t, typename hash_t = poplar_xorshift_t>
+template<typename val_t, typename hash_t = poplar_xorshift_t, size_t layered_bit_width = 4>
 using sparse_layered_hashmap_t
     = hashmap_t<
         val_t, hash_t, buckets_bv_t,
-        displacement_t<layered_displacement_table_t<4>>>;
+        displacement_t<layered_displacement_table_t<layered_bit_width>>>;
 
-template<typename val_t, typename hash_t = poplar_xorshift_t>
+template<typename val_t, typename hash_t = poplar_xorshift_t, size_t elias_bucket_size = 1024>
 using plain_elias_hashmap_t
     = hashmap_t<
         val_t, hash_t, plain_sentinel_t,
         displacement_t<elias_gamma_displacement_table_t<
-            fixed_elias_gamma_bucket_size_t<1024>>>>;
+            fixed_elias_gamma_bucket_size_t<elias_bucket_size>>>>;
 
-template<typename val_t, typename hash_t = poplar_xorshift_t>
+template<typename val_t, typename hash_t = poplar_xorshift_t, size_t elias_bucket_size = 1024>
 using sparse_elias_hashmap_t
     = hashmap_t<
         val_t, hash_t, buckets_bv_t,
         displacement_t<elias_gamma_displacement_table_t<
-            fixed_elias_gamma_bucket_size_t<1024>>>>;
+            fixed_elias_gamma_bucket_size_t<elias_bucket_size>>>>;
 
 }}}
