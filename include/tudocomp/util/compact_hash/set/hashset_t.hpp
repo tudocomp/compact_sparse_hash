@@ -44,7 +44,7 @@ public:
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline hashset_t(size_t size = DEFAULT_TABLE_SIZE,
-                               size_t key_width = DEFAULT_KEY_WIDTH):
+                     size_t key_width = DEFAULT_KEY_WIDTH):
         m_sizing(size),
         m_key_width(key_width),
         m_storage(table_size(), storage_widths()),
