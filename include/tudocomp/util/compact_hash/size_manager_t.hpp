@@ -38,11 +38,27 @@ class size_manager_t {
     size_manager_t() = default;
 
 public:
+    /// runtime initilization arguments, if any
+    struct config_args {
+        config_args() {}
+        config_args(float load_factor): load_factor(load_factor) {}
+
+        float load_factor = 0.5;
+    };
+
+    /// get the config of this instance
+    inline config_args current_config() const {
+        return config_args {
+            m_load_factor,
+        };
+    }
+
     /// Create the size manager with an initial table size `capacity`
-    inline size_manager_t(size_t capacity) {
+    inline size_manager_t(size_t capacity, config_args config = config_args{}) {
         capacity = adjust_size(capacity);
 
         m_size = 0;
+        m_load_factor = config.load_factor;
         CHECK(is_pot(capacity));
         m_capacity_log2 = log2_upper(capacity);
     }

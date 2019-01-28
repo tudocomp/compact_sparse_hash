@@ -12,15 +12,6 @@
 namespace tdc {namespace compact_hash {
     template<typename satellite_t>
     struct plain_sentinel_t {
-        /// runtime initilization arguments, if any
-        struct config_args {
-            config_args() = default;
-        };
-
-        /// this is called during a resize to copy over internal config values
-        inline void reconstruct_overwrite_config_from(plain_sentinel_t const& other) {
-        }
-
         using satellite_t_export = satellite_t;
         using entry_ptr_t = typename satellite_t::entry_ptr_t;
         using entry_bit_width_t = typename satellite_t::entry_bit_width_t;
@@ -33,11 +24,23 @@ namespace tdc {namespace compact_hash {
         std::unique_ptr<uint64_t[]> m_alloc;
         value_type m_empty_value;
 
+        /// runtime initilization arguments, if any
+        struct config_args {
+            value_type empty_value = value_type();
+        };
+
+        /// get the config of this instance
+        inline config_args current_config() const {
+            return config_args{
+                m_empty_value,
+            };
+        }
+
         inline plain_sentinel_t() {}
         inline plain_sentinel_t(size_t table_size,
                                 entry_bit_width_t widths,
-                                value_type const& empty_value = value_type()):
-            m_empty_value(empty_value)
+                                config_args config = config_args{}):
+            m_empty_value(config.empty_value)
         {
             size_t alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
             m_alloc = std::make_unique<uint64_t[]>(alloc_size);

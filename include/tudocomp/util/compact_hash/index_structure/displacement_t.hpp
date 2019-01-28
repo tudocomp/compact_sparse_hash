@@ -31,21 +31,16 @@ class displacement_t {
 public:
     /// runtime initilization arguments, if any
     struct config_args {
-        config_args() = default;
         typename displacement_table_t::config_args table_config;
     };
 
-    /// this is called during a resize to copy over internal config values
-    inline void reconstruct_overwrite_config_from(displacement_t const& other) {
-        m_displace.reconstruct_overwrite_config_from(other.m_displace);
+    /// get the config of this instance
+    inline config_args current_config() const {
+        return config_args {};
     }
 
-    inline displacement_t(size_t table_size):
-        m_displace(table_size) {}
-
-    template<typename... extra_arguments_type>
-    inline displacement_t(size_t table_size, extra_arguments_type... extra_arguments):
-        m_displace(table_size, extra_arguments...) {}
+    inline displacement_t(size_t table_size, config_args config = config_args{}):
+        m_displace(table_size, config.table_config) {}
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {

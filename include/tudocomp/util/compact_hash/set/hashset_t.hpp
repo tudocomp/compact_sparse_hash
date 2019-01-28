@@ -18,12 +18,21 @@ class hashset_t {
 public:
     /// runtime initilization arguments for the template config parameters
     struct config_args {
-        config_args() = default;
-
+        typename size_manager_t::config_args size_manager_config;
         typename hash_t::config_args hash_config;
         typename storage_t::config_args storage_config;
         typename placement_t::config_args displacement_config;
     };
+
+    /// this is called during a resize to copy over internal config values
+    inline config_args current_config() const {
+        auto r = config_args{};
+        r.size_manager_config = m_sizing.current_config();
+        r.hash_config = m_hash.current_config();
+        r.storage_config = m_storage.current_config();
+        r.displacement_config = m_placement.current_config();
+        return r;
+    }
 
     /// Default value of the `key_width` parameter of the constructor.
     static constexpr size_t DEFAULT_KEY_WIDTH = 1;
@@ -53,12 +62,13 @@ public:
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline hashset_t(size_t size = DEFAULT_TABLE_SIZE,
-                     size_t key_width = DEFAULT_KEY_WIDTH):
-        m_sizing(size),
+                     size_t key_width = DEFAULT_KEY_WIDTH,
+                     config_args config = config_args{}):
+        m_sizing(size, config.size_manager_config),
         m_key_width(key_width),
-        m_storage(table_size(), storage_widths()),
-        m_placement(table_size()),
-        m_hash(real_width())
+        m_storage(table_size(), storage_widths(), config.storage_config),
+        m_placement(table_size(), config.displacement_config),
+        m_hash(real_width(), config.hash_config)
     {
     }
 
@@ -171,14 +181,6 @@ public:
     /// Swap this instance of the data structure with another one.
     inline void swap(hashset_t& other) {
         std::swap(*this, other);
-    }
-
-    /// this is called during a resize to copy over internal config values
-    inline void reconstruct_overwrite_config_from(hashset_t const& other) {
-        max_load_factor(other.max_load_factor());
-        m_hash.reconstruct_overwrite_config_from(other.m_hash);
-        m_storage.reconstruct_overwrite_config_from(other.m_storage);
-        m_placement.reconstruct_overwrite_config_from(other.m_placement);
     }
 
 private:
@@ -306,9 +308,9 @@ private:
             while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
                 new_capacity = m_sizing.grown_capacity(new_capacity);
             }
+            auto config = this->current_config();
             auto new_table = hashset_t<hash_t, placement_t>(
-                new_capacity, new_key_width);
-            new_table.reconstruct_overwrite_config_from(*this);
+                new_capacity, new_key_width, config);
 
             /*
             std::cout

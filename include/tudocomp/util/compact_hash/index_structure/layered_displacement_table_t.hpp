@@ -35,15 +35,13 @@ class layered_displacement_table_t {
         m_displace(std::move(displace)), m_spill(std::move(spill)) {}
 public:
     /// runtime initilization arguments, if any
-    struct config_args {
-        config_args() = default;
-    };
+    struct config_args {};
 
-    /// this is called during a resize to copy over internal config values
-    inline void reconstruct_overwrite_config_from(layered_displacement_table_t const& other) {
-    }
+    /// get the config of this instance
+    inline config_args current_config() const { return config_args{}; }
 
-    inline layered_displacement_table_t(size_t table_size) {
+    inline layered_displacement_table_t(size_t table_size,
+                                        config_args config = config_args{}) {
         m_displace.reserve(table_size);
         m_displace.resize(table_size);
     }

@@ -404,15 +404,13 @@ private:
     friend struct ::tdc::heap_size;
 public:
     /// runtime initilization arguments, if any
-    struct config_args {
-        config_args() = default;
-    };
+    struct config_args {};
 
-    /// this is called during a resize to copy over internal config values
-    inline void reconstruct_overwrite_config_from(elias_gamma_displacement_table_t const& other) {
-    }
+    /// get the config of this instance
+    inline config_args current_config() const { return config_args{}; }
 
-    inline elias_gamma_displacement_table_t(size_t table_size, bucket_size_t bucket_size = bucket_size_t()) {
+    inline elias_gamma_displacement_table_t(size_t table_size,
+                                            config_args config = config_args{}) {
         auto r = calc_buckets(table_size);
         m_bucket_size_cache = r.bucket_size;
 
