@@ -331,13 +331,23 @@ struct elias_gamma_bucket_t {
 /// Buckets take up exactly `N` elements.
 template<size_t N>
 struct fixed_elias_gamma_bucket_size_t {
-    inline static size_t bucket_size(size_t table_size) { return N; }
+    fixed_elias_gamma_bucket_size_t() = default;
+    inline size_t bucket_size(size_t /*table_size*/) const { return N; }
+};
+
+/// Buckets take up exactly `fixed_size` elements.
+struct dynamic_fixed_elias_gamma_bucket_size_t {
+    size_t m_fixed_size;
+    dynamic_fixed_elias_gamma_bucket_size_t(size_t fixed_size = 4):
+        m_fixed_size(fixed_size) {}
+    inline size_t bucket_size(size_t /*table_size*/) const { return m_fixed_size; }
 };
 
 /// Bucket sizes grow according to the table size via the formular
 /// `std::pow(std::log2(table_size), 3.0 / 2.0)`.
 struct growing_elias_gamma_bucket_size_t {
-    inline static size_t bucket_size(size_t table_size) {
+    growing_elias_gamma_bucket_size_t() = default;
+    inline size_t bucket_size(size_t table_size) const {
         // TODO: Add reference for the growth formula.
         return std::pow(std::log2(table_size), 3.0 / 2.0);
     }
@@ -353,16 +363,18 @@ struct growing_elias_gamma_bucket_size_t {
 /// `static size_t bucket_size(size_t table_size);` for calculating the
 /// desired bucket size.
 template<typename elias_gamma_bucket_size_t>
-struct elias_gamma_displacement_table_t {
+class elias_gamma_displacement_table_t {
+public:
+    using bucket_size_t = elias_gamma_bucket_size_t;
+private:
     mutable uint64_t m_elem_cursor = 0;
     mutable uint64_t m_bit_cursor = 0;
     mutable size_t m_bucket_cursor = 0;
 
-    size_t m_bucket_size;
+
+    size_t m_bucket_size_cache;
 
     std::unique_ptr<elias_gamma_bucket_t[]> m_buckets;
-
-    using bucket_size_t = elias_gamma_bucket_size_t;
 
     struct BucketSizes {
         size_t full_buckets;
@@ -371,7 +383,7 @@ struct elias_gamma_displacement_table_t {
         size_t bucket_size;
     };
     inline static BucketSizes calc_buckets(size_t table_size) {
-        auto bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
+        auto bucket_size = bucket_size_t().bucket_size(table_size);
 
         size_t full_buckets = table_size / bucket_size;
         size_t remainder_bucket_size = table_size % bucket_size;
@@ -385,15 +397,20 @@ struct elias_gamma_displacement_table_t {
         };
     }
 
-    template<typename... extra_arguments_type>
-    inline elias_gamma_displacement_table_t(size_t table_size, extra_arguments_type... extra_arguments) {
+    template<typename T>
+    friend struct ::tdc::serialize;
+
+    template<typename T>
+    friend struct ::tdc::heap_size;
+public:
+    inline elias_gamma_displacement_table_t(size_t table_size, bucket_size_t bucket_size = bucket_size_t()) {
         auto r = calc_buckets(table_size);
-        m_bucket_size = r.bucket_size;
+        m_bucket_size_cache = r.bucket_size;
 
         m_buckets = std::make_unique<elias_gamma_bucket_t[]>(r.buckets);
 
         for (size_t i = 0; i < r.full_buckets; i++) {
-            m_buckets[i] = elias_gamma_bucket_t(m_bucket_size);
+            m_buckets[i] = elias_gamma_bucket_t(m_bucket_size_cache);
         }
         if (r.remainder_bucket_size != 0) {
             m_buckets[r.buckets - 1] = elias_gamma_bucket_t(r.remainder_bucket_size);
@@ -401,8 +418,8 @@ struct elias_gamma_displacement_table_t {
     }
 
     inline size_t get(size_t pos) const {
-        size_t bucket = pos / m_bucket_size;
-        size_t offset = pos % m_bucket_size;
+        size_t bucket = pos / m_bucket_size_cache;
+        size_t offset = pos % m_bucket_size_cache;
         if (bucket != m_bucket_cursor) {
             m_bucket_cursor = bucket;
             m_elem_cursor = 0;
@@ -414,8 +431,8 @@ struct elias_gamma_displacement_table_t {
             .get(offset);
     }
     inline void set(size_t pos, size_t val) {
-        size_t bucket = pos / m_bucket_size;
-        size_t offset = pos % m_bucket_size;
+        size_t bucket = pos / m_bucket_size_cache;
+        size_t offset = pos % m_bucket_size_cache;
         if (bucket != m_bucket_cursor) {
             m_bucket_cursor = bucket;
             m_elem_cursor = 0;
@@ -440,7 +457,7 @@ struct heap_size<compact_hash::elias_gamma_displacement_table_t<elias_gamma_buck
         bytes += heap_size<uint64_t>::compute(val.m_elem_cursor);
         bytes += heap_size<uint64_t>::compute(val.m_bit_cursor);
         bytes += heap_size<size_t>::compute(val.m_bucket_cursor);
-        bytes += heap_size<size_t>::compute(val.m_bucket_size);
+        bytes += heap_size<size_t>::compute(val.m_bucket_size_cache);
         bytes += object_size_t::exact(sizeof(decltype(val.m_buckets)));
 
         using bucket_t = compact_hash::elias_gamma_bucket_t;
@@ -448,7 +465,7 @@ struct heap_size<compact_hash::elias_gamma_displacement_table_t<elias_gamma_buck
             compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
         table_t const& table = val;
-        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+        DCHECK_EQ(table.m_bucket_size_cache, typename table_t::bucket_size_t().bucket_size(table_size));
 
         auto& buckets = table.m_buckets;
         auto s = T::calc_buckets(table_size);
@@ -477,7 +494,7 @@ struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_buck
             compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
         table_t const& table = val;
-        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+        DCHECK_EQ(table.m_bucket_size_cache, typename table_t::bucket_size_t().bucket_size(table_size));
 
         auto& buckets = table.m_buckets;
         auto s = T::calc_buckets(table_size);
@@ -501,7 +518,7 @@ struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_buck
             compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
         table_t table = table_t(table_size);
-        DCHECK_EQ(table.m_bucket_size, table_t::bucket_size_t::bucket_size(table_size));
+        DCHECK_EQ(table.m_bucket_size_cache, typename table_t::bucket_size_t().bucket_size(table_size));
 
         auto& buckets = table.m_buckets;
         auto s = T::calc_buckets(table_size);

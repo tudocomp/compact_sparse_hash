@@ -60,8 +60,8 @@ public:
     /// Constructs a hashtable with a initial table size `size`,
     /// and a initial key bit-width `key_width`.
     inline hashmap_t(size_t size = DEFAULT_TABLE_SIZE,
-                               size_t key_width = DEFAULT_KEY_WIDTH,
-                               size_t value_width = DEFAULT_VALUE_WIDTH):
+                     size_t key_width = DEFAULT_KEY_WIDTH,
+                     size_t value_width = DEFAULT_VALUE_WIDTH):
         m_sizing(size),
         m_key_width(key_width),
         m_val_width(value_width),
