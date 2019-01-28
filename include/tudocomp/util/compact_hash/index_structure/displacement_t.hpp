@@ -32,6 +32,10 @@ public:
     inline displacement_t(size_t table_size):
         m_displace(table_size) {}
 
+    template<typename... extra_arguments_type>
+    inline displacement_t(size_t table_size, extra_arguments_type... extra_arguments):
+        m_displace(table_size, extra_arguments...) {}
+
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
         using satellite_t = typename storage_t::satellite_t_export;

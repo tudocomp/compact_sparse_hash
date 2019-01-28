@@ -368,6 +368,7 @@ struct elias_gamma_displacement_table_t {
         size_t full_buckets;
         size_t remainder_bucket_size;
         size_t buckets;
+        size_t bucket_size;
     };
     inline static BucketSizes calc_buckets(size_t table_size) {
         auto bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
@@ -380,12 +381,14 @@ struct elias_gamma_displacement_table_t {
             full_buckets,
             remainder_bucket_size,
             buckets,
+            bucket_size,
         };
     }
 
-    inline elias_gamma_displacement_table_t(size_t table_size) {
-        m_bucket_size = elias_gamma_bucket_size_t::bucket_size(table_size);
+    template<typename... extra_arguments_type>
+    inline elias_gamma_displacement_table_t(size_t table_size, extra_arguments_type... extra_arguments) {
         auto r = calc_buckets(table_size);
+        m_bucket_size = r.bucket_size;
 
         m_buckets = std::make_unique<elias_gamma_bucket_t[]>(r.buckets);
 
