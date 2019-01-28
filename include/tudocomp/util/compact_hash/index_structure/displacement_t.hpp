@@ -32,10 +32,12 @@ public:
     /// runtime initilization arguments, if any
     struct config_args {
         config_args() = default;
+        typename displacement_table_t::config_args table_config;
     };
 
     /// this is called during a resize to copy over internal config values
     inline void reconstruct_overwrite_config_from(displacement_t const& other) {
+        m_displace.reconstruct_overwrite_config_from(other.m_displace);
     }
 
     inline displacement_t(size_t table_size):

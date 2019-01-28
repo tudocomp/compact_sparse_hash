@@ -403,6 +403,15 @@ private:
     template<typename T>
     friend struct ::tdc::heap_size;
 public:
+    /// runtime initilization arguments, if any
+    struct config_args {
+        config_args() = default;
+    };
+
+    /// this is called during a resize to copy over internal config values
+    inline void reconstruct_overwrite_config_from(elias_gamma_displacement_table_t const& other) {
+    }
+
     inline elias_gamma_displacement_table_t(size_t table_size, bucket_size_t bucket_size = bucket_size_t()) {
         auto r = calc_buckets(table_size);
         m_bucket_size_cache = r.bucket_size;

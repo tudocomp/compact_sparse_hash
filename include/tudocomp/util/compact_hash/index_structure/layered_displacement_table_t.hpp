@@ -34,6 +34,14 @@ class layered_displacement_table_t {
                                  std::unordered_map<size_t, size_t>&& spill):
         m_displace(std::move(displace)), m_spill(std::move(spill)) {}
 public:
+    /// runtime initilization arguments, if any
+    struct config_args {
+        config_args() = default;
+    };
+
+    /// this is called during a resize to copy over internal config values
+    inline void reconstruct_overwrite_config_from(layered_displacement_table_t const& other) {
+    }
 
     inline layered_displacement_table_t(size_t table_size) {
         m_displace.reserve(table_size);
