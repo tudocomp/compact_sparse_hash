@@ -36,7 +36,7 @@ public:
 
     /// get the config of this instance
     inline config_args current_config() const {
-        return config_args {};
+        return config_args { m_displace.current_config() };
     }
 
     inline displacement_t(size_t table_size, config_args config = config_args{}):
