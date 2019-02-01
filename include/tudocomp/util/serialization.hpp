@@ -47,6 +47,11 @@ namespace tdc {
         return serialize<T>::read(inp);
     }
 
+    template<typename T>
+    inline void serialize_read_into(std::istream& inp, T& out) {
+        out = serialize<T>::read(inp);
+    }
+
 #define gen_direct_serialization(...) \
     template<>\
     struct serialize<__VA_ARGS__> {\

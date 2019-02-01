@@ -599,4 +599,73 @@ struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_buck
     }
 };
 
+template<size_t N>
+struct heap_size<compact_hash::fixed_elias_gamma_bucket_size_t<N>> {
+    static object_size_t compute(compact_hash::fixed_elias_gamma_bucket_size_t<N> const& val) {
+        return object_size_t::exact(sizeof(compact_hash::fixed_elias_gamma_bucket_size_t<N>));
+    }
+};
+gen_heap_size_without_indirection(compact_hash::dynamic_fixed_elias_gamma_bucket_size_t)
+gen_heap_size_without_indirection(compact_hash::growing_elias_gamma_bucket_size_t)
+
+template<size_t N>
+struct serialize<compact_hash::fixed_elias_gamma_bucket_size_t<N>> {
+    using T = compact_hash::fixed_elias_gamma_bucket_size_t<N>;
+
+    static object_size_t write(std::ostream& out, T const& val) {
+        auto bytes = object_size_t::empty();
+        return bytes;
+    }
+
+    static T read(std::istream& in) {
+        return T({});
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return true;
+    }
+};
+
+template<>
+struct serialize<compact_hash::dynamic_fixed_elias_gamma_bucket_size_t> {
+    using T = compact_hash::dynamic_fixed_elias_gamma_bucket_size_t;
+
+    static object_size_t write(std::ostream& out, T const& val) {
+        auto bytes = object_size_t::empty();
+        bytes += serialize_write(out, val.m_fixed_size);
+        return bytes;
+    }
+
+    static T read(std::istream& in) {
+        auto val = T({});
+        serialize_read_into(in, val.m_fixed_size);
+        return val;
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(m_fixed_size);
+    }
+};
+
+template<>
+struct serialize<compact_hash::growing_elias_gamma_bucket_size_t> {
+    using T = compact_hash::growing_elias_gamma_bucket_size_t;
+
+    static object_size_t write(std::ostream& out, T const& val) {
+        auto bytes = object_size_t::empty();
+        bytes += serialize_write(out, val.m_factor);
+        return bytes;
+    }
+
+    static T read(std::istream& in) {
+        auto val = T({});
+        serialize_read_into(in, val.m_factor);
+        return val;
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(m_factor);
+    }
+};
+
 }
