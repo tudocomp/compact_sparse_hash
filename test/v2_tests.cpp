@@ -68,7 +68,7 @@ void TableTest() {
 
         widths_t ws { 5, 7 };
         size_t table_size = 16;
-        t = tab_t(table_size, ws);
+        t = tab_t(table_size, ws, {});
         auto ctx = t.context(table_size, ws);
 
         for(size_t i = 0; i < table_size; i++) {
@@ -92,7 +92,7 @@ void TableTest() {
     {
         widths_t ws { 5, 7 };
         size_t table_size = 128;
-        auto t = tab_t(table_size, ws);
+        auto t = tab_t(table_size, ws, {});
         auto ctx = t.context(table_size, ws);
 
         for(size_t i = 60; i < 80; i++) {
@@ -141,8 +141,8 @@ void CVTableTest() {
     widths_t ws { 5, 7 };
     auto size_mgr = size_manager_t(128);
 
-    auto t = tab_t(size_mgr.capacity(), ws);
-    auto p = placement_t(size_mgr.capacity());
+    auto t = tab_t(size_mgr.capacity(), ws, {});
+    auto p = placement_t(size_mgr.capacity(), {});
 
     auto tctx = t.context(size_mgr.capacity(), ws);
     auto pctx = p.context(t, size_mgr.capacity(), ws, size_mgr);
@@ -264,8 +264,8 @@ void DPTableTest() {
 
     widths_t ws { 5, 7 };
     auto size_mgr = TestSizeMgr { 128 };
-    auto t = tab_t(size_mgr.table_size, ws);
-    auto p = placement_t(size_mgr.table_size);
+    auto t = tab_t(size_mgr.table_size, ws, {});
+    auto p = placement_t(size_mgr.table_size, {});
 
     auto tctx = t.context(size_mgr.table_size, ws);
     auto pctx = p.context(t, size_mgr.table_size, ws, size_mgr);

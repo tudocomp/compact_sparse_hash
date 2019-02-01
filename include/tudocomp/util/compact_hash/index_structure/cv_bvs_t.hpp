@@ -27,7 +27,7 @@ public:
     /// get the config of this instance
     inline config_args current_config() const { return config_args{}; }
 
-    inline cv_bvs_t(size_t table_size, config_args config = config_args{}) {
+    inline cv_bvs_t(size_t table_size, config_args config) {
         m_cv.reserve(table_size);
         m_cv.resize(table_size);
     }

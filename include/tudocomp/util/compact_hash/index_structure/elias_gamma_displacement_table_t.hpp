@@ -449,7 +449,7 @@ public:
     }
 
     inline elias_gamma_displacement_table_t(size_t table_size,
-                                            config_args config = config_args{}):
+                                            config_args config):
         m_bucket_size(config.bucket_size_config)
     {
         auto r = calc_buckets(table_size);
@@ -566,7 +566,7 @@ struct serialize<compact_hash::elias_gamma_displacement_table_t<elias_gamma_buck
         using table_t =
             compact_hash::elias_gamma_displacement_table_t<elias_gamma_bucket_size_t>;
 
-        table_t table = table_t(table_size);
+        table_t table = table_t(table_size, {});
         table.m_bucket_size_cache = serialize<size_t>::read(in);
         table.m_bucket_size = serialize<elias_gamma_bucket_size_t>::read(in);
 

@@ -82,7 +82,7 @@ public:
     }
 
     inline layered_displacement_table_t(size_t table_size,
-                                        config_args config = config_args{}):
+                                        config_args config):
         m_bit_width(config.bit_width_config)
     {
         m_bit_width.set_width(m_displace);

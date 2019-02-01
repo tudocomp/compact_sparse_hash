@@ -27,7 +27,7 @@ struct naive_displacement_table_t {
 
     std::vector<size_t> m_displace;
     inline naive_displacement_table_t(size_t table_size,
-                                      config_args config = config_args{}) {
+                                      config_args config) {
         m_displace.reserve(table_size);
         m_displace.resize(table_size);
     }

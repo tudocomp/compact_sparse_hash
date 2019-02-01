@@ -39,7 +39,7 @@ namespace tdc {namespace compact_hash {
         inline plain_sentinel_t() {}
         inline plain_sentinel_t(size_t table_size,
                                 entry_bit_width_t widths,
-                                config_args config = config_args{}):
+                                config_args config):
             m_empty_value(config.empty_value)
         {
             size_t alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;

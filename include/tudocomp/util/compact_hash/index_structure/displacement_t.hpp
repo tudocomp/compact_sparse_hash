@@ -39,7 +39,7 @@ public:
         return config_args { m_displace.current_config() };
     }
 
-    inline displacement_t(size_t table_size, config_args config = config_args{}):
+    inline displacement_t(size_t table_size, config_args config):
         m_displace(table_size, config.table_config) {}
 
     template<typename storage_t, typename size_mgr_t>

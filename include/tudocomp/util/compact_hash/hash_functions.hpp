@@ -100,7 +100,7 @@ public:
 
   Xorshift() = default;
 
-  explicit Xorshift(uint32_t univ_bits, config_args config = config_args{}) {
+  explicit Xorshift(uint32_t univ_bits, config_args config) {
     DCHECK(0 < univ_bits && univ_bits < 64);
 
     shift_ = univ_bits / 2 + 1;
@@ -185,7 +185,7 @@ public:
     inline config_args current_config() const { return config_args{}; }
 
     /// Constructs a hash function for values with a width of `w` bits.
-    xorshift_t(uint32_t w, config_args config = config_args{}):
+    xorshift_t(uint32_t w, config_args config):
         m_j((w / 2ull) + 1)
     {
         DCHECK_LT((w / 2ull), m_j);
