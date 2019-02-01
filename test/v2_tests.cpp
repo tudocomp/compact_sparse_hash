@@ -361,8 +361,6 @@ TEST(DPTable, place##_##tab##_##tname##_test) { \
 }
 
 using naive_displacement_t = displacement_t<naive_displacement_table_t>;
-using layered_displacement_t = displacement_t<layered_displacement_table_t<4>>;
-using elias_gamma_displacement_t = displacement_t<elias_gamma_displacement_table_t<fixed_elias_gamma_bucket_size_t<1024>>>;
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint8_t);
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, uint64_t);
 MakeDPTableTest(naive_displacement_t, plain_sentinel_t, dynamic_t);
@@ -372,6 +370,7 @@ MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint64_t);
 MakeDPTableTest(naive_displacement_t, buckets_bv_t,     dynamic_t);
 MakeDPTableTest(naive_displacement_t, buckets_bv_t,     uint_t40);
 
+using layered_displacement_t = displacement_t<layered_displacement_table_t<static_layered_bit_width_t<4>>>;
 MakeDPTableTest(layered_displacement_t, plain_sentinel_t, uint8_t);
 MakeDPTableTest(layered_displacement_t, plain_sentinel_t, uint64_t);
 MakeDPTableTest(layered_displacement_t, plain_sentinel_t, dynamic_t);
@@ -381,6 +380,17 @@ MakeDPTableTest(layered_displacement_t, buckets_bv_t,     uint64_t);
 MakeDPTableTest(layered_displacement_t, buckets_bv_t,     dynamic_t);
 MakeDPTableTest(layered_displacement_t, buckets_bv_t,     uint_t40);
 
+using layered_displacement2_t = displacement_t<layered_displacement_table_t<dynamic_layered_bit_width_t>>;
+MakeDPTableTest(layered_displacement2_t, plain_sentinel_t, uint8_t);
+MakeDPTableTest(layered_displacement2_t, plain_sentinel_t, uint64_t);
+MakeDPTableTest(layered_displacement2_t, plain_sentinel_t, dynamic_t);
+MakeDPTableTest(layered_displacement2_t, plain_sentinel_t, uint_t40);
+MakeDPTableTest(layered_displacement2_t, buckets_bv_t,     uint8_t);
+MakeDPTableTest(layered_displacement2_t, buckets_bv_t,     uint64_t);
+MakeDPTableTest(layered_displacement2_t, buckets_bv_t,     dynamic_t);
+MakeDPTableTest(layered_displacement2_t, buckets_bv_t,     uint_t40);
+
+using elias_gamma_displacement_t = displacement_t<elias_gamma_displacement_table_t<fixed_elias_gamma_bucket_size_t<1024>>>;
 MakeDPTableTest(elias_gamma_displacement_t, plain_sentinel_t, uint8_t);
 MakeDPTableTest(elias_gamma_displacement_t, plain_sentinel_t, uint64_t);
 MakeDPTableTest(elias_gamma_displacement_t, plain_sentinel_t, dynamic_t);
@@ -389,6 +399,16 @@ MakeDPTableTest(elias_gamma_displacement_t, buckets_bv_t,     uint8_t);
 MakeDPTableTest(elias_gamma_displacement_t, buckets_bv_t,     uint64_t);
 MakeDPTableTest(elias_gamma_displacement_t, buckets_bv_t,     dynamic_t);
 MakeDPTableTest(elias_gamma_displacement_t, buckets_bv_t,     uint_t40);
+
+using elias_gamma_displacement2_t = displacement_t<elias_gamma_displacement_table_t<dynamic_fixed_elias_gamma_bucket_size_t>>;
+MakeDPTableTest(elias_gamma_displacement2_t, plain_sentinel_t, uint8_t);
+MakeDPTableTest(elias_gamma_displacement2_t, plain_sentinel_t, uint64_t);
+MakeDPTableTest(elias_gamma_displacement2_t, plain_sentinel_t, dynamic_t);
+MakeDPTableTest(elias_gamma_displacement2_t, plain_sentinel_t, uint_t40);
+MakeDPTableTest(elias_gamma_displacement2_t, buckets_bv_t,     uint8_t);
+MakeDPTableTest(elias_gamma_displacement2_t, buckets_bv_t,     uint64_t);
+MakeDPTableTest(elias_gamma_displacement2_t, buckets_bv_t,     dynamic_t);
+MakeDPTableTest(elias_gamma_displacement2_t, buckets_bv_t,     uint_t40);
 
 template<template<typename> typename table_t, typename val_t>
 void FullTableTest() {
