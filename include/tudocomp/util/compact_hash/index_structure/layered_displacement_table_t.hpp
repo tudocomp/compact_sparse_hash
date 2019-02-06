@@ -200,4 +200,61 @@ struct serialize<compact_hash::layered_displacement_table_t<bit_width_t>> {
     }
 };
 
+template<size_t bit_width_t>
+struct heap_size<compact_hash::static_layered_bit_width_t<bit_width_t>> {
+    using T = compact_hash::static_layered_bit_width_t<bit_width_t>;
+
+    static object_size_t compute(T const& val) {
+        return object_size_t::empty();
+    }
+};
+
+template<size_t bit_width_t>
+struct serialize<compact_hash::static_layered_bit_width_t<bit_width_t>> {
+    using T = compact_hash::static_layered_bit_width_t<bit_width_t>;
+
+    static object_size_t write(std::ostream& out, T const& val) {
+        return object_size_t::empty();
+    }
+
+    static T read(std::istream& in) {
+        return T();
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return true;
+    }
+};
+
+template<>
+struct heap_size<compact_hash::dynamic_layered_bit_width_t> {
+    using T = compact_hash::dynamic_layered_bit_width_t;
+
+    static object_size_t compute(T const& val) {
+        return object_size_t::exact(sizeof(T));
+    }
+};
+
+template<>
+struct serialize<compact_hash::dynamic_layered_bit_width_t> {
+    using T = compact_hash::dynamic_layered_bit_width_t;
+
+    static object_size_t write(std::ostream& out, T const& val) {
+        auto bytes = object_size_t::empty();
+        bytes += serialize_write(out, val.m_width);
+        return bytes;
+    }
+
+    static T read(std::istream& in) {
+        T ret;
+        serialize_read_into(in, ret.m_width);
+        return ret;
+    }
+
+    static bool equal_check(T const& lhs, T const& rhs) {
+        return gen_equal_check(m_width);
+    }
+};
+
+
 }

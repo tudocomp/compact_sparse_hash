@@ -179,6 +179,17 @@ gen_test_set(set_poplar_displacement_elias_growing,
     >
 )
 
+gen_test_set(set_poplar_displacement_elias_dynamic,
+    hashset_t<
+        poplar_xorshift_t,
+        displacement_t<
+            elias_gamma_displacement_table_t<
+                dynamic_fixed_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
 template<typename table_t>
 void serialize_test_map() {
     serialize_test_builder<table_t>([] {
@@ -322,6 +333,19 @@ gen_test_map(map_poplar_bbv_displacement_elias_growing,
     >
 )
 
+gen_test_map(map_poplar_bbv_displacement_elias_dynamic,
+    hashmap_t<
+        val_t,
+        poplar_xorshift_t,
+        buckets_bv_t,
+        displacement_t<
+            elias_gamma_displacement_table_t<
+                dynamic_fixed_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
 gen_test_map(map_poplar_ps_displacement_compact_fixed_4,
     hashmap_t<
         val_t,
@@ -374,6 +398,19 @@ gen_test_map(map_poplar_ps_displacement_elias_growing,
         displacement_t<
             elias_gamma_displacement_table_t<
                 growing_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
+gen_test_map(map_poplar_ps_displacement_elias_dynamic,
+    hashmap_t<
+        val_t,
+        poplar_xorshift_t,
+        plain_sentinel_t,
+        displacement_t<
+            elias_gamma_displacement_table_t<
+                dynamic_fixed_elias_gamma_bucket_size_t
             >
         >
     >

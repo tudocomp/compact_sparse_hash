@@ -410,6 +410,16 @@ MakeDPTableTest(elias_gamma_displacement2_t, buckets_bv_t,     uint64_t);
 MakeDPTableTest(elias_gamma_displacement2_t, buckets_bv_t,     dynamic_t);
 MakeDPTableTest(elias_gamma_displacement2_t, buckets_bv_t,     uint_t40);
 
+using elias_gamma_displacement3_t = displacement_t<elias_gamma_displacement_table_t<growing_elias_gamma_bucket_size_t>>;
+MakeDPTableTest(elias_gamma_displacement3_t, plain_sentinel_t, uint8_t);
+MakeDPTableTest(elias_gamma_displacement3_t, plain_sentinel_t, uint64_t);
+MakeDPTableTest(elias_gamma_displacement3_t, plain_sentinel_t, dynamic_t);
+MakeDPTableTest(elias_gamma_displacement3_t, plain_sentinel_t, uint_t40);
+MakeDPTableTest(elias_gamma_displacement3_t, buckets_bv_t,     uint8_t);
+MakeDPTableTest(elias_gamma_displacement3_t, buckets_bv_t,     uint64_t);
+MakeDPTableTest(elias_gamma_displacement3_t, buckets_bv_t,     dynamic_t);
+MakeDPTableTest(elias_gamma_displacement3_t, buckets_bv_t,     uint_t40);
+
 template<template<typename> typename table_t, typename val_t>
 void FullTableTest() {
     {
