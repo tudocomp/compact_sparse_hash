@@ -21,7 +21,13 @@ class cv_bvs_t {
     inline cv_bvs_t(IntVector<uint_t<2>>&& cv): m_cv(std::move(cv)) {}
 
 public:
-    inline cv_bvs_t(size_t table_size) {
+    /// runtime initilization arguments, if any
+    struct config_args {};
+
+    /// get the config of this instance
+    inline config_args current_config() const { return config_args{}; }
+
+    inline cv_bvs_t(size_t table_size, config_args config) {
         m_cv.reserve(table_size);
         m_cv.resize(table_size);
     }

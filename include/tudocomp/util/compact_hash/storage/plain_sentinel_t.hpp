@@ -24,11 +24,23 @@ namespace tdc {namespace compact_hash {
         std::unique_ptr<uint64_t[]> m_alloc;
         value_type m_empty_value;
 
+        /// runtime initilization arguments, if any
+        struct config_args {
+            value_type empty_value = value_type();
+        };
+
+        /// get the config of this instance
+        inline config_args current_config() const {
+            return config_args{
+                m_empty_value,
+            };
+        }
+
         inline plain_sentinel_t() {}
         inline plain_sentinel_t(size_t table_size,
                                 entry_bit_width_t widths,
-                                value_type const& empty_value = value_type()):
-            m_empty_value(empty_value)
+                                config_args config):
+            m_empty_value(config.empty_value)
         {
             size_t alloc_size = qvd_t::calc_sizes(table_size, widths).overall_qword_size;
             m_alloc = std::make_unique<uint64_t[]>(alloc_size);

@@ -14,13 +14,13 @@ template<typename hash_t = poplar_xorshift_t>
 using sparse_cv_hashset_t
     = hashset_t<hash_t, cv_bvs_t>;
 
-template<typename hash_t = poplar_xorshift_t, size_t layered_bit_width = 4>
+template<typename hash_t = poplar_xorshift_t>
 using sparse_layered_hashset_t
-    = hashset_t<hash_t, displacement_t<layered_displacement_table_t<layered_bit_width>>>;
+    = hashset_t<hash_t, displacement_t<layered_displacement_table_t<dynamic_layered_bit_width_t>>>;
 
-template<typename hash_t = poplar_xorshift_t, size_t elias_bucket_size = 1024>
+template<typename hash_t = poplar_xorshift_t>
 using sparse_elias_hashset_t
     = hashset_t<hash_t, displacement_t<elias_gamma_displacement_table_t<
-        fixed_elias_gamma_bucket_size_t<elias_bucket_size>>>>;
+        dynamic_fixed_elias_gamma_bucket_size_t>>>;
 
 }}}

@@ -19,8 +19,15 @@ struct naive_displacement_table_t {
     template<typename T>
     friend struct ::tdc::serialize;
 
+    /// runtime initilization arguments, if any
+    struct config_args {};
+
+    /// get the config of this instance
+    inline config_args current_config() const { return config_args{}; }
+
     std::vector<size_t> m_displace;
-    inline naive_displacement_table_t(size_t table_size) {
+    inline naive_displacement_table_t(size_t table_size,
+                                      config_args config) {
         m_displace.reserve(table_size);
         m_displace.resize(table_size);
     }

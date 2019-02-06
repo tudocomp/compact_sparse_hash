@@ -132,11 +132,20 @@ TEST(serialize, name) {            \
     serialize_test_set<__VA_ARGS__>(); \
 }
 
-gen_test_set(set_poplar_displacement_compact_4,
+gen_test_set(set_poplar_displacement_compact_fixed_4,
     hashset_t<
         poplar_xorshift_t,
         displacement_t<
-            layered_displacement_table_t<4>
+            layered_displacement_table_t<static_layered_bit_width_t<4>>
+        >
+    >
+)
+
+gen_test_set(set_poplar_displacement_compact_dynamic,
+    hashset_t<
+        poplar_xorshift_t,
+        displacement_t<
+            layered_displacement_table_t<dynamic_layered_bit_width_t>
         >
     >
 )
@@ -165,6 +174,17 @@ gen_test_set(set_poplar_displacement_elias_growing,
         displacement_t<
             elias_gamma_displacement_table_t<
                 growing_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
+gen_test_set(set_poplar_displacement_elias_dynamic,
+    hashset_t<
+        poplar_xorshift_t,
+        displacement_t<
+            elias_gamma_displacement_table_t<
+                dynamic_fixed_elias_gamma_bucket_size_t
             >
         >
     >
@@ -256,15 +276,24 @@ TEST(serialize, name) {            \
 
 using val_t = uint64_t;
 
-
-
-gen_test_map(map_poplar_bbv_displacement_compact_4,
+gen_test_map(map_poplar_bbv_displacement_compact_fixed_4,
     hashmap_t<
         val_t,
         poplar_xorshift_t,
         buckets_bv_t,
         displacement_t<
-            layered_displacement_table_t<4>
+            layered_displacement_table_t<static_layered_bit_width_t<4>>
+        >
+    >
+)
+
+gen_test_map(map_poplar_bbv_displacement_compact_dynamic,
+    hashmap_t<
+        val_t,
+        poplar_xorshift_t,
+        buckets_bv_t,
+        displacement_t<
+            layered_displacement_table_t<dynamic_layered_bit_width_t>
         >
     >
 )
@@ -304,13 +333,37 @@ gen_test_map(map_poplar_bbv_displacement_elias_growing,
     >
 )
 
-gen_test_map(map_poplar_ps_displacement_compact_4,
+gen_test_map(map_poplar_bbv_displacement_elias_dynamic,
+    hashmap_t<
+        val_t,
+        poplar_xorshift_t,
+        buckets_bv_t,
+        displacement_t<
+            elias_gamma_displacement_table_t<
+                dynamic_fixed_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
+gen_test_map(map_poplar_ps_displacement_compact_fixed_4,
     hashmap_t<
         val_t,
         poplar_xorshift_t,
         plain_sentinel_t,
         displacement_t<
-            layered_displacement_table_t<4>
+            layered_displacement_table_t<static_layered_bit_width_t<4>>
+        >
+    >
+)
+
+gen_test_map(map_poplar_ps_displacement_compact_dynamic,
+    hashmap_t<
+        val_t,
+        poplar_xorshift_t,
+        plain_sentinel_t,
+        displacement_t<
+            layered_displacement_table_t<dynamic_layered_bit_width_t>
         >
     >
 )
@@ -345,6 +398,19 @@ gen_test_map(map_poplar_ps_displacement_elias_growing,
         displacement_t<
             elias_gamma_displacement_table_t<
                 growing_elias_gamma_bucket_size_t
+            >
+        >
+    >
+)
+
+gen_test_map(map_poplar_ps_displacement_elias_dynamic,
+    hashmap_t<
+        val_t,
+        poplar_xorshift_t,
+        plain_sentinel_t,
+        displacement_t<
+            elias_gamma_displacement_table_t<
+                dynamic_fixed_elias_gamma_bucket_size_t
             >
         >
     >

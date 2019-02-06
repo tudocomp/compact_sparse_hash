@@ -27,8 +27,16 @@ namespace tdc {namespace compact_hash {
         template<typename T>
         friend struct ::tdc::serialize;
 
+        /// runtime initilization arguments, if any
+        struct config_args {};
+
+        /// get the config of this instance
+        inline config_args current_config() const { return config_args{}; }
+
         inline buckets_bv_t() {}
-        inline buckets_bv_t(size_t table_size, entry_bit_width_t widths) {
+        inline buckets_bv_t(size_t table_size,
+                            entry_bit_width_t widths,
+                            config_args config) {
             size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
             m_buckets = std::make_unique<my_bucket_t[]>(buckets_size);
@@ -225,7 +233,7 @@ struct serialize<compact_hash::buckets_bv_t<satellite_t>> {
     static T read(std::istream& in, size_t table_size, entry_bit_width_t const& widths) {
         using namespace compact_hash;
 
-        T val { table_size, widths };
+        T val { table_size, widths, {} };
 
         auto ctx = val.context(table_size, widths);
 

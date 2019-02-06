@@ -29,8 +29,18 @@ class displacement_t {
         m_displace(std::move(table)) {}
 
 public:
-    inline displacement_t(size_t table_size):
-        m_displace(table_size) {}
+    /// runtime initilization arguments, if any
+    struct config_args {
+        typename displacement_table_t::config_args table_config;
+    };
+
+    /// get the config of this instance
+    inline config_args current_config() const {
+        return config_args { m_displace.current_config() };
+    }
+
+    inline displacement_t(size_t table_size, config_args config):
+        m_displace(table_size, config.table_config) {}
 
     template<typename storage_t, typename size_mgr_t>
     struct context_t {
