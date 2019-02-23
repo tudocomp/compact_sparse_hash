@@ -267,6 +267,22 @@ public:
         });
     }
 
+    /// Checker wether for the `new_size` this hashtable would need
+    /// to perform a grow of the capacity
+    inline bool needs_to_grow_capacity(size_t new_size) const {
+        return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
+    }
+
+    /// Checker wether for the `new_size`, `new_key_width` and
+    /// `new_value_width` this hashtable would need to reallocate.
+    inline bool needs_to_realloc(size_t new_size,
+                                 size_t new_key_width,
+                                 size_t new_value_width) const {
+        return needs_to_grow_capacity(new_size)
+            || (new_key_width != key_width())
+            || (new_value_width != value_width());
+    }
+
     inline std::string debug_print_storage() {
         std::stringstream ss;
 
@@ -402,22 +418,6 @@ private:
         }
 
         return result;
-    }
-
-    /// Checker wether for the `new_size` this hashtable would need
-    /// to perform a grow of the capacity
-    inline bool needs_to_grow_capacity(size_t new_size) const {
-        return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
-    }
-
-    /// Checker wether for the `new_size`, `new_key_width` and
-    /// `new_value_width` this hashtable would need to reallocate.
-    inline bool needs_to_realloc(size_t new_size,
-                                 size_t new_key_width,
-                                 size_t new_value_width) const {
-        return needs_to_grow_capacity(new_size)
-            || (new_key_width != key_width())
-            || (new_value_width != value_width());
     }
 
     /// Check the current key width and table site against the arguments,
