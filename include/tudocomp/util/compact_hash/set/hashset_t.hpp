@@ -304,22 +304,25 @@ private:
     }
 
     /// Checker wether for the `new_size` this hashtable would need
-    /// to perform a grow of the capacity
+    /// to perform a grow of the capacity.
     inline bool needs_to_grow_capacity(size_t new_size) const {
         return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
+    }
+
+    /// Checker wether for the `new_size` and `new_key_width` this
+    /// hashtable would need to reallocate.
+    inline bool needs_to_realloc(size_t new_size,
+                                 size_t new_key_width) const {
+        return needs_to_grow_capacity(new_size)
+            || (new_key_width != key_width());
     }
 
     /// Check the current key width and table site against the arguments,
     /// and grows the table or quotient bitvectors as needed.
     template<typename on_resize_t>
-    inline void grow_if_needed(size_t new_size,
-                               size_t new_key_width,
+    inline void grow_if_needed(size_t const new_size,
+                               size_t const new_key_width,
                                on_resize_t& onr) {
-        auto needs_realloc = [&]() {
-            return needs_to_grow_capacity(new_size)
-                || (new_key_width != key_width());
-        };
-
         /*
         std::cout
                 << "buckets size/cap: " << m_buckets.size()
@@ -331,7 +334,7 @@ private:
         // TODO: The iterators is inefficient since it does redundant
         // memory lookups and address calculations.
 
-        if (needs_realloc()) {
+        if (needs_to_realloc(new_size, new_key_width)) {
             size_t new_capacity = m_sizing.capacity();
             while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
                 new_capacity = m_sizing.grown_capacity(new_capacity);
@@ -357,7 +360,7 @@ private:
             *this = std::move(new_table);
         }
 
-        DCHECK(!needs_realloc());
+        DCHECK(!needs_to_realloc(new_size, new_key_width));
     }
 };
 
