@@ -404,15 +404,17 @@ private:
         return result;
     }
 
+    /// Checker wether for the `new_size` this hashtable would need
+    /// to perform a grow of the capacity
+    inline bool needs_to_grow_capacity(size_t new_size) const {
+        return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
+    }
+
     /// Check the current key width and table site against the arguments,
     /// and grows the table or quotient bitvectors as needed.
     inline void grow_if_needed(size_t new_size, size_t new_key_width, size_t new_value_width) {
-        auto needs_to_grow_capacity = [&]() {
-            return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
-        };
-
         auto needs_realloc = [&]() {
-            return needs_to_grow_capacity()
+            return needs_to_grow_capacity(new_size)
                 || (new_key_width != key_width())
                 || (new_value_width != value_width());
         };
