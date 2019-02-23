@@ -183,6 +183,31 @@ public:
         std::swap(*this, other);
     }
 
+    /// Moves the contents of this hashtable
+    /// into another table.
+    ///
+    /// This method tries to eagerly free memory in
+    /// order to keep the total consumption low, if possible.
+    ///
+    /// The target hashtable will grow as needed. To prevent that, ensure its
+    /// capacity and bit widths are already large enough.
+    ///
+    /// The `on_resize` handler will call `on_reinsert()` for
+    /// each moved element. It will not be called for growth operations
+    /// of the target hashtable.
+    template<typename on_resize_t = default_on_resize_t>
+    inline void move_into(hashset_t& other,
+                          on_resize_t&& on_resize = on_resize_t()) {
+        auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
+        pctx.drain_all([&](auto initial_address, auto kv) {
+            auto stored_quotient = kv.get_quotient();
+            auto key = this->compose_key(initial_address, stored_quotient);
+            auto r = other.lookup_insert(key);
+            DCHECK(r.found());
+            DCHECK(!r.key_already_exist());
+            on_resize.on_reinsert(key, r.id());
+        });
+    }
 private:
     using quot_width_t = typename satellite_t::entry_bit_width_t;
 
@@ -324,15 +349,7 @@ private:
 
             onr.on_resize(new_capacity);
 
-            auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
-            pctx.drain_all([&](auto initial_address, auto kv) {
-                auto stored_quotient = kv.get_quotient();
-                auto key = this->compose_key(initial_address, stored_quotient);
-                auto r = new_table.lookup_insert(key);
-                DCHECK(r.found());
-                DCHECK(!r.key_already_exist());
-                onr.on_reinsert(key, r.id());
-            });
+            move_into(new_table, onr);
 
             *this = std::move(new_table);
         }

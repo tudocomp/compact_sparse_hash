@@ -250,6 +250,23 @@ public:
         }
     }
 
+    /// Moves the contents of this hashtable
+    /// into another table.
+    ///
+    /// This method tries to eagerly free memory in
+    /// order to keep the total consumption low, if possible.
+    ///
+    /// The target hashtable will grow as needed. To prevent that, ensure its
+    /// capacity and bit widths are already large enough.
+    inline void move_into(hashmap_t& other) {
+        auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
+        pctx.drain_all([&](auto initial_address, auto kv) {
+            auto stored_quotient = kv.get_quotient();
+            auto key = this->compose_key(initial_address, stored_quotient);
+            other.insert(key, std::move(*kv.val_ptr()));
+        });
+    }
+
     inline std::string debug_print_storage() {
         std::stringstream ss;
 
@@ -430,12 +447,7 @@ private:
                 << "\n";
             */
 
-            auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
-            pctx.drain_all([&](auto initial_address, auto kv) {
-                auto stored_quotient = kv.get_quotient();
-                auto key = this->compose_key(initial_address, stored_quotient);
-                new_table.insert(key, std::move(*kv.val_ptr()));
-            });
+            move_into(new_table);
 
             *this = std::move(new_table);
         }
