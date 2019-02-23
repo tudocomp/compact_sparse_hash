@@ -209,13 +209,13 @@ public:
         });
     }
 
-    /// Checker wether for the `new_size` this hashtable would need
+    /// Check wether for the `new_size` this hashtable would need
     /// to perform a grow of the capacity.
     inline bool needs_to_grow_capacity(size_t new_size) const {
         return m_sizing.needs_to_grow_capacity(m_sizing.capacity(), new_size);
     }
 
-    /// Checker wether for the `new_size` and `new_key_width` this
+    /// Check wether for the `new_size` and `new_key_width` this
     /// hashtable would need to reallocate.
     inline bool needs_to_realloc(size_t new_size,
                                  size_t new_key_width) const {
