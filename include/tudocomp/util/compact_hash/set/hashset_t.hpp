@@ -223,6 +223,15 @@ public:
             || (new_key_width != key_width());
     }
 
+    /// Compute the new capacity the hashmap would have after a grow
+    /// operation for `new_size`.
+    inline size_t grown_capacity(size_t new_size) const {
+        size_t new_capacity = m_sizing.capacity();
+        while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
+            new_capacity = m_sizing.grown_capacity(new_capacity);
+        }
+        return new_capacity;
+    }
 private:
     using quot_width_t = typename satellite_t::entry_bit_width_t;
 
@@ -336,10 +345,7 @@ private:
         // memory lookups and address calculations.
 
         if (needs_to_realloc(new_size, new_key_width)) {
-            size_t new_capacity = m_sizing.capacity();
-            while (m_sizing.needs_to_grow_capacity(new_capacity, new_size)) {
-                new_capacity = m_sizing.grown_capacity(new_capacity);
-            }
+            size_t new_capacity = grown_capacity(new_size);
             auto config = this->current_config();
             auto new_table = hashset_t<hash_t, placement_t>(
                 new_capacity, new_key_width, config);
