@@ -232,6 +232,57 @@ public:
         }
         return new_capacity;
     }
+
+    /// Pseudo-Pointer to a key.
+    ///
+    /// Does not actually point at a memory location, and defines equality
+    ///  based on the key value and wether this is in its `null` state.
+    class pointer_type {
+        uint64_t m_key;
+        bool m_empty;
+    public:
+        pointer_type(uint64_t key): m_key(key), m_empty(false) {}
+        pointer_type(): m_key(-1), m_empty(true) {}
+
+        inline uint64_t& operator*() {
+            return m_key;
+        }
+        inline uint64_t* operator->() {
+            return &m_key;
+        }
+        inline bool operator==(pointer_type const& other) const {
+            return (m_empty == other.m_empty) && (m_key == other.m_key);
+        }
+        inline bool operator!=(pointer_type const& other) const {
+            return !(*this == other);
+        }
+        inline bool operator==(uint64_t const* const& other) const {
+            return (other != nullptr) && (m_key == *other);
+        }
+        inline bool operator!=(uint64_t const* const& other) const {
+            return !(*this == other);
+        }
+    };
+
+    /// Search for a key inside the hashtable.
+    ///
+    /// This returns a pseudo-pointer to the key if its found, or null
+    /// otherwise. This method exists for STL-compability.
+    inline pointer_type find(uint64_t key) {
+        if  (count(key)) {
+            return pointer_type(key);
+        } else {
+            return pointer_type();
+        }
+    }
+
+    /// Count the number of occurrences of `key`, as defined on STL containers.
+    ///
+    /// It will return either 0 or 1.
+    inline size_t count(uint64_t key) {
+        return lookup(key).found();
+    }
+
 private:
     using quot_width_t = typename satellite_t::entry_bit_width_t;
 
