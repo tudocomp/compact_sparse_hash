@@ -93,12 +93,26 @@ bool operator==(Init const& lhs, Init const& rhs) {
 /// Assert that a element exists in the hashtable
 template<typename table_t>
 inline void debug_check_single(table_t& table, uint64_t key, typename table_t::value_type const& val) {
-    auto ptr = table.search(key);
-    EXPECT_NE(ptr, nullptr) << "key " << key << " not found!";
-    if (ptr != nullptr) {
-        EXPECT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+    {
+        auto ptr = table.search(key);
+        EXPECT_NE(ptr, nullptr) << "key " << key << " not found!";
+        if (ptr != nullptr) {
+            EXPECT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+        }
+        if (ptr == nullptr) abort();
     }
-    if (ptr == nullptr) abort();
+    {
+        auto ptr = table.find(key);
+        EXPECT_NE(ptr, nullptr) << "key " << key << " not found!";
+        if (ptr != nullptr) {
+            EXPECT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+        }
+        if (ptr == nullptr) abort();
+    }
+    {
+        auto c = table.count(key);
+        EXPECT_NE(c, 0) << "key " << key << " not found!";
+    }
 }
 
 

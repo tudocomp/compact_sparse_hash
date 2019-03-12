@@ -234,7 +234,6 @@ public:
         grow_if_needed(size(), raw_key_width, raw_val_width);
     }
 
-    // TODO: STL-conform API?
     /// Search for a key inside the hashtable.
     ///
     /// This returns a pointer to the value if its found, or null
@@ -291,6 +290,22 @@ public:
             new_capacity = m_sizing.grown_capacity(new_capacity);
         }
         return new_capacity;
+    }
+
+    /// Search for a key inside the hashtable.
+    ///
+    /// This returns a pointer to the value if its found, or null
+    /// otherwise. The behavior of this method is the same as `search()`, and
+    /// exists for STL-compability.
+    inline pointer_type find(uint64_t key) {
+        return search(key);
+    }
+
+    /// Count the number of occurrences of `key`, as defined on STL containers.
+    ///
+    /// It will return either 0 or 1.
+    inline size_t count(uint64_t key) {
+        return search(key) != pointer_type();
     }
 
     inline std::string debug_print_storage() {
