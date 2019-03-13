@@ -144,7 +144,8 @@ struct elias_gamma_bucket_t {
 
     inline void realloc(size_t old_size, size_t new_size) {
         auto n = std::make_unique<uint64_t[]>(new_size);
-        for (size_t i = 0; i < old_size; i++) {
+        size_t common_size = std::min(old_size, new_size);
+        for (size_t i = 0; i < common_size; i++) {
             n[i] = m_data[i];
         }
         m_data = std::move(n);
@@ -251,7 +252,8 @@ struct elias_gamma_bucket_t {
             auto existing_bit_size = m_bits;
 
             // std::cout << "existing_bit_size: " << existing_bit_size << "\n";
-            // std::cout << "new_bit_size: " << new_bit_size << "\n";
+            // std::cout << "new_bit_size:      " << new_bit_size << "\n";
+            // std::cout << std::endl;
 
             if (new_bit_size < existing_bit_size) {
                 // Shift left, then shrink
