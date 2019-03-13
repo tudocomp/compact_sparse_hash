@@ -101,15 +101,16 @@ public:
 
   Xorshift() = default;
 
-  explicit Xorshift(uint32_t univ_bits, config_args config) {
-    DCHECK(0 < univ_bits && univ_bits < 64);
-
-    shift_ = univ_bits / 2 + 1;
-    univ_size_ = size_p2_t{univ_bits};
+  Xorshift(uint32_t univ_bits, config_args config):
+    m_size(size_p2_t{univ_bits}),
+    m_shift(univ_bits / 2 + 1)
+  {
+    DCHECK_LT(0, univ_bits);
+    DCHECK_LT(univ_bits, 64);
   }
 
   uint64_t hash(uint64_t x) const {
-    DCHECK(x < univ_size_.size());
+    DCHECK_LT(x, m_size.size());
     x = hash_<0>(x);
     x = hash_<1>(x);
     x = hash_<2>(x);
@@ -117,7 +118,7 @@ public:
   }
 
   uint64_t hash_inv(uint64_t x) const {
-    DCHECK(x < univ_size_.size());
+    DCHECK_LT(x, m_size.size());
     x = hash_inv_<2>(x);
     x = hash_inv_<1>(x);
     x = hash_inv_<0>(x);
@@ -125,11 +126,11 @@ public:
   }
 
   uint64_t size() const {
-    return univ_size_.size();
+    return m_size.size();
   }
 
   uint64_t bits() const {
-    return univ_size_.bits();
+    return m_size.bits();
   }
 
   void show_stat(std::ostream& os) const {
@@ -139,8 +140,8 @@ public:
   }
 
 private:
-  uint32_t shift_{};
-  size_p2_t univ_size_{};
+  size_p2_t m_size{};
+  uint32_t m_shift{};
 
   template<typename T>
   friend struct ::tdc::serialize;
@@ -150,14 +151,14 @@ private:
 
   template <uint32_t N>
   uint64_t hash_(uint64_t x) const {
-    x = x ^ (x >> (shift_ + N));
-    x = (x * PRIME_TABLE[univ_size_.bits()][0][N]) & univ_size_.mask();
+    x = x ^ (x >> (m_shift + N));
+    x = (x * PRIME_TABLE[m_size.bits()][0][N]) & m_size.mask();
     return x;
   }
   template <uint32_t N>
   uint64_t hash_inv_(uint64_t x) const {
-    x = (x * PRIME_TABLE[univ_size_.bits()][1][N]) & univ_size_.mask();
-    x = x ^ (x >> (shift_ + N));
+    x = (x * PRIME_TABLE[m_size.bits()][1][N]) & m_size.mask();
+    x = x ^ (x >> (m_shift + N));
     return x;
   }
 };
@@ -270,8 +271,8 @@ struct heap_size<poplar::bijective_hash::Xorshift> {
 
         auto bytes = object_size_t::empty();
 
-        bytes += heap_size<uint64_t>::compute(val.shift_);
-        bytes += heap_size<uint64_t>::compute(val.univ_size_.bits());
+        bytes += heap_size<uint64_t>::compute(val.m_shift);
+        bytes += heap_size<uint64_t>::compute(val.m_size.bits());
 
         return bytes;
     }
@@ -286,8 +287,8 @@ struct serialize<poplar::bijective_hash::Xorshift> {
 
         auto bytes = object_size_t::empty();
 
-        bytes += serialize<uint64_t>::write(out, val.shift_);
-        bytes += serialize<uint64_t>::write(out, val.univ_size_.bits());
+        bytes += serialize<uint64_t>::write(out, val.m_shift);
+        bytes += serialize<uint64_t>::write(out, val.m_size.bits());
 
         return bytes;
     }
@@ -295,13 +296,13 @@ struct serialize<poplar::bijective_hash::Xorshift> {
         using namespace compact_hash;
 
         T ret;
-        ret.shift_ = serialize<uint64_t>::read(in);
-        ret.univ_size_ = poplar::bijective_hash::size_p2_t(serialize<uint64_t>::read(in));
+        ret.m_shift = serialize<uint64_t>::read(in);
+        ret.m_size = poplar::bijective_hash::size_p2_t(serialize<uint64_t>::read(in));
         return ret;
     }
     static bool equal_check(T const& lhs, T const& rhs) {
-        return gen_equal_check(shift_)
-        && gen_equal_check(univ_size_.bits());
+        return gen_equal_check(m_shift)
+        && gen_equal_check(m_size.bits());
 
     }
 };
