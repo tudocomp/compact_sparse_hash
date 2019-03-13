@@ -249,6 +249,7 @@ public:
         }
     }
 
+
     /// Moves the contents of this hashtable
     /// into another table.
     ///
@@ -300,6 +301,9 @@ public:
     inline pointer_type find(uint64_t key) {
         return search(key);
     }
+
+    /// exists for STL-compability.
+    pointer_type end() const { return pointer_type(); }
 
     /// Count the number of occurrences of `key`, as defined on STL containers.
     ///
