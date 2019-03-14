@@ -1,3 +1,6 @@
 [submodule "external/bit_span"]
-	path = external/bit_span
+	path = submodules/bit_span
 	url = https://github.com/tudocomp/bit_span.git
+[submodule "submodules/build_system"]
+	path = submodules/build_system
+	url = https://github.com/tudocomp/build_system
