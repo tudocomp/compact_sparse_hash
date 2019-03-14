@@ -30,8 +30,8 @@ void BucketTest() {
     widths_t ws { 5, 7 };
     b = map_bucket_t<val_t>(0b10, ws);
 
-    ASSERT_EQ(b.bv(), 2);
-    ASSERT_EQ(b.size(), 1);
+    ASSERT_EQ(b.bv(), 2U);
+    ASSERT_EQ(b.size(), 1U);
     ASSERT_EQ(b.is_empty(), false);
 
     auto p1 = b.at(0, ws);
@@ -169,25 +169,25 @@ void CVTableTest() {
         ASSERT_EQ(is, should);
     };
 
-    check_insert(60, 1, 5, false);
+    check_insert(60, 1, 5U, false);
     table_state({
         {60, 1, 5},
     });
 
-    check_insert(66, 2, 5, false);
+    check_insert(66, 2, 5U, false);
     table_state({
         {60, 1, 5},
         {66, 2, 5},
     });
 
-    check_insert(64, 3, 5, false);
+    check_insert(64, 3, 5U, false);
     table_state({
         {60, 1, 5},
         {64, 3, 5},
         {66, 2, 5},
     });
 
-    check_insert(62, 4, 5, false);
+    check_insert(62, 4, 5U, false);
     table_state({
         {60, 1, 5},
         {62, 4, 5},
@@ -195,7 +195,7 @@ void CVTableTest() {
         {66, 2, 5},
     });
 
-    check_insert(62, 5, 6, false);
+    check_insert(62, 5, 6U, false);
     table_state({
         {60, 1, 5},
         {62, 4, 5},
@@ -204,7 +204,7 @@ void CVTableTest() {
         {66, 2, 5},
     });
 
-    check_insert(62, 10, 6, true);
+    check_insert(62, 10, 6U, true);
     table_state({
         {60, 1, 5},
         {62, 4, 5},
@@ -213,7 +213,7 @@ void CVTableTest() {
         {66, 2, 5},
     });
 
-    check_insert(62, 9, 7, false);
+    check_insert(62, 9, 7U, false);
     table_state({
         {60, 1, 5},
         {62, 4, 5},
@@ -292,25 +292,25 @@ void DPTableTest() {
         ASSERT_EQ(is, should);
     };
 
-    check_insert(60, 1, 5, false);
+    check_insert(60, 1, 5U, false);
     table_state({
         {60, 1, 5},
     });
 
-    check_insert(66, 2, 5, false);
+    check_insert(66, 2, 5U, false);
     table_state({
         {60, 1, 5},
         {66, 2, 5},
     });
 
-    check_insert(64, 3, 5, false);
+    check_insert(64, 3, 5U, false);
     table_state({
         {60, 1, 5},
         {64, 3, 5},
         {66, 2, 5},
     });
 
-    check_insert(62, 4, 5, false);
+    check_insert(62, 4, 5U, false);
     table_state({
         {60, 1, 5},
         {62, 4, 5},
@@ -318,7 +318,7 @@ void DPTableTest() {
         {66, 2, 5},
     });
 
-    check_insert(62, 5, 6, false);
+    check_insert(62, 5, 6U, false);
     table_state({
         {60, 1, 5},
         {62, 4, 5},
@@ -327,7 +327,7 @@ void DPTableTest() {
         {66, 2, 5},
     });
 
-    check_insert(62, 10, 6, true);
+    check_insert(62, 10, 6U, true);
     table_state({
         {60, 1, 5},
         {62, 4, 5},
@@ -336,7 +336,7 @@ void DPTableTest() {
         {66, 2, 5},
     });
 
-    check_insert(62, 9, 7, false);
+    check_insert(62, 9, 7U, false);
     table_state({
         {60, 1, 5},
         {62, 4, 5},

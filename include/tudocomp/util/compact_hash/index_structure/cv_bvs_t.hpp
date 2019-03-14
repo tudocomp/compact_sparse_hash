@@ -107,7 +107,7 @@ public:
             {
                 v_counter += get_v(cursor);
             }
-            DCHECK_GE(v_counter, 1);
+            DCHECK_GE(v_counter, 1U);
             ret.groups_terminator = cursor;
 
             // Walk back again to find the end of the group

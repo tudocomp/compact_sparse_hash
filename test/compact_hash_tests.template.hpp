@@ -25,20 +25,20 @@ struct Init {
     }
 
     ~Init() {
-        EXPECT_NE(value, 0) << "destroying a already destroyed value";
+        EXPECT_NE(value, 0U) << "destroying a already destroyed value";
         value = 0;
     }
 
     Init(Init&& other) {
-        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
+        EXPECT_NE(other.value, 0U) << "moving from a already destroyed value";
 
         m_copyable = other.m_copyable;
         this->value = other.value;
     }
 
     Init& operator=(Init&& other) {
-        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
-        EXPECT_NE(value, 0) << "moving into a already destroyed value";
+        EXPECT_NE(other.value, 0U) << "moving from a already destroyed value";
+        EXPECT_NE(value, 0U) << "moving into a already destroyed value";
 
         m_copyable = other.m_copyable;
         this->value = other.value;
@@ -47,7 +47,7 @@ struct Init {
     }
 
     Init(Init const& other) {
-        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
+        EXPECT_NE(other.value, 0U) << "moving from a already destroyed value";
         EXPECT_TRUE(other.m_copyable) << "copying a non-copyable value";
 
         if (!other.m_copyable) {
@@ -59,8 +59,8 @@ struct Init {
     }
 
     Init& operator=(Init const& other) {
-        EXPECT_NE(value, 0) << "moving into a already destroyed value";
-        EXPECT_NE(other.value, 0) << "moving from a already destroyed value";
+        EXPECT_NE(value, 0U) << "moving into a already destroyed value";
+        EXPECT_NE(other.value, 0U) << "moving from a already destroyed value";
         EXPECT_TRUE(other.m_copyable) << "copying a non-copyable value";
 
         m_copyable = other.m_copyable;
@@ -85,8 +85,8 @@ std::ostream& operator<<(std::ostream& os, Init const& v) {
 }
 
 bool operator==(Init const& lhs, Init const& rhs) {
-    EXPECT_NE(lhs.value, 0) << "comparing against destroyed value";
-    EXPECT_NE(rhs.value, 0) << "comparing against destroyed value";
+    EXPECT_NE(lhs.value, 0U) << "comparing against destroyed value";
+    EXPECT_NE(rhs.value, 0U) << "comparing against destroyed value";
     return lhs.value == rhs.value;
 }
 
@@ -111,7 +111,7 @@ inline void debug_check_single(table_t& table, uint64_t key, typename table_t::v
     }
     {
         auto c = table.count(key);
-        EXPECT_NE(c, 0) << "key " << key << " not found!";
+        EXPECT_NE(c, 0U) << "key " << key << " not found!";
     }
 }
 

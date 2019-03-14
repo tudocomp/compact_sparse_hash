@@ -88,7 +88,7 @@ inline void debug_check_single(compact_hash_type& table, uint64_t key) {
     ASSERT_TRUE(r.found()) << "key " << key << " not found!";
 
     auto c = table.count(key);
-    ASSERT_EQ(c, 1) << "key " << key << " not found!";
+    ASSERT_EQ(c, 1U) << "key " << key << " not found!";
 
     auto p = table.find(key);
     ASSERT_TRUE(p != decltype(p)()) << "key " << key << " not found!";

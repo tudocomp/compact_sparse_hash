@@ -100,7 +100,7 @@ public:
 
     /// Returns the new capacity after growth.
     inline size_t grown_capacity(size_t capacity) const {
-        DCHECK_GE(capacity, 1);
+        DCHECK_GE(capacity, 1U);
         return capacity * 2;
     }
 

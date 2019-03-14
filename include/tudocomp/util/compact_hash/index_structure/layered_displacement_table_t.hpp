@@ -162,7 +162,7 @@ struct serialize<compact_hash::layered_displacement_table_t<bit_width_t>> {
             spill_size--;
         }
 
-        DCHECK_EQ(spill_size, 0);
+        DCHECK_EQ(spill_size, 0U);
 
         return bytes;
     }

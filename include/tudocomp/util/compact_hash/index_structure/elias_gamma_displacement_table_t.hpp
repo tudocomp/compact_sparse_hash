@@ -49,7 +49,7 @@ public:
         // std::cout << "wrote bit " << set << "\n";
 
         if (set) {
-            DCHECK_NE(res.data[word_offset], 0);
+            DCHECK_NE(res.data[word_offset], 0U);
         }
     }
     inline uint8_t read_bit() {
@@ -119,7 +119,7 @@ struct elias_gamma_bucket_t {
 
         auto f = [&](size_t bits) {
             uint64_t bit_cursor = bit_size % 64;
-            DCHECK_LE(bit_cursor + bits, 64);
+            DCHECK_LE(bit_cursor + bits, 64U);
             auto r = alloc_callback_ret_t<uint64_t> { &buffer, bit_cursor };
             bit_size += bits;
             return r;
@@ -204,7 +204,7 @@ struct elias_gamma_bucket_t {
                 size--;
             }
 
-            DCHECK_EQ(size, 0);
+            DCHECK_EQ(size, 0U);
         }
         if (to > from) {
             from_ptr += size;
@@ -218,7 +218,7 @@ struct elias_gamma_bucket_t {
                 size--;
             }
 
-            DCHECK_EQ(size, 0);
+            DCHECK_EQ(size, 0U);
         }
     }
 

@@ -22,7 +22,7 @@ struct quot_bucket_layout_t {
         }
     };
     inline static Layout calc_sizes(size_t size, uint8_t quot_width) {
-        DCHECK_NE(size, 0);
+        DCHECK_NE(size, 0U);
 
         auto layout = cbp::bit_layout_t();
 
@@ -38,7 +38,7 @@ struct quot_bucket_layout_t {
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
     inline static quot_ptr_t ptr(uint64_t* alloc, size_t size, uint8_t quot_width) {
-        DCHECK(size != 0);
+        DCHECK_NE(size, 0U);
         auto layout = calc_sizes(size, quot_width);
 
         return layout.quots_layout.ptr_relative_to(alloc);
@@ -56,7 +56,7 @@ struct quot_bucket_layout_t {
             auto ps = ptr(alloc, size, quot_width);
             return quot_ptr_t(ps.quot_ptr() + pos);
         } else {
-            DCHECK_EQ(pos, 0);
+            DCHECK_EQ(pos, 0U);
             return quot_ptr_t();
         }
     }

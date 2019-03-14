@@ -29,7 +29,7 @@ struct val_quot_bucket_layout_t {
         }
     };
     inline static Layout calc_sizes(size_t size, QVWidths widths) {
-        DCHECK_NE(size, 0);
+        DCHECK_NE(size, 0U);
         DCHECK_LE(alignof(val_t), alignof(uint64_t));
 
         auto layout = cbp::bit_layout_t();
@@ -50,7 +50,7 @@ struct val_quot_bucket_layout_t {
     /// Creates the pointers to the beginnings of the two arrays inside
     /// the allocation.
     inline static val_quot_ptrs_t<val_t> ptr(uint64_t* alloc, size_t size, QVWidths widths) {
-        DCHECK(size != 0);
+        DCHECK_NE(size, 0U);
         auto layout = calc_sizes(size, widths);
 
         return val_quot_ptrs_t<val_t> {
@@ -78,7 +78,7 @@ struct val_quot_bucket_layout_t {
             auto ps = ptr(alloc, size, widths);
             return val_quot_ptrs_t<val_t>(ps.val_ptr() + pos, ps.quot_ptr() + pos);
         } else {
-            DCHECK_EQ(pos, 0);
+            DCHECK_EQ(pos, 0U);
             return val_quot_ptrs_t<val_t>();
         }
     }

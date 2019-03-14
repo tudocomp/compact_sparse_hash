@@ -105,8 +105,8 @@ public:
     m_size(size_p2_t{univ_bits}),
     m_shift(univ_bits / 2 + 1)
   {
-    DCHECK_LT(0, univ_bits);
-    DCHECK_LT(univ_bits, 64);
+    DCHECK_LT(0U, univ_bits);
+    DCHECK_LT(univ_bits, 64U);
   }
 
   uint64_t hash(uint64_t x) const {
@@ -191,7 +191,7 @@ public:
         m_j((w / 2ull) + 1)
     {
         DCHECK_LT((w / 2ull), m_j);
-        DCHECK_NE(w, 0);
+        DCHECK_NE(w, 0U);
 
         // NB: Two shifts because a single shift with w == 64 is undefined
         // behavior for a uint64_t according to the C++ standard.
