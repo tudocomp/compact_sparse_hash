@@ -115,13 +115,12 @@ inline void debug_check_single(table_t& table, uint64_t key, typename table_t::v
     }
 }
 
-
 template<typename hashfn_t>
 void test_hashfn() {
-    for(uint32_t w = 1; w < 64; w++) {
+    for(uint32_t w = 1; w <= 64; w++) {
         hashfn_t fn { w, {} };
 
-        size_t max_val = std::min<size_t>(((1 << w) - 1), 1000);
+        size_t max_val = std::min<size_t>((((1 << (w-1)) << 1) - 1), 1000);
 
         for (size_t i = 0; i < (max_val + 1); i++) {
             auto hi = fn.hash(i);

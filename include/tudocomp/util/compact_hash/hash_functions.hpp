@@ -6,22 +6,6 @@
 // Source: https://github.com/kampersanda/poplar-trie/blob/master/include/poplar/bijective_hash.hpp
 namespace poplar{namespace bijective_hash {
 
-class size_p2_t {
-public:
-  size_p2_t() = default;
-
-  explicit size_p2_t(uint32_t bits)
-    : bits_{bits}, mask_{(1ULL << bits) - 1} {}
-
-  uint32_t bits() const { return bits_; }
-  uint64_t mask() const { return mask_; }
-  uint64_t size() const { return mask_ + 1; }
-
-private:
-  uint32_t bits_{};
-  uint64_t mask_{};
-};
-
 // (p, q): p < 2**w is a prime and q < 2**w is an integer such that pq mod m = 1
 constexpr uint64_t PRIME_TABLE[][2][3] = {
   {{0ULL, 0ULL, 0ULL}, {0ULL, 0ULL, 0ULL}}, // 0
@@ -101,46 +85,52 @@ public:
 
   Xorshift() = default;
 
-  Xorshift(uint32_t univ_bits, config_args config):
-    m_size(size_p2_t{univ_bits}),
+  inline Xorshift(uint32_t univ_bits, config_args config):
+    m_bits(univ_bits),
     m_shift(univ_bits / 2 + 1)
   {
-    DCHECK_LT(0U, univ_bits);
-    DCHECK_LT(univ_bits, 64U);
+    DCHECK_LT(0U, m_bits);
+    DCHECK_LE(m_bits, 64U);
+    DCHECK_LT(0, mask());
   }
 
-  uint64_t hash(uint64_t x) const {
-    DCHECK_LT(x, m_size.size());
+  inline uint64_t hash(uint64_t x) const {
+    DCHECK_LE(x, mask());
     x = hash_<0>(x);
     x = hash_<1>(x);
     x = hash_<2>(x);
     return x;
   }
 
-  uint64_t hash_inv(uint64_t x) const {
-    DCHECK_LT(x, m_size.size());
+  inline uint64_t hash_inv(uint64_t x) const {
+    DCHECK_LE(x, mask());
     x = hash_inv_<2>(x);
     x = hash_inv_<1>(x);
     x = hash_inv_<0>(x);
     return x;
   }
 
-  uint64_t size() const {
-    return m_size.size();
+  /// STL compability
+  inline uint64_t operator()(uint64_t x) const {
+    return hash(x);
   }
 
-  uint64_t bits() const {
-    return m_size.bits();
+  inline uint64_t bits() const {
+    return m_bits;
+  }
+
+  inline uint64_t mask() const {
+    return (-1ULL >> (64-m_bits));
   }
 
   void show_stat(std::ostream& os) const {
     os << "Statistics of Xorshift\n";
-    os << " - size: " << size() << "\n";
+    os << " - mask: " << mask() << "\n";
     os << " - bits: " << bits() << "\n";
   }
 
 private:
-  size_p2_t m_size{};
+  uint32_t m_bits{};
   uint32_t m_shift{};
 
   template<typename T>
@@ -151,13 +141,14 @@ private:
 
   template <uint32_t N>
   uint64_t hash_(uint64_t x) const {
+    DCHECK_LE(x, mask());
     x = x ^ (x >> (m_shift + N));
-    x = (x * PRIME_TABLE[m_size.bits()][0][N]) & m_size.mask();
+    x = (x * PRIME_TABLE[bits()][0][N]) & mask();
     return x;
   }
   template <uint32_t N>
   uint64_t hash_inv_(uint64_t x) const {
-    x = (x * PRIME_TABLE[m_size.bits()][1][N]) & m_size.mask();
+    x = (x * PRIME_TABLE[bits()][1][N]) & mask();
     x = x ^ (x >> (m_shift + N));
     return x;
   }
@@ -272,7 +263,7 @@ struct heap_size<poplar::bijective_hash::Xorshift> {
         auto bytes = object_size_t::empty();
 
         bytes += heap_size<uint64_t>::compute(val.m_shift);
-        bytes += heap_size<uint64_t>::compute(val.m_size.bits());
+        bytes += heap_size<uint64_t>::compute(val.m_bits);
 
         return bytes;
     }
@@ -288,7 +279,7 @@ struct serialize<poplar::bijective_hash::Xorshift> {
         auto bytes = object_size_t::empty();
 
         bytes += serialize<uint64_t>::write(out, val.m_shift);
-        bytes += serialize<uint64_t>::write(out, val.m_size.bits());
+        bytes += serialize<uint64_t>::write(out, val.m_bits);
 
         return bytes;
     }
@@ -297,13 +288,12 @@ struct serialize<poplar::bijective_hash::Xorshift> {
 
         T ret;
         ret.m_shift = serialize<uint64_t>::read(in);
-        ret.m_size = poplar::bijective_hash::size_p2_t(serialize<uint64_t>::read(in));
+        ret.m_bits = serialize<uint64_t>::read(in);
         return ret;
     }
     static bool equal_check(T const& lhs, T const& rhs) {
         return gen_equal_check(m_shift)
-        && gen_equal_check(m_size.bits());
-
+        && gen_equal_check(m_bits);
     }
 };
 
