@@ -145,20 +145,31 @@ public:
         return m_sizing.max_load_factor();
     }
 
+    using entry_t = generic_entry_t<typename satellite_t::entry_ptr_t>;
+
     /// Inserts a key-value pair into the hashtable.
-    inline void insert(uint64_t key, value_type&& value) {
-        insert_kv_width(key, std::move(value), key_width(), value_width());
+    ///
+    /// Returns an `entry_t`, which provides access to a pointer to the allocation, as well as an
+    /// id unique per table size.
+    inline entry_t insert(uint64_t key, value_type&& value) {
+        return insert_kv_width(key, std::move(value), key_width(), value_width());
     }
 
     /// Inserts a key-value pair into the hashtable,
     /// and grow the key width as needed.
-    inline void insert_key_width(uint64_t key, value_type&& value, uint8_t key_width) {
-        insert_kv_width(key, std::move(value), key_width, value_width());
+    ///
+    /// Returns an `entry_t`, which provides access to a pointer to the allocation, as well as an
+    /// id unique per table size.
+    inline entry_t insert_key_width(uint64_t key, value_type&& value, uint8_t key_width) {
+        return insert_kv_width(key, std::move(value), key_width, value_width());
     }
 
     /// Inserts a key-value pair into the hashtable,
     /// and grow the key and value width as needed.
-    inline void insert_kv_width(uint64_t key, value_type&& value, uint8_t key_width, uint8_t value_width) {
+    ///
+    /// Returns an `entry_t`, which provides access to a pointer to the allocation, as well as an
+    /// id unique per table size.
+    inline entry_t insert_kv_width(uint64_t key, value_type&& value, uint8_t key_width, uint8_t value_width) {
         auto raw_key_width = std::max<size_t>(key_width, this->key_width());
         auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
@@ -169,6 +180,7 @@ public:
         } else {
             result.ptr().set_val(std::move(value));
         }
+        return result;
     }
 
     /// Returns a reference to the element with key `key`.
@@ -194,6 +206,34 @@ public:
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
     inline reference_type access_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
+        auto result = access_entry_kv_width(key, key_width, value_width);
+        pointer_type addr = result.ptr().val_ptr();
+        return *addr;
+    }
+
+    /// Returns an `entry_t` to the element with key `key`.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    inline entry_t access_entry(uint64_t key) {
+        return access_kv_width(key, key_width(), value_width());
+    }
+
+    /// Returns an `entry_t` to the element with key `key`,
+    /// and grow the key width as needed.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    inline entry_t access_entry_key_width(uint64_t key, uint8_t key_width) {
+        return access_kv_width(key, key_width, value_width());
+    }
+
+    /// Returns an `entry_t` to the element with key `key`,
+    /// and grow the key and value width as needed.
+    ///
+    /// If the value does not already exist in the table, it will be
+    /// default-constructed.
+    inline entry_t access_entry_kv_width(uint64_t key, uint8_t key_width, uint8_t value_width) {
         auto raw_key_width = std::max<size_t>(key_width, this->key_width());
         auto raw_val_width = std::max<size_t>(value_width, this->value_width());
 
@@ -205,7 +245,7 @@ public:
 
         pointer_type addr = result.ptr().val_ptr();
         DCHECK(addr != pointer_type());
-        return *addr;
+        return result;
     }
 
     /// Returns a reference to the element with key `key`.
