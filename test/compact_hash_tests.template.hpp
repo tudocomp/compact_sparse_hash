@@ -115,6 +115,21 @@ inline void debug_check_single(table_t& table, uint64_t key, typename table_t::v
     }
 }
 
+/// Assert that a element exists in the hashtable
+template<typename table_t>
+inline void debug_check_single_id(table_t& table, uint64_t id, typename table_t::value_type const& val) {
+    {   
+        auto entry = table.lookup_id(id);
+        EXPECT_EQ(entry.id(), id) << "lookup id is " << entry.id() << " instead of " << id;
+        auto ptr = entry.ptr().val_ptr();
+        EXPECT_NE(ptr, nullptr) << "id " << id << " not found!";
+        if (ptr != nullptr) {
+            EXPECT_EQ(*ptr, val) << "value is " << *ptr << " instead of " << val;
+        }
+        if (ptr == nullptr) abort();
+    }
+}
+
 template<typename hashfn_t>
 void test_hashfn() {
     for(uint32_t w = 1; w <= 64; w++) {
@@ -678,4 +693,56 @@ TEST(hash_max_dynamic, max_load_90) {
 }
 TEST(hash_max_dynamic, max_load_100) {
     load_factor_test<dynamic_t, true, true>(1.0);
+}
+
+TEST(hash, grow_bits_larger_id_lookup) {
+    auto ch = compact_hash_type<Init>(0, 0, 1); // check that it grows to minimum 2
+
+    uint8_t bits = 1;
+
+    auto add = [&](auto key, auto&& v0, auto&& v1) {
+        bits = std::max(bits, bits_for(key));
+
+        auto entry = ch.insert_key_width(key, std::move(v0), bits);
+        uint64_t id = entry.id();
+        debug_check_single(ch, key, v1);
+        debug_check_single_id(ch, id, v1);
+    };
+
+
+    for(size_t i = 0; i < 10000; i++) {
+        add(i*13ull, Init(i), Init::copyable(i));
+    }
+}
+
+TEST(hash, grow_bits_larger_address_id_lookup) {
+    std::vector<std::pair<uint64_t, Init>> inserted;
+
+    auto ch = compact_hash_type<Init>(0, 0, 1); // check that it grows to minimum 2
+
+    uint8_t bits = 1;
+
+    auto add = [&](auto key, auto&& v0, auto&& v1) {
+        bits = std::max(bits, bits_for(key));
+
+        auto entry = ch.access_entry_key_width(key, bits);
+        
+        auto&& r = *entry.ptr().val_ptr();
+        ASSERT_EQ(r, Init());
+        r = std::move(v0);
+        ASSERT_EQ(r, v1);
+        
+        uint64_t id = entry.id();
+        debug_check_single(ch, key, v1);
+        debug_check_single_id(ch, id, v1);
+    };
+
+
+    for(size_t i = 0; i < 10000; i++) {
+        add(i*13ull, Init(i), Init::copyable(i));
+    }
+
+    //std::cout << "=======================\n";
+    //std::cout << ch.debug_state() << "\n";
+    //std::cout << "=======================\n";
 }

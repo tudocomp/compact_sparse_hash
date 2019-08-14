@@ -216,7 +216,7 @@ public:
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
     inline entry_t access_entry(uint64_t key) {
-        return access_kv_width(key, key_width(), value_width());
+        return access_entry_kv_width(key, key_width(), value_width());
     }
 
     /// Returns an `entry_t` to the element with key `key`,
@@ -225,7 +225,7 @@ public:
     /// If the value does not already exist in the table, it will be
     /// default-constructed.
     inline entry_t access_entry_key_width(uint64_t key, uint8_t key_width) {
-        return access_kv_width(key, key_width, value_width());
+        return access_entry_kv_width(key, key_width, value_width());
     }
 
     /// Returns an `entry_t` to the element with key `key`,
@@ -287,6 +287,17 @@ public:
         } else {
             return pointer_type();
         }
+    }
+
+    /// Takes an ID as returned by `entry_t::id()`, and returns the corresponding `entry_t`.
+    ///
+    /// The bavior is undefined if the id does not exist in the data structure, or after an
+    /// intermediate rehash.
+    inline entry_t lookup_id(uint64_t id) {
+        auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
+        auto result = pctx.lookup_id(id);
+
+        return result;
     }
 
 

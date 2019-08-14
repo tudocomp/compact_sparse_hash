@@ -288,6 +288,19 @@ public:
             return local_id;
         }
 
+        entry_t lookup_id(uint64_t id) {
+            uint64_t local_id = id >> size_mgr.capacity_log2();
+            uint64_t initial_address = id & ((1ull << size_mgr.capacity_log2()) - 1);
+
+            auto group = search_existing_group(initial_address);
+            auto position = size_mgr.mod_add(group.group_start, local_id);
+
+            auto sctx = storage.context(table_size, widths);
+            auto sparse_entry = sctx.at(sctx.table_pos(position));
+
+            return entry_t::found_exist(id, sparse_entry);
+        }
+
         entry_t lookup_insert(uint64_t initial_address,
                               uint64_t stored_quotient)
         {
