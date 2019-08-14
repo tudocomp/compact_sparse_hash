@@ -434,14 +434,14 @@ TEST(hash, swap) {
 }
 
 TEST(hash, grow_bits_larger_id_lookup) {
-    auto ch = compact_hash_type<Init>(0, 0, 1); // check that it grows to minimum 2
+    auto ch = compact_hash_type(0, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
 
     auto add = [&](auto key) {
         bits = std::max(bits, bits_for(key));
 
-        auto entry = ch.lookup_insert(key, bits);
+        auto entry = ch.lookup_insert_key_width(key, bits);
         uint64_t id = entry.id();
         debug_check_single(ch, key);
         debug_check_single_id(ch, id);
