@@ -97,6 +97,13 @@ inline void debug_check_single(compact_hash_type& table, uint64_t key) {
 }
 
 /// Assert that a element exists in the hashtable
+inline void debug_check_single_id(compact_hash_type& table, uint64_t id) {
+    auto r = table.lookup_id(id);
+    ASSERT_TRUE(r.found()) << "id " << id << " not found!";
+    ASSERT_EQ(r.id(), id) << "lookup id is " << r.id() << " instead of " << id;
+}
+
+/// Assert that a element exists in the hashtable
 inline void debug_check_single(shadow_sets_t& table, uint64_t key) {
     auto r = table.lookup(key);
     ASSERT_TRUE(r.found()) << "key " << key << " not found!";
@@ -425,3 +432,24 @@ TEST(hash, swap) {
     a.swap(b);
     std::swap(a, b);
 }
+
+TEST(hash, grow_bits_larger_id_lookup) {
+    auto ch = compact_hash_type<Init>(0, 0, 1); // check that it grows to minimum 2
+
+    uint8_t bits = 1;
+
+    auto add = [&](auto key) {
+        bits = std::max(bits, bits_for(key));
+
+        auto entry = ch.lookup_insert(key, bits);
+        uint64_t id = entry.id();
+        debug_check_single(ch, key);
+        debug_check_single_id(ch, id);
+    };
+
+
+    for(size_t i = 0; i < 10000; i++) {
+        add(i*13ull);
+    }
+}
+

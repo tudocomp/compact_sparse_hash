@@ -178,6 +178,17 @@ public:
         return pctx.search(dkey.initial_address, dkey.stored_quotient);
     }
 
+    /// Takes an ID as returned by `entry_t::id()`, and returns the corresponding `entry_t`.
+    ///
+    /// The bavior is undefined if the id does not exist in the data structure, or after an
+    /// intermediate rehash.
+    inline entry_t lookup_id(uint64_t id) {
+        auto pctx = m_placement.context(m_storage, table_size(), storage_widths(), m_sizing);
+        auto result = pctx.lookup_id(id);
+
+        return result;
+    }
+
     /// Swap this instance of the data structure with another one.
     inline void swap(hashset_t& other) {
         std::swap(*this, other);

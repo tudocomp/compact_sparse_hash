@@ -54,6 +54,16 @@ public:
         entry_width_t widths;
         size_mgr_t const& size_mgr;
         storage_t& storage;
+
+        entry_t lookup_id(uint64_t id) {
+            uint64_t position = id;
+
+            auto sctx = storage.context(table_size, widths);
+            auto sparse_entry = sctx.at(sctx.table_pos(position));
+
+            return entry_t::found_exist(id, sparse_entry);
+        }
+
         entry_t lookup_insert(uint64_t initial_address,
                               uint64_t stored_quotient)
         {

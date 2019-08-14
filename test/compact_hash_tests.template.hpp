@@ -716,8 +716,6 @@ TEST(hash, grow_bits_larger_id_lookup) {
 }
 
 TEST(hash, grow_bits_larger_address_id_lookup) {
-    std::vector<std::pair<uint64_t, Init>> inserted;
-
     auto ch = compact_hash_type<Init>(0, 0, 1); // check that it grows to minimum 2
 
     uint8_t bits = 1;
@@ -741,8 +739,4 @@ TEST(hash, grow_bits_larger_address_id_lookup) {
     for(size_t i = 0; i < 10000; i++) {
         add(i*13ull, Init(i), Init::copyable(i));
     }
-
-    //std::cout << "=======================\n";
-    //std::cout << ch.debug_state() << "\n";
-    //std::cout << "=======================\n";
 }
