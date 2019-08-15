@@ -31,7 +31,7 @@ struct naive_displacement_table_t {
         m_displace.reserve(table_size);
         m_displace.resize(table_size);
     }
-    inline size_t get(size_t pos) {
+    inline size_t get(size_t pos) const {
         return m_displace[pos];
     }
     inline void set(size_t pos, size_t val) {

@@ -54,7 +54,7 @@ public:
     }
 
     /// Returns true if the key exists in the table.
-    inline bool found() {
+    inline bool found() const {
         return !m_not_found;
     }
 
@@ -63,19 +63,19 @@ public:
     /// The _id_ is an integer that uniquely describes the key,
     /// while only taking up approximately log2(table_size) bits.
     /// It gets invalidated if the underlying table needs to be resized.
-    inline uint64_t id() {
+    inline uint64_t id() const {
         DCHECK(found());
         return m_id;
     }
 
     /// Returns true if the key already exists in the table.
-    inline bool key_already_exist() {
+    inline bool key_already_exist() const {
         DCHECK(found());
         return m_key_already_exist;
     }
 
     /// Return the ptr to the data, if it exists.
-    inline entry_ptr ptr() {
+    inline entry_ptr ptr() const {
         DCHECK(found());
         return m_ptr;
     }

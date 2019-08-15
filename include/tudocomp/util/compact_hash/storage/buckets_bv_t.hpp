@@ -112,6 +112,8 @@ namespace tdc {namespace compact_hash {
             }
 
             inline void destroy_vals() {
+                if(m_buckets == nullptr) return;  // stop when this is an instance after std::move
+
                 size_t buckets_size = bucket_layout_t::table_size_to_bucket_size(table_size);
 
                 for(size_t i = 0; i < buckets_size; i++) {
@@ -169,7 +171,7 @@ namespace tdc {namespace compact_hash {
             }
         };
         inline auto context(size_t table_size, entry_bit_width_t const& widths) {
-            DCHECK(m_buckets);
+            // DCHECK(m_buckets); // this needs to be commented out for swapping two CHTs with std::move. 
             return context_t<buckets_t> {
                 m_buckets, table_size, widths
             };

@@ -386,6 +386,8 @@ public:
         return ss.str();
     }
 
+    placement_t& placement() { return m_placement; } // need direct access to placement to restore the key from an entry's quotient
+
 private:
     using widths_t = typename satellite_t::entry_bit_width_t;
 
@@ -399,6 +401,7 @@ private:
 
     /// Placement management structures
     placement_t m_placement;
+
 
     /// Hash function
     hash_t m_hash {1};
@@ -452,6 +455,7 @@ private:
         return m_sizing.decompose_hashed_value(hres);
     }
 
+public: // need direct access to compose_key to restore the key from an entry's quotient
     /// Compose a key from its initial address and quotient.
     inline uint64_t compose_key(uint64_t initial_address, uint64_t quotient) {
         uint64_t harg = m_sizing.compose_hashed_value(initial_address, quotient);
@@ -460,6 +464,7 @@ private:
         DCHECK(dcheck_key_width(key)) << "Composed key " << key << ", which requires more than the current set maximum of " << key_width() << " bits, but should not.";
         return key;
     }
+private:
 
     /// Run the destructors of the bucket elements,
     /// but don't drop them from the table.

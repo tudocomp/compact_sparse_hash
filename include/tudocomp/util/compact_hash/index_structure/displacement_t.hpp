@@ -29,6 +29,7 @@ class displacement_t {
         m_displace(std::move(table)) {}
 
 public:
+    displacement_table_t& displacement_table() { return m_displace; }
     /// runtime initilization arguments, if any
     struct config_args {
         typename displacement_table_t::config_args table_config;
