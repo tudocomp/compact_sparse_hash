@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glog/logging.h>
+
 #include <tudocomp/util/compact_hash/util.hpp>
 #include <tudocomp/util/compact_hash/size_manager_t.hpp>
 #include <tudocomp/util/serialization.hpp>
